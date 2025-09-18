@@ -1,0 +1,1 @@
+export const cloudIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="12" fill="none"><path fill="#717B8A" d="M0 7.48a4.08 4.08 0 0 1 3.417-4.026A5.44 5.44 0 0 1 13.439 4.8a3.4 3.4 0 0 1-.519 6.76H4.08A4.08 4.08 0 0 1 0 7.48Z"/></svg>`;

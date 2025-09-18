@@ -1,0 +1,60 @@
+<div class="wrapper">
+  <app-page-header icon="dashboard" title="dashboard"></app-page-header>
+</div>
+
+<div class="wrapper">
+  <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+    <div class="min-h-full">
+      <div class="bg-dark-300 rounded-lg shadow-md p-6 max-w-2xl mx-auto h-full">
+        <header class="flex items-center gap-4 mb-8">
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="63" height="63" fill="none"><rect width="63" height="63" fill="#7D63FB" rx="12"/><path stroke="#fff" d="M43 20H28.621l-2.56-2.56A1.496 1.496 0 0 0 25 17h-6c-1.654 0-3 1.346-3 3v21c0 1.654 1.346 3 3 3h24c1.654 0 3-1.346 3-3V23c0-1.654-1.346-3-3-3Z"/><circle cx="43" cy="43" r="9" fill="#fff"/><path fill="#7D63FB" fill-rule="evenodd" d="M43 39a.8.8 0 0 1 .8.8v2.4h2.4a.8.8 0 0 1 0 1.6h-2.4v2.4a.8.8 0 0 1-1.6 0v-2.4h-2.4a.8.8 0 0 1 0-1.6h2.4v-2.4a.8.8 0 0 1 .8-.8Z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-medium mb-1">{{ 'new.quickly-project.title' | translate }}</h2>
+            <p class="text-sm">{{ 'new.quickly-project.description' | translate }}</p>
+          </div>
+        </header>
+        <app-project-form 
+          (formSubmit)="onCreateProject($event)" 
+          [isSubmitting]="creatingProject">
+        </app-project-form>
+      </div>
+    </div>
+
+    <div class="min-h-full">
+      <div class="bg-dark-300 rounded-lg shadow-md p-6 max-w-2xl mx-auto h-full">
+        <header class="flex items-center gap-4 mb-8">
+          <div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="63" height="63" fill="none"><rect width="63" height="63" fill="#E74D88" rx="12"/><path fill="#fff" fill-rule="evenodd" d="M32 16c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16Zm0 30.032c-7.72 0-14-6.313-14-14.032 0-7.72 6.28-14 14-14s14 6.28 14 14-6.28 14.032-14 14.032ZM33 22v9.594l4.72 4.72a1 1 0 0 1-1.414 1.414l-4.95-4.95a.38.38 0 0 1-.03-.035l-.018-.024A.992.992 0 0 1 31 32V22a1 1 0 0 1 2 0Z" clip-rule="evenodd"/></svg>
+          </div>
+          <div>
+            <h2 class="text-xl font-medium mb-1">{{ 'latest.projects.title' | translate }}</h2>
+            <p class="text-sm">{{ 'latest.projects.description' | translate }}</p>
+          </div>
+        </header>
+        <ul class="border-t border-gray-300">
+          @for (project of latestProjects().slice(0, 6); track project.uuid) {
+          <li class="border-b border-gray-300">
+            <div class="flex items-center justify-between gap-4 py-6">
+              <div>
+                  <h3 class="text-sm font-normal">{{ project.name }}</h3>
+              </div>
+              <div class="flex items-start gap-4">
+                  <a [routerLink]="['/projects', project.uuid, 'edit']" class="text-sm text-gray-500">{{ 'edit' | translate }}</a>
+                  <a [routerLink]="['/projects', project.uuid]" class="text-sm text-gray-500">{{ 'show' | translate }}</a>
+              </div>
+            </div>
+          </li>
+          }
+        </ul>
+
+        <footer class="mt-8 mb-2 text-right">
+          <a routerLink="/projects" class="btn btn-normal btn-tertiary">{{ 'view.all' | translate }}</a>
+        </footer>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-upload-form></app-upload-form>

@@ -1,0 +1,540 @@
+<div class="wrapper">
+    <app-page-header
+      title="Guía de Estilos"
+      icon="design">
+      <div actions>
+      </div>
+    </app-page-header>
+
+
+  <!-- Sección de botones -->
+  <section class="mb-12">
+    <h2 class="text-2xl font-semibold mb-4">Buttons</h2>
+
+    <!-- Variantes -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium mb-3">Variants</h3>
+      <div class="flex flex-wrap gap-4">
+        <app-button variant="primary">Button</app-button>
+        <app-button variant="primary">Primary Button</app-button>
+        <app-button variant="secondary">Secondary Button</app-button>
+        <app-button variant="tertiary">Tertiary Button</app-button>
+        <app-button variant="muted">Muted Button</app-button>
+      </div>
+    </div>
+
+    <!-- Tamaños -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium mb-3">Sizes</h3>
+      <div class="flex flex-wrap items-center gap-4">
+        <app-button size="small">Small Button</app-button>
+        <app-button size="normal">Normal Button</app-button>
+        <app-button variant="secondary" size="large">GO</app-button>
+      </div>
+    </div>
+
+    <!-- Link - Submit - RouterLink -->
+    <div class="mb-8">
+      <h3 class="text-lg font-medium mb-3">Sizes</h3>
+      <div class="flex flex-wrap items-center gap-4">
+        <app-button routerLink="/dashboard" variant="secondary">
+          Router Link
+        </app-button>
+
+        <app-button href="#" target="_blank" rel="noopener noreferrer">
+            As link
+        </app-button>
+
+        <app-button type="submit" (click)="action()">
+          Submit
+        </app-button>
+
+        <app-button routerLink="/dashboard" variant="secondary">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </span>
+        </app-button>
+      </div>
+    </div>
+
+    <div class="mb-8">
+      <h3 class="text-lg font-medium mb-3">CUSTOM A BUTTON TAG</h3>
+      <div class="flex flex-wrap items-center gap-4">
+        <a class="btn btn-normal btn-secondary" routerLink="/dashboard">
+          Router Link
+        </a>
+
+        <a class="btn btn-normal btn-primary" href="#" target="_blank" rel="noopener noreferrer">
+            As link
+        </a>
+
+        <button class="btn btn-normal btn-muted" type="submit" (click)="action()">
+          Submit
+        </button>
+
+        <button class="btn btn-small btn-muted">
+          <span class="flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+            </svg>
+            Dashboard
+          </span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-semibold mb-4">Icons</h2>
+
+    <h3 class="text-lg font-medium mb-3">SIZES</h3>
+    <div class="flex flex-wrap gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex flex-col items-center">
+          <app-icon icon="settings"></app-icon>
+          <span class="text-xs mt-2">Default</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="dashboard" class="w-4 h-4 text-primary"></app-icon>
+          <span class="text-xs mt-2">16px</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="dashboard" class="w-8 h-8 text-secondary"></app-icon>
+          <span class="text-xs mt-2">32px</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="dashboard" class="w-12 h-12 text-tertiary"></app-icon>
+          <span class="text-xs mt-2">48px</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="dashboard" class="w-16 h-16 text-muted"></app-icon>
+          <span class="text-xs mt-2">64px</span>
+        </div>
+      </div>
+    </div>
+
+    <h3 class="text-lg font-medium mb-3">LIBRARY</h3>
+    <div class="flex flex-wrap gap-4">
+      <div class="flex flex-wrap items-center gap-4">
+        <div class="flex flex-col items-center">
+          <app-icon icon="settings"></app-icon>
+          <span class="text-xs mt-2">settings</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="userProfile"></app-icon>
+          <span class="text-xs mt-2">UserProfile</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="formit" class="text-primary"></app-icon>
+          <span class="text-xs mt-2">formit</span>
+        </div>
+
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="faq"></app-icon>
+          <span class="text-xs mt-2">faq</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="contact"></app-icon>
+          <span class="text-xs mt-2">contact</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="library"></app-icon>
+          <span class="text-xs mt-2">library</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="project"></app-icon>
+          <span class="text-xs mt-2">project</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="upload"></app-icon>
+          <span class="text-xs mt-2">upload</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="search"></app-icon>
+          <span class="text-xs mt-2">search</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="closeCircle"></app-icon>
+          <span class="text-xs mt-2">closeCircle</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="xMark"></app-icon>
+          <span class="text-xs mt-2">xMark</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="trash"></app-icon>
+          <span class="text-xs mt-2">trash</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="trashAlt"></app-icon>
+          <span class="text-xs mt-2">trashAlt</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="down"></app-icon>
+          <span class="text-xs mt-2">down</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="sort"></app-icon>
+          <span class="text-xs mt-2">sort</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="sortAsc"></app-icon>
+          <span class="text-xs mt-2">sortAsc</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="sortDesc"></app-icon>
+          <span class="text-xs mt-2">sortDesc</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="points"></app-icon>
+          <span class="text-xs mt-2">points</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="cloud"></app-icon>
+          <span class="text-xs mt-2">cloud</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="eye"></app-icon>
+          <span class="text-xs mt-2">eye</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="warning"></app-icon>
+          <span class="text-xs mt-2">warning</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="star"></app-icon>
+          <span class="text-xs mt-2">star</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="group"></app-icon>
+          <span class="text-xs mt-2">group</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="audio"></app-icon>
+          <span class="text-xs mt-2">audio</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="video"></app-icon>
+          <span class="text-xs mt-2">video</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="light"></app-icon>
+          <span class="text-xs mt-2">light</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="fade"></app-icon>
+          <span class="text-xs mt-2">fade</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="wait"></app-icon>
+          <span class="text-xs mt-2">wait</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="action"></app-icon>
+          <span class="text-xs mt-2">action</span>
+        </div>
+
+        <div class="flex flex-col items-center">  
+          <app-icon icon="noContinue"></app-icon>
+          <span class="text-xs mt-2">noContinue</span>
+        </div>
+
+        <div class="flex flex-col items-center">  
+          <app-icon icon="autoContinue"></app-icon>
+          <span class="text-xs mt-2">autoContinue</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="autoFollow"></app-icon>
+          <span class="text-xs mt-2">autoFollow</span>
+        </div>
+
+        <div class="flex flex-col items-center">
+          <app-icon icon="activity"></app-icon>
+          <span class="text-xs mt-2">activity</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-6">Formularios</h2>
+
+    <div class="mt-4">
+      <form action="" method="get">
+        <div class="field">
+          <label class="label" for="name">Nombre</label>
+          <input class="input" type="text" id="name" name="name" placeholder="Nombre">
+          <p class="help">Help text lore ipsum dolor sit amet</p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="email">Email</label>
+          <input class="input" type="email" id="email" name="email" placeholder="formitgo@stagelab.coop">
+          <p class="help is-error">This field is required</p>
+        </div>
+
+        <div class="field">
+          <label class="label" for="description">Textarea</label>
+          <textarea class="textarea" id="description" name="description" placeholder="Mensaje"></textarea>
+        </div>
+        
+        <div class="field">
+          <label class="label" for="file">File</label>
+          <input class="input" type="file" id="file" name="file">
+        </div>
+
+        <div class="field">
+          <label for="location" class="label">Location</label>
+          <div class="select">
+            <select id="location" name="location" class="">
+              <option>United States</option>
+              <option selected>Canada</option>
+              <option>Mexico</option>
+            </select>
+            <svg class="select-icon" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true" data-slot="icon">
+              <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+            </svg>
+          </div>
+        </div>        
+
+        <div class="field flex items-center gap-2">
+          <input type="checkbox" id="checkbox" name="checkbox" class="checkbox">
+          <label class="label-inline mt-2" for="checkbox">Checkbox</label>
+        </div>
+
+        <div class="field">
+          <input type="checkbox" id="checkbox-sin-label" name="checkbox-sin-label" class="checkbox">
+        </div>
+
+        <fieldset>
+          <legend class="font-semibold">Notifications</legend>
+          <p class="mt-1 text-sm/6">How do you prefer to receive notifications?</p>
+          <div class="mt-6 space-y-6">
+            <div class="flex items-center">
+              <input id="radio-email" name="notification-method" type="radio" checked class="radio">
+              <label for="radio-email" class="ml-3 mt-2 label-inline">Email</label>
+            </div>
+            <div class="flex items-center">
+              <input id="sms" name="notification-method" type="radio" class="radio">
+              <label for="sms" class="ml-3 mt-2 label-inline">Phone (SMS)</label>
+            </div>
+            <div class="flex items-center">
+              <input id="push" name="notification-method" type="radio" class="radio">
+              <label for="push" class="ml-3 mt-2label-inline">Push notification</label>
+            </div>
+          </div>
+        </fieldset>
+        
+      </form>
+    </div>
+  </section>
+
+  <section class="mb-12">
+    <h2 class="text-2xl font-bold mb-6">Modales</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="p-6 border rounded-lg bg-white shadow-sm">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+            <app-icon icon="info" class="h-5 w-5 text-primary" />
+          </div>
+          <h3 class="text-lg font-semibold">Modal Base</h3>
+        </div>
+        <p class="text-sm text-muted mb-4">Modal base que puede contener cualquier contenido.</p>
+        <button 
+          class="btn btn-normal btn-primary w-full"
+          (click)="openBaseModal()"
+        >
+          Abrir Modal Base
+        </button>
+      </div>
+
+      <div class="p-6 border rounded-lg bg-white shadow-sm">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-secondary/10">
+            <app-icon icon="formit" class="h-5 w-5 text-secondary" />
+          </div>
+          <h3 class="text-lg font-semibold">Modal con Scroll</h3>
+        </div>
+        <p class="text-sm text-muted mb-4">Modal con contenido que requiere scroll.</p>
+        <button 
+          class="btn btn-normal btn-secondary w-full"
+          (click)="openScrollModal()"
+        >
+          Abrir Modal con Scroll
+        </button>
+      </div>
+
+      <div class="p-6 border rounded-lg bg-white shadow-sm">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-danger/10">
+            <app-icon icon="exclamationTriangle" class="h-5 w-5 text-danger" />
+          </div>
+          <h3 class="text-lg font-semibold">Modal de Confirmación</h3>
+        </div>
+        <p class="text-sm text-muted mb-4">Modal para confirmar acciones importantes o destructivas.</p>
+        <button 
+          class="btn btn-normal btn-tertiary w-full"
+          (click)="openConfirmationModal()"
+        >
+          Abrir Confirmación
+        </button>
+      </div>
+    </div>
+
+    <h3 class="text-xl font-semibold mt-8 mb-4">Tamaños de Modal</h3>
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <button 
+        class="btn btn-normal btn-primary"
+        (click)="openSizeModal('sm')"
+      >
+        Pequeño (sm)
+      </button>
+      <button 
+        class="btn btn-normal btn-primary"
+        (click)="openSizeModal('md')"
+      >
+        Mediano (md)
+      </button>
+      <button 
+        class="btn btn-normal btn-primary"
+        (click)="openSizeModal('lg')"
+      >
+        Grande (lg)
+      </button>
+      <button 
+        class="btn btn-normal btn-primary"
+        (click)="openSizeModal('xl')"
+      >
+        Extra Grande (xl)
+      </button>
+      <button 
+        class="btn btn-normal btn-primary"
+        (click)="openSizeModal('full')"
+      >
+        Completo (full)
+      </button>
+    </div>
+  </section>
+</div>
+
+<app-modal [isOpen]="isBaseModalOpen" (close)="closeBaseModal()">
+  <div class="flex flex-col space-y-4">
+    <h2 class="text-lg font-semibold">Modal Base</h2>
+    <p class="text-sm text-muted">
+      Este es un ejemplo de contenido en el modal base. Puedes poner cualquier contenido aquí.
+    </p>
+    <div class="flex justify-end">
+      <button 
+        class="btn btn-normal btn-primary"
+        (click)="closeBaseModal()"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<app-modal [isOpen]="isScrollModalOpen" [size]="'xl'" (close)="closeScrollModal()">
+  <div class="flex flex-col space-y-4">
+    <h2 class="text-lg font-semibold">Modal con Contenido Largo (Extra Grande)</h2>
+    <div class="space-y-4">
+      <p>
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nullam in dui mauris. Vivamus hendrerit arcu sed erat molestie vehicula. Sed auctor neque eu tellus rhoncus ut eleifend nibh porttitor. Ut in nulla enim. Phasellus molestie magna non est bibendum non venenatis nisl tempor. Suspendisse dictum feugiat nisl ut dapibus. Mauris iaculis porttitor posuere. Praesent id metus massa, ut blandit odio. Proin quis tortor orci. Etiam at risus et justo dignissim congue. Donec congue lacinia dui, a porttitor lectus condimentum laoreet.
+      </p>
+      <p>
+        Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Suspendisse viverra, mauris vel auctor fringilla, est magna vulputate sapien, vel rutrum augue nibh id ante. Fusce tincidunt enim vel sagittis. Nulla facilisi. Aenean accumsan libero quis elit imperdiet, vitae fringilla lacus blandit. Integer faucibus euismod mauris, non malesuada magna efficitur in. Nullam non tincidunt nisi, ac viverra quam. Donec sed risus nec erat convallis posuere.
+      </p>
+      <p>
+        Maecenas vel sapien fermentum, venenatis erat et, pulvinar orci. Proin tincidunt, nibh id aliquam posuere, ex felis iaculis sem, sed aliquam libero justo vel tellus. Quisque fermentum dolor a magna molestie, sed faucibus nibh vehicula. Sed venenatis, mi ut condimentum facilisis, eros odio facilisis nisi, in dignissim erat libero ut ligula. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Morbi nec orci dapibus, convallis nulla eu, semper est.
+      </p>
+      <p>
+        Suspendisse potenti. Proin fermentum, ante non faucibus finibus, tellus dui scelerisque massa, id suscipit quam nulla vel sapien. Aliquam erat volutpat. Praesent fermentum consequat sapien non scelerisque. In in sem ligula. Nullam elementum vulputate felis, sed hendrerit mauris dapibus vel. Nullam consequat lectus sed diam congue lobortis.
+      </p>
+      <p>
+        Aliquam erat volutpat. Praesent aliquam, enim at fermentum mollis, ligula massa adipiscing nisl, ac euismod nibh nisl eu lectus. Fusce vulputate sem at sapien. Vivamus leo. Aliquam euismod libero eu enim. Nulla nec felis sed leo placerat imperdiet. Aenean suscipit nulla in justo. Suspendisse cursus rutrum augue. Nulla tincidunt tincidunt mi. Curabitur iaculis, lorem vel rhoncus faucibus, felis magna fermentum augue, et ultricies lacus lorem varius purus. Curabitur eu amet.
+      </p>
+    </div>
+    <div class="flex justify-end mt-4">
+      <button 
+        class="btn btn-normal btn-secondary"
+        (click)="closeScrollModal()"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</app-modal>
+
+<app-confirmation-dialog
+  [isOpen]="isConfirmationModalOpen"
+  [title]="confirmationConfig.title"
+  [message]="confirmationConfig.message"
+  [confirmText]="confirmationConfig.confirmText"
+  [cancelText]="confirmationConfig.cancelText"
+  (close)="closeConfirmationModal()"
+  (confirm)="onConfirm()"
+></app-confirmation-dialog>
+
+<app-modal [isOpen]="isSizeModalOpen" [size]="selectedSize" (close)="closeSizeModal()">
+  <div class="flex flex-col space-y-4">
+    <h2 class="text-lg font-semibold">Modal de Tamaño: {{ selectedSize }}</h2>
+    <p class="text-sm text-muted">
+      Este modal muestra el tamaño <strong>{{ selectedSize }}</strong>. Puedes usar diferentes tamaños según tus necesidades.
+    </p>
+    <div class="bg-gray-100 p-4 rounded">
+      <ul class="list-disc pl-5 space-y-2">
+        <li><strong>sm</strong>: max-w-sm (384px)</li>
+        <li><strong>md</strong>: max-w-lg (512px)</li>
+        <li><strong>lg</strong>: max-w-2xl (672px)</li>
+        <li><strong>xl</strong>: max-w-4xl (896px)</li>
+        <li><strong>full</strong>: max-w-[90%] (90% del ancho de pantalla)</li>
+      </ul>
+    </div>
+    <div class="flex justify-end mt-4">
+      <button 
+        class="btn btn-normal btn-primary"
+        (click)="closeSizeModal()"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</app-modal>
+

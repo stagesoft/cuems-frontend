@@ -1,0 +1,1 @@
+export const LibraryIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="19" fill="none"><path fill="currentColor" fill-rule="evenodd" d="M0 0h22v4.222H0V0Zm18.7 5.278H1.1v11.61C1.1 18.055 2.086 19 3.3 19h15.4c1.214 0 2.2-.946 2.2-2.111V5.278h-2.2ZM6.6 11.61h8.8V9.5H6.6v2.111Z" clip-rule="evenodd"/></svg>`;

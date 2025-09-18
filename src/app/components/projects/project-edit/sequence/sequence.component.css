@@ -1,0 +1,184 @@
+.drawer-container {
+  transition: transform 0.3s ease-out, visibility 0.3s ease-out;
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.drawer-open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.drawer-closed {
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.drawer-content {
+  animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.drawer-backdrop {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.drawer-header-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-header-button:hover {
+  transform: scale(1.05);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.drawer-shadow {
+  box-shadow: 
+    -20px 0 25px -5px rgba(0, 0, 0, 0.1),
+    -8px 0 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.activity-item {
+  animation: slideInActivity 0.3s ease-out;
+}
+
+@keyframes slideInActivity {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background-color: rgba(156, 163, 175, 0.5);
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(156, 163, 175, 0.8);
+}
+
+.table-responsive {
+  min-width: 800px;
+}
+
+.table-container {
+  transition: margin-right 0.3s ease-out;
+}
+
+.table-name-cell {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-name-cell > span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.name-column-responsive {
+  width: 240px !important;
+  min-width: 240px !important;
+  max-width: 240px !important;
+}
+
+@media (max-width: 1400px) {
+  .name-column-responsive {
+    width: 200px !important;
+    min-width: 200px !important;
+    max-width: 200px !important;
+  }
+}
+
+@media (max-width: 1200px) {
+  .name-column-responsive {
+    width: 160px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .name-column-responsive {
+    width: 120px !important;
+    min-width: 120px !important;
+    max-width: 120px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .name-column-responsive {
+    width: 80px !important;
+    min-width: 80px !important;
+    max-width: 80px !important;
+  }
+}
+
+/* === DRAG & DROP  === */
+
+  /* Element that is being dragged */
+.cdk-drag-dragging {
+  opacity: 0.8;
+  background-color: inherit;
+}
+
+/* Placeholder where the element was */
+.cdk-drag-placeholder {
+  opacity: 0.3;
+  background-color: #f3f4f6;
+}
+
+/* Handle of drag (icon of points) */
+.drag-handle {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.drag-handle:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}

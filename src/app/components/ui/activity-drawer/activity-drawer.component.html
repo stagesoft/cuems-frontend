@@ -1,0 +1,70 @@
+<!-- Backdrop for the drawer (mobile only) -->
+<div *ngIf="drawerService.isActivityDrawerOpen()"
+     class="fixed inset-0 bg-black bg-opacity-25 lg:hidden drawer-backdrop z-40"
+     (click)="drawerService.closeActivityDrawer()">
+</div>
+
+<!-- Activity/Warnings Drawer -->
+<div [ngClass]="{
+       'drawer-open': drawerService.isActivityDrawerOpen(),
+       'drawer-closed': !drawerService.isActivityDrawerOpen(),
+       'no-animation': !shouldAnimate
+     }"
+     class="drawer-container absolute top-0 right-0 h-full bg-gray-300 z-50 flex flex-col"
+     [style.width.px]="DRAWER_WIDTH">
+  
+  <!-- Drawer Header -->
+  <div class="flex justify-end px-8 pt-8 mb-4">
+    <button 
+      (click)="drawerService.closeActivityDrawer()"
+      class="">
+      <app-icon icon="xMark" class="w-6 h-6"></app-icon>
+    </button>
+  </div>
+  
+  <!-- Tabs -->
+  <div class="flex gap-6 px-8">
+    <button 
+      (click)="setActiveDrawerTab('activity')"
+      [class]="drawerService.activeDrawerTab() === 'activity' 
+              ? 'btn-primary' 
+              : 'border border-white'"
+      class="btn btn-normal w-full">
+      Activity
+    </button>
+    <button 
+      (click)="setActiveDrawerTab('warnings')"
+      [class]="drawerService.activeDrawerTab() === 'warnings' 
+              ? 'btn-primary' 
+              : 'border border-white'"
+      class="btn btn-normal w-full">
+      Warnings
+    </button>
+  </div>
+  
+  <!-- Tab Content -->
+  <div class="p-8 flex-1 overflow-hidden">
+    <!-- Activity Tab -->
+    <div *ngIf="drawerService.activeDrawerTab() === 'activity'" class="space-y-3">
+      <div class="p-6 rounded text-sm activity-item">
+        <div class="flex items-center gap-2 mb-1">
+          <app-icon icon="activity" class="w-4 h-4"></app-icon>
+          <span class="font-medium">Activity</span>
+          <span class="text-xs">Live updates</span>
+        </div>
+        <p>Project activity and changes will appear here</p>
+      </div>
+    </div>
+    
+    <!-- Warnings Tab -->
+    <div *ngIf="drawerService.activeDrawerTab() === 'warnings'" class="space-y-3">
+      <div class="p-6 rounded text-sm">
+        <div class="flex items-center gap-2 mb-1">
+          <app-icon icon="warning" class="w-4 h-4 text-yellow-500"></app-icon>
+          <span class="font-medium">No Warnings</span>
+        </div>
+        <p>All systems are running normally</p>
+      </div>
+    </div>
+  </div>
+</div>

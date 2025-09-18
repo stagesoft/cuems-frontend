@@ -1,0 +1,26 @@
+<div class="wrapper">
+  <app-page-header
+    title="Create New Project"
+    icon="project">
+  </app-page-header>
+</div>
+
+<div class="wrapper py-6 flex flex-wrap justify-between">
+  <div class="w-full md:flex-1 md:max-w-2xl bg-dark-300 p-6 rounded-lg shadow-sm">
+    <app-project-form 
+      (formSubmit)="onFormSubmit($event)" 
+      [isSubmitting]="isSubmitting">
+    </app-project-form>
+    
+    <div class="mt-4 flex justify-start">
+      <a routerLink="/projects" class="btn btn-muted btn-normal">{{ 'cancel' | translate }}</a>
+    </div>
+  </div>
+
+  <div>
+    <a class="flex items-center gap-2" routerLink="/projects">
+      <app-icon icon="closeCircle" class="w-4 h-4"></app-icon>
+      <span class="text-sm">{{ 'cancel' | translate }}</span>
+    </a>
+  </div>
+</div> 

@@ -1,0 +1,149 @@
+<div class="wrapper mt-12 mb-8">
+  <div class="bg-dark-300 rounded-lg p-6">
+    <header 
+      class="flex items-center gap-4"
+      [class.cursor-pointer]="collapsible"
+      (click)="toggleExpanded()">
+      <div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="63" height="63" fill="none">
+          <rect width="63" height="63" fill="#48C589" rx="12"/>
+          <path fill="#fff" d="M18.176 17.814v-.7.7Zm0-1.4v-.7.7ZM47.824 24.9v.7h.004l-.005-.7Zm-29.648 0-.005.7h.005v-.7Zm0 0v-.7h-.009l.01.7Zm29.648 0 .01-.7h-.01v.7Zm-29.648 1.4v.7-.7Zm25.413 21.328v.7-.7ZM18.877 26.3v-.7a.7.7 0 0 0-.7.7h.7Zm28.247 0h.7a.7.7 0 0 0-.7-.7v.7Zm-3.535 19.928v.7-.7ZM37.235 31.3l.073-.697a.703.703 0 0 0-.073-.003v.7Zm.141.014.14-.685a.67.67 0 0 0-.067-.01l-.073.695Zm-.14 1.386v.7a.703.703 0 0 0 .072-.004l-.073-.696Zm.14-.015.073.697a.67.67 0 0 0 .067-.01l-.14-.687Zm10.448-14.87v.7c.387 0 .717.319.717.733h1.4c0-1.18-.949-2.134-2.117-2.134v.7Zm-29.648 0v.7h29.648v-1.4H18.176v.7Zm-1.417 1.433h.7c0-.414.33-.734.717-.734v-1.4a2.126 2.126 0 0 0-2.117 2.134h.7Zm0 4.219h.7v-4.22h-1.4v4.22h.7Zm1.398 1.433.01-.7a.726.726 0 0 1-.708-.733h-1.4c0 1.169.933 2.117 2.089 2.133l.01-.7Zm0 0-.019-.7a1.4 1.4 0 0 0-1.362 1.4h1.4l-.019-.7Zm-.68.7h-.7v.611h1.4V25.6h-.7Zm0 .611.173-.677a2.132 2.132 0 0 1-1.591-2.067h-1.4a3.532 3.532 0 0 0 2.643 3.423l.174-.678Zm-2.118-2.744h.7v-4.22h-1.4v4.22h.7Zm0-4.22h.7c0-1.178.948-2.133 2.117-2.133v-1.4c-1.953 0-3.517 1.593-3.517 3.534h.7Zm2.817-2.833v.7h29.648v-1.4H18.176v.7Zm29.648 0v.7c1.168 0 2.117.955 2.117 2.134h1.4c0-1.941-1.564-3.534-3.517-3.534v.7Zm2.817 2.834h-.7v4.219h1.4v-4.22h-.7Zm0 4.219h-.7c0 .994-.677 1.832-1.592 2.067l.174.678.174.678a3.532 3.532 0 0 0 2.644-3.423h-.7Zm-2.118 2.745h.7V25.6h-1.4v.612h.7Zm0-.612h.7a1.4 1.4 0 0 0-1.361-1.4l-.02.7-.018.7h.7Zm.718-2.133h-.7c0 .41-.325.728-.708.733l.01.7.01.7a2.126 2.126 0 0 0 2.088-2.133h-.7Zm0-4.22h-.7v4.22h1.4v-4.22h-.7ZM47.843 24.9l-.005-.7h-.02l.006.7.004.7h.02l-.005-.7Zm-.02 0v-.7H18.177v1.4h29.648v-.7Zm-29.647 0 .005-.7h-.019l-.005.7-.005.7h.02l.004-.7Zm0 0-.009-.7h-.02l.01.7.01.7h.019l-.01-.7Zm29.648 0v-.7H18.177v1.4h29.647v-.7Zm.019 0 .01-.7h-.02l-.01.7-.009.7h.02l.009-.7Zm.68 1.312-.174-.678a2.11 2.11 0 0 1-.525.066V27c.3 0 .593-.038.873-.11l-.174-.678Zm-.7.088v-.7H18.177V27h29.648v-.7Zm-29.647 0v-.7c-.182 0-.358-.024-.526-.067l-.174.678-.174.679c.28.071.573.11.874.11v-.7Zm-.7-.088h-.7v16.45h1.4v-16.45h-.7Zm0 16.45h-.7c0 3.12 2.514 5.666 5.636 5.666v-1.4c-2.34 0-4.236-1.91-4.236-4.267h-.7Zm4.936 4.966v.7h21.177v-1.4H22.412v.7Zm21.177 0v.7c3.122 0 5.634-2.547 5.634-5.667h-1.4c0 2.357-1.896 4.267-4.234 4.267v.7Zm4.934-4.967h.7v-16.45h-1.4v16.45h.7Zm-29.646-16.36v.7h28.247v-1.4H18.877v.7Zm0 16.36h.7v-16.36h-1.4v16.36h.7Zm3.535 3.567v-.7c-1.557 0-2.835-1.274-2.835-2.867h-1.4c0 2.357 1.896 4.267 4.235 4.267v-.7Zm21.177 0v-.7H22.412v1.4h21.177v-.7Zm3.535-3.567h-.7c0 1.593-1.279 2.867-2.835 2.867v1.4c2.338 0 4.235-1.91 4.235-4.267h-.7Zm0-16.36h-.7v16.36h1.4v-16.36h-.7ZM37.235 31.3l-.072.696.14.015.073-.697.073-.696-.141-.014-.073.696Zm-8.47 0v.7h8.47v-1.4h-8.47v.7Zm-.7.7h.7v-1.4a1.4 1.4 0 0 0-1.4 1.4h.7Zm.7.7V32h-1.4a1.4 1.4 0 0 0 1.4 1.4v-.7Zm8.47 0V32h-8.47v1.4h8.47v-.7Zm.141-.015-.072-.696-.141.015.072.696.073.696.14-.014-.072-.697Zm.56-.685h-.7l.14.685.14.686A1.4 1.4 0 0 0 38.636 32h-.7Zm-.56-.686-.14.686h1.4a1.4 1.4 0 0 0-1.12-1.371l-.14.685Z"/>
+          <circle cx="43" cy="43" r="9" fill="#fff"/>
+          <path fill="#48C589" fill-rule="evenodd" d="M43 39a.8.8 0 0 1 .8.8v2.4h2.4a.8.8 0 0 1 0 1.6h-2.4v2.4a.8.8 0 0 1-1.6 0v-2.4h-2.4a.8.8 0 0 1 0-1.6h2.4v-2.4a.8.8 0 0 1 .8-.8Z" clip-rule="evenodd"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <h2 class="text-xl font-medium mb-1">{{ 'upload-form.title' | translate }}</h2>
+        <p class="text-sm">{{ 'upload-form.description' | translate }}</p>
+      </div>
+      @if (collapsible) {
+        <div class="flex items-center">
+          <app-icon 
+            icon="down" 
+            class="w-[16px] h-[16px] transition-transform duration-200"
+            [class.rotate-180]="isExpanded()">
+          </app-icon>
+        </div>
+      }
+    </header>
+    
+    <div class="upload-content-wrapper" [class.expanded]="!collapsible || isExpanded()">
+      <div class="upload-content">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2 pb-8 mt-6">
+      <div class="order-2 md:order-1">
+        <div>
+          <div>
+            <p class="font-medium mb-4">{{ 'upload-form.files.name' | translate }}</p>
+          </div>
+
+          <!-- file list -->
+          <div class="border-t border-gray-300">
+            @if (uploadQueue().length === 0) {
+              <div class="py-8 text-center text-gray-500">
+                <p class="text-sm">{{ 'upload-form.files.no-selected' | translate }}</p>
+                <p class="text-xs">{{ 'upload-form.files.no-selected.description' | translate }}</p>
+              </div>
+            } @else {
+              @for (file of uploadQueue(); track file.id) {
+                <div class="flex flex-wrap items-center gap-4 py-6 border-b border-gray-300">
+                  <p class="text-sm w-40 truncate" [title]="file.name">{{ file.name }}</p>
+                  <p class="text-xs uppercase py-1 px-2 border border-gray-300 rounded-md">
+                    {{ getFileExtension(file.name) }}
+                  </p>
+                  <div class="flex-1">
+                    <div class="w-full bg-gray-300 rounded-full h-2.5">
+                      <div 
+                        class="h-2.5 rounded-full transition-all duration-300"
+                        [class]="file.status === 'completed' ? 'bg-success' : 
+                                file.status === 'error' ? 'bg-danger' : 'bg-success-light'"
+                        [style.width.%]="file.progress">
+                      </div>
+                    </div>
+                    <div class="flex justify-between items-center mt-1">
+                      <span class="text-xs" [class]="getStatusClass(file.status)">
+                        {{ getStatusText(file) }}
+                      </span>
+                      <span class="text-xs text-gray-500">
+                        {{ formatFileSize(file.size) }}
+                      </span>
+                    </div>
+                  </div>
+                  @if (file.status === 'pending' || file.status === 'error') {
+                    <button 
+                      (click)="removeFile(file.id)"
+                      class="text-danger-light hover:text-danger text-xs"
+                      title="{{ 'upload-form.files.remove-file' | translate }}">
+                      ✕
+                    </button>
+                  }
+                </div>
+              }
+            }
+          </div>
+
+          <div class="flex justify-end gap-4 mt-8">
+            <button 
+              class="btn btn-normal btn-muted"
+              (click)="clearList()"
+              [disabled]="uploadQueue().length === 0">
+              {{ 'upload-form.files.clear-list' | translate }}
+            </button>
+            <button 
+              class="btn btn-normal btn-secondary"
+              (click)="uploadAll()"
+              [disabled]="uploadQueue().length === 0 || isUploading()">
+              @if (isUploading()) {
+                <span>{{ 'upload-form.files.uploading' | translate }}</span>
+              } @else {
+                <span>{{ 'upload-form.files.upload-all' | translate }}</span>
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="order-1 md:order-2">
+        <div>
+          <div>
+            <p class="font-medium mb-4">{{ 'upload-form.files.area.title' | translate }}</p>
+          </div>
+          
+          <div 
+            class="border border-dashed rounded-md p-4 min-h-64 relative cursor-pointer transition-colors"
+            [class]="isDragOver() ? 'border-blue-500 bg-blue-50' : 'border-gray-300'"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+            (click)="openFileSelector()">
+            
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div class="text-center">
+                <div class="mb-4">
+                  <svg class="mx-auto" xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="none">
+                    <path fill="#717B8A" fill-rule="evenodd" d="M56 28C56 12.535 43.464 0 28 0 12.535 0 0 12.535 0 28c0 15.464 12.535 28 28 28 15.464 0 28-12.536 28-28ZM3.446 28C3.446 14.49 14.49 3.5 28 3.5c13.51 0 24.5 10.99 24.5 24.5S41.51 52.5 28 52.5 3.446 41.51 3.446 28Zm26.322-7.445v19.712a1.75 1.75 0 0 1-3.5 0V20.445l-6.439 6.44a1.75 1.75 0 0 1-2.474-2.474l10.61-10.337 10.609 10.337a1.75 1.75 0 1 1-2.475 2.474l-6.33-6.33Z" clip-rule="evenodd"/>
+                  </svg>
+                </div>
+                <p class="text-sm text-gray-500 px-4">
+                  @if (isDragOver()) {
+                    {{ 'upload-form.files.area.description' | translate }}
+                  } @else {
+                    {{ 'upload-form.files.area.description' | translate }}
+                  }
+                </p>
+              </div>
+            </div>
+            
+            <input 
+              #fileInput
+              type="file" 
+              class="hidden" 
+              multiple
+              accept="audio/*,video/*,image/*"
+              (change)="onFileSelected($event)" />
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

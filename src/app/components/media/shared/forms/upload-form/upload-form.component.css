@@ -1,0 +1,68 @@
+.upload-area {
+  transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+  border-color: #48C589;
+  background-color: rgba(72, 197, 137, 0.05);
+}
+
+.upload-area.drag-over {
+  border-color: #48C589 !important;
+  background-color: rgba(72, 197, 137, 0.1) !important;
+  transform: scale(1.02);
+}
+
+.file-item {
+  transition: all 0.2s ease;
+}
+
+.file-item:hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.progress-bar {
+  transition: width 0.3s ease;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn:disabled:hover {
+  opacity: 0.5;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.file-item {
+  animation: slideIn 0.3s ease;
+}
+
+.upload-content-wrapper {}
+
+:host(.collapsible) .upload-content-wrapper {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.4s ease;
+  overflow: hidden;
+}
+
+:host(.collapsible) .upload-content-wrapper.expanded {
+  grid-template-rows: 1fr;
+}
+
+:host(.collapsible) .upload-content {
+  min-height: 0;
+  overflow: hidden;
+} 

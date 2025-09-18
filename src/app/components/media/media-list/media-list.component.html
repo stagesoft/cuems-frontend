@@ -1,0 +1,155 @@
+<div class="wrapper">
+  <app-page-header
+  title="Media"
+  icon="library"></app-page-header>
+</div>
+
+  <app-upload-form 
+    [collapsible]="true" 
+    [defaultExpanded]="false">
+  </app-upload-form>
+
+<div class="wrapper">
+  <div class="py-6">
+    <div>
+      <div class="sm:flex sm:items-center">
+        <div class="sm:flex-auto">
+          <div class="flex items-center mb-8">
+            <a routerLink="/media"
+              class="pr-4 py-1 border-r"
+              routerLinkActive="font-medium"
+              [routerLinkActiveOptions]="{exact: true}"
+            >
+              {{ 'media.list.active' | translate }} ({{ mediaService.fileList().length }})
+            </a>
+
+            <a routerLink="/media/trash"
+              class="px-4 py-1"
+              routerLinkActive="font-medium"
+            >
+              {{ 'media.list.trash' | translate }} ({{ mediaService.fileTrashList().length }})
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-4">
+        <button type="button" (click)="selectAllFiles()" class="btn btn-small btn-muted" [disabled]="selectedFiles.length === getSelectableFiles().length || isBulkDeleting">
+          {{ 'media.list.select.all' | translate }}
+        </button>
+        <button type="button" (click)="deselectAllFiles()" class="btn btn-small btn-muted" [disabled]="selectedFiles.length === 0 || isBulkDeleting">
+          {{ 'media.list.deselect.all' | translate }}
+        </button>
+        <button type="button" (click)="deleteSelectedFiles()" class="btn btn-tertiary btn-small" [disabled]="selectedFiles.length === 0 || isBulkDeleting">
+          <span *ngIf="isBulkDeleting" class="loading loading-spinner loading-xs mr-2"></span>
+          {{ 'media.list.delete.selected' | translate }}
+        </button>
+      </div>
+
+      <div *ngIf="isLoading" class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+
+      <div *ngIf="!isLoading && mediaService.fileList().length === 0" class="py-8 text-center">
+        {{ 'media.list.empty.description' | translate }}
+      </div>
+
+      <div *ngIf="!isLoading && mediaService.fileList().length > 0" class="mt-8 flow-root">
+        <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+          <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+            <div class="rounded-lg shadow-sm overflow-hidden">
+              <div class="p-6">
+                <h2 class="text-lg font-semibold mb-4">{{ 'media.table.title' | translate }}</h2>
+                
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-gray-300">
+                    <thead>
+                      <tr>
+                        <th scope="col" class="w-10 py-3.5 pr-3 pl-4 text-left text-sm font-semibold sm:pl-0">
+                          <input class="checkbox" type="checkbox" (click)="$event.stopPropagation(); selectAllFiles()" [checked]="selectedFiles.length === getSelectableFiles().length" [disabled]="isBulkDeleting">
+                        </th>
+                        <th class="w-40 px-3 py-3.5 text-left text-sm font-semibold w-32">{{ 'media.table.type' | translate }}</th>
+                        <th class="w-40 px-3 py-3.5 text-left text-sm font-semibold">{{ 'media.table.filename' | translate }}</th>
+                        <th class="w-64 px-3 py-3.5 text-left text-sm font-semibold">{{ 'media.table.projects' | translate }}</th>
+                        <th scope="col" class="relative py-3.5 pr-4 pl-3 sm:pr-0">
+                          <span class="sr-only">{{ 'media.table.actions' | translate }}</span>
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y">
+                      <tr *ngFor="let fileObj of mediaService.fileList()"
+                          [class.opacity-50]="isFileBeingDeleted(getFileUuid(fileObj))"
+                          class="cursor-pointer">
+                          <td class="w-10 whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0" (click)="$event.stopPropagation()">
+                            <input class="checkbox" type="checkbox" (click)="selectFile(getFileUuid(fileObj))" [checked]="selectedFiles.includes(getFileUuid(fileObj))" [disabled]="isFileBeingDeleted(getFileUuid(fileObj)) || isBulkDeleting">
+                          </td>
+                        <td class="px-4 py-3">
+                          <div class="flex items-center">
+                            <app-file-icon-preview 
+                              [fileType]="getFileData(fileObj)?.type || ''"
+                              [fileName]="getFileData(fileObj)?.unix_name || ''"
+                              [uuid]="getFileUuid(fileObj)"
+                              [showExtension]="true">
+                            </app-file-icon-preview>
+                          </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="text-sm font-medium">
+                              {{ getFileData(fileObj)?.unix_name || 'Unknown' }}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                          <div class="text-sm">
+                            <span *ngIf="getFileData(fileObj)?.in_projects_list && getFileData(fileObj)?.in_projects_list.length > 0">{{ getProjectNames(getFileData(fileObj)?.in_projects_list).join(', ') }}</span>
+                            <span *ngIf="!getFileData(fileObj)?.in_projects_list || getFileData(fileObj)?.in_projects_list.length === 0" class="italic">{{ 'media.table.projects.no' | translate }}</span>
+                          </div>
+                        </td>
+                        <td class="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
+                          <button (click)="$event.stopPropagation(); deleteFile(getFileUuid(fileObj))" class="text-tertiary hover:text-tertiary-light" [disabled]="isFileBeingDeleted(getFileUuid(fileObj)) || isBulkDeleting">
+                            <span *ngIf="isFileBeingDeleted(getFileUuid(fileObj))" class="loading loading-spinner loading-xs mr-1"></span>
+                            {{ 'media.list.delete' | translate }}<span class="sr-only">, {{ getFileData(fileObj)?.unix_name }}</span>
+                          </button>
+                        </td>
+                      </tr>
+                      <tr *ngIf="mediaService.fileList().length === 0">
+                        <td colspan="5" class="px-6 py-8 text-center">
+                          {{ 'media.list.no.files.available' | translate }}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="!isLoading && mediaService.fileList().length > 0" class="mt-4 flex justify-end">
+        <button (click)="refreshFiles()" class="btn btn-small btn-muted" [disabled]="isLoading || isBulkDeleting">
+          Refresh
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<app-confirmation-dialog
+  [isOpen]="isConfirmDeleteOpen"
+  [title]="'Delete File'"
+  [message]="'Are you sure you want to delete this file? It will be moved to trash.'"
+  [confirmText]="'Delete'"
+  [cancelText]="'Cancel'"
+  (close)="closeDeleteConfirmation()"
+  (confirm)="confirmDelete()"
+></app-confirmation-dialog>
+
+<app-confirmation-dialog
+  [isOpen]="isConfirmBulkDeleteOpen"
+  [title]="'Delete Files'"
+  [message]="'Are you sure you want to delete the selected files? They will be moved to trash.'"
+  [confirmText]="'Delete'"
+  [cancelText]="'Cancel'"
+  (close)="closeBulkDeleteConfirmation()"
+  (confirm)="confirmBulkDelete()"
+></app-confirmation-dialog> 

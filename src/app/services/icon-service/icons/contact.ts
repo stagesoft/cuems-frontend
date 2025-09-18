@@ -1,0 +1,1 @@
+export const ContactIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="16" fill="none"><path fill="currentColor" fill-rule="evenodd" d="M2 0h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2Zm9.65 11.486L18 7.079V5l-7.35 5.1a1.15 1.15 0 0 1-1.3 0L2 5v2.08l6.35 4.406c.99.685 2.309.685 3.3 0Z" clip-rule="evenodd"/></svg>`;

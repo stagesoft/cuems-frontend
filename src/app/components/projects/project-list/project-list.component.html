@@ -1,0 +1,128 @@
+<div class="wrapper">
+  <app-page-header
+  title="projects"
+  icon="project"></app-page-header>
+</div>
+
+<div class="wrapper">
+  <div class="py-6">
+
+<div>
+  <div class="sm:flex sm:items-center">
+    <div class="sm:flex-auto">
+      <div class="flex items-center mb-8">
+        <a routerLink="/projects"
+           class="pr-4 py-1 border-r"
+           routerLinkActive="font-medium"
+           [routerLinkActiveOptions]="{exact: true}"
+        >
+          {{ 'project.list.active' | translate }} ({{ projectsService.projects().length }})
+        </a>
+
+        <a routerLink="/projects/trash"
+           class="px-4 py-1"
+           routerLinkActive="font-medium"
+        >
+          {{ 'project.list.trash' | translate }} ({{ projectsService.projectsInTrash().length }})
+        </a>
+      </div>
+    </div>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+      <button type="button" (click)="createNewProject()" class="btn btn-primary btn-normal">{{ 'project.list.new.project' | translate }}</button>
+    </div>
+  </div>
+
+  <div class="flex gap-4">
+    <button type="button" (click)="selectAllProjects()" class="btn btn-small btn-muted" [disabled]="selectedProjects.length === getSelectableProjects().length || isBulkDeleting">{{ 'project.list.select.all' | translate }}</button>
+    <button type="button" (click)="deselectAllProjects()" class="btn btn-small btn-muted" [disabled]="selectedProjects.length === 0 || isBulkDeleting">{{ 'project.list.deselect.all' | translate }}</button>
+    <button type="button" (click)="deleteSelectedProjects()" class="btn btn-tertiary btn-small" [disabled]="selectedProjects.length === 0 || isBulkDeleting">
+      <span *ngIf="isBulkDeleting" class="loading loading-spinner loading-xs mr-2"></span>
+      {{ 'project.list.delete' | translate }}
+    </button>
+  </div>
+
+  <div *ngIf="isLoading" class="flex justify-center py-12">
+    <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+  </div>
+
+  <div *ngIf="!isLoading && projectsService.projects().length === 0" class="py-8 text-center">
+      {{ 'project.list.no.projects.available' | translate }} {{ 'project.list.no.projects.available.description' | translate }}
+  </div>
+
+  <div *ngIf="!isLoading && projectsService.projects().length > 0" class="mt-8 flow-root">
+    <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+      <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+        <table class="min-w-full divide-y divide-gray-300">
+          <thead>
+            <tr>
+              <th scope="col" class="w-10 py-3.5 pr-3 pl-4 text-left text-sm font-semibold sm:pl-0">
+                <input class="checkbox" type="checkbox" (click)="$event.stopPropagation(); selectAllProjects()" [checked]="selectedProjects.length === getSelectableProjects().length" [disabled]="isBulkDeleting">
+              </th>
+              <th scope="col" class="w-64 py-3.5 pr-3 pl-4 text-left text-sm font-semibold sm:pl-0">{{ 'project.list.name' | translate }}</th>
+              <th scope="col" class="w-40 px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.unix_name' | translate }}</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.created' | translate }}</th>
+              <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.modified' | translate }}</th>
+              <th scope="col" class="relative py-3.5 pr-4 pl-3 sm:pr-0">
+                <span class="sr-only">{{ 'project.list.actions' | translate }}</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-200">
+            <tr *ngFor="let project of projectsService.projects()"
+                [class.opacity-50]="isProjectBeingDeleted(project.uuid)">
+                <td class="w-10 whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0" (click)="$event.stopPropagation()">
+                  <input class="checkbox" type="checkbox" (click)="selectProject(project.uuid)" [checked]="selectedProjects.includes(project.uuid)" [disabled]="isProjectBeingDeleted(project.uuid) || isBulkDeleting">
+                </td>
+              <td class="w-64 py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap sm:pl-0">{{ project.name }}</td>
+              <td class="w-40 px-3 py-4 text-sm whitespace-nowrap">{{ project.unix_name }}</td>
+              <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.created | date:'medium' }}</td>
+              <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.modified | date:'medium' }}</td>
+              <td class="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
+                <a *ngIf="!isProjectBeingDeleted(project.uuid)" [routerLink]="['/projects', project.uuid, 'edit']" (click)="$event.stopPropagation()" class="mr-4">
+                  {{ 'project.list.edit' | translate }}<span class="sr-only">, {{ project.name }}</span>
+                </a>
+                <a *ngIf="!isProjectBeingDeleted(project.uuid)" [routerLink]="['/projects', project.uuid]" (click)="$event.stopPropagation()" class="mr-4">
+                  {{ 'project.list.view' | translate }}<span class="sr-only">, {{ project.name }}</span>
+                </a>
+                <button (click)="$event.stopPropagation(); deleteProject(project.uuid)" class="text-tertiary hover:text-tertiary-light" [disabled]="isProjectBeingDeleted(project.uuid) || isBulkDeleting">
+                  <span *ngIf="isProjectBeingDeleted(project.uuid)" class="loading loading-spinner loading-xs mr-1"></span>
+                  {{ 'project.list.delete' | translate }}<span class="sr-only">, {{ project.name }}</span>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="!isLoading && projectsService.projects().length > 0" class="mt-4 flex justify-end">
+    <button (click)="refreshProjects()" class="btn btn-small btn-muted" [disabled]="isLoading || isBulkDeleting">
+      {{ 'project.list.refresh' | translate }}
+    </button>
+  </div>
+</div>
+  </div>
+</div>
+
+<app-confirmation-dialog
+  [isOpen]="isConfirmDeleteOpen"
+  [title]="'project.list.delete.project' | translate"
+  [message]="'project.list.delete.project.description' | translate"
+  [confirmText]="'project.list.delete' | translate"
+  [cancelText]="'project.list.cancel' | translate"
+  (close)="closeDeleteConfirmation()"
+  (confirm)="confirmDelete()"
+></app-confirmation-dialog>
+
+<app-confirmation-dialog
+  [isOpen]="isConfirmBulkDeleteOpen"
+  [title]="'project.list.delete.projects' | translate"
+  [message]="'project.list.delete.projects.description' | translate"
+  [confirmText]="'project.list.delete' | translate"
+  [cancelText]="'project.list.cancel' | translate"
+  (close)="closeBulkDeleteConfirmation()"
+  (confirm)="confirmBulkDelete()"
+></app-confirmation-dialog>
+
+

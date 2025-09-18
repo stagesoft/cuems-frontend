@@ -1,0 +1,42 @@
+<div class="fixed top-4 right-4 flex w-full max-w-xs flex-col space-y-4 pr-4 pb-4 sm:justify-start z-[9999]"
+     role="status"
+     aria-live="polite">
+  @for (notification of notifications(); track notification.id) {
+    <div class="pointer-events-auto relative w-full max-w-sm rounded-md border border-gray-200 bg-white py-4 pl-6 pr-4 shadow-lg">
+      <div class="flex items-start">
+        <!-- Icons -->
+        @if (notification.type === 'info') {
+          <div class="flex-shrink-0">
+            <span aria-hidden="true" class="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-gray-400 text-xl font-bold text-gray-400">!</span>
+            <span class="sr-only">Information:</span>
+          </div>
+        }
+        @if (notification.type === 'success') {
+          <div class="flex-shrink-0">
+            <span aria-hidden="true" class="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-green-600 text-lg font-bold text-green-600">✓</span>
+            <span class="sr-only">Success:</span>
+          </div>
+        }
+        @if (notification.type === 'error') {
+          <div class="flex-shrink-0">
+            <span aria-hidden="true" class="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-600 text-lg font-bold text-red-600">×</span>
+            <span class="sr-only">Error:</span>
+          </div>
+        }
+        <!-- Text -->
+        <div class="ml-3 w-0 flex-1 pt-0.5">
+          <p class="text-sm font-medium leading-5 text-gray-900">{{ notification.content }}</p>
+        </div>
+        <!-- Remove button -->
+        <div class="ml-4 flex flex-shrink-0">
+          <button (click)="remove(notification.id)" type="button" class="inline-flex text-gray-400">
+            <svg aria-hidden class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="sr-only">Close notification</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</div> 

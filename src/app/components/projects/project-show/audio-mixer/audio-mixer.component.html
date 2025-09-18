@@ -1,0 +1,153 @@
+<div class="py-4">
+  <div class="flex items-center justify-between p-4 border-b">
+    <h2 class="text-lg font-semibold">Audio Mixer</h2>
+  </div>
+
+  <div class="mt-4 space-y-6" *ngIf="audioNodes.length > 0">
+    <div *ngFor="let node of audioNodes" class="bg-dark-300 rounded-lg overflow-hidden">
+      <div class="p-4 border-b border-dark-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <app-icon icon="node" class="w-5 h-5 text-secondary"></app-icon>
+            <div>
+              <h3 class="font-medium text-white">Node {{ node.uuid }}</h3>
+              <p class="text-xs text-gray-400">Audio Node</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm">Master Volume</div>
+            <div class="text-lg font-medium text-white">{{ node.volume }}%</div>
+          </div>
+        </div>
+        
+        <div class="mt-4">
+          <div class="flex items-center gap-4">
+            <label class="text-sm font-medium min-w-[80px]">Master:</label>
+            <div class="flex-1 flex items-center gap-3">
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                [value]="node.volume"
+                (input)="onMasterVolumeChange(node, +$any($event.target).value)"
+                class="flex-1 h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb">
+              <span class="text-sm min-w-[40px] text-right">{{ node.volume }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+   
+      <div class="p-4" *ngIf="node.outputs && node.outputs.length > 0">
+        <div class="space-y-4">
+          <div *ngFor="let output of node.outputs" class="border-l-2 border-gray-600 pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <app-icon icon="audio" class="w-[12px] h-[12px]"></app-icon>
+                <span class="text-sm font-medium text-gray-200">{{ output.name }}</span>
+              </div>
+              <span class="text-sm text-gray-400">{{ output.volume }}%</span>
+            </div>
+            
+            <div class="flex items-center gap-4 mb-3">
+              <label class="text-xs text-gray-400 min-w-[80px]">Output:</label>
+              <div class="flex-1 flex items-center gap-3">
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  [value]="output.volume"
+                  (input)="onNodeVolumeChange(node, output, +$any($event.target).value)"
+                  class="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb-small">
+                <span class="text-xs text-gray-400 min-w-[35px] text-right">{{ output.volume }}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+   </div>
+
+  <div *ngIf="audioNodes.length === 0" class="mt-8 p-6 bg-dark-300 rounded-lg text-center">
+    <app-icon icon="audio" class="mx-auto h-12 w-12 text-gray-400"></app-icon>
+    <h3 class="mt-2 text-sm font-medium text-gray-300">No Audio Cues</h3>
+    <p class="mt-1 text-sm text-gray-500">This project doesn't have any audio cues yet.</p>
+  </div>
+</div>
+
+<style>
+  .slider-thumb::-webkit-slider-thumb {
+    appearance: none;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #10b981;
+    cursor: pointer;
+    border: 2px solid #065f46;
+  }
+
+  .slider-thumb::-moz-range-thumb {
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #10b981;
+    cursor: pointer;
+    border: 2px solid #065f46;
+  }
+
+  .slider-thumb-small::-webkit-slider-thumb {
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #1e40af;
+  }
+
+  .slider-thumb-small::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #3b82f6;
+    cursor: pointer;
+    border: 2px solid #1e40af;
+  }
+
+  .slider-thumb-mini::-webkit-slider-thumb {
+    appearance: none;
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    background: #8b5cf6;
+    cursor: pointer;
+    border: 2px solid #5b21b6;
+  }
+
+  .slider-thumb-mini::-moz-range-thumb {
+    height: 12px;
+    width: 12px;
+    border-radius: 50%;
+    background: #8b5cf6;
+    cursor: pointer;
+    border: 2px solid #5b21b6;
+  }
+
+  .slider-thumb-channel::-webkit-slider-thumb {
+    appearance: none;
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #8b5cf6;
+    cursor: pointer;
+    border: 2px solid #5b21b6;
+  }
+
+  .slider-thumb-channel::-moz-range-thumb {
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    background: #8b5cf6;
+    cursor: pointer;
+    border: 2px solid #5b21b6;
+  }
+</style>

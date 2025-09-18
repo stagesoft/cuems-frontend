@@ -1,0 +1,83 @@
+<footer class="mt-12">
+    <div class="wrapper">
+      <div class="text-center pt-12 pb-6 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-center">
+        <p class="text-sm font-normal space-x-2">
+          <span>{{ 'footer.formitgo' | translate }}</span>
+          <span> · </span>
+          <span>{{ 'footer.followus' | translate }}</span>
+          <a href="#" target="_blank" rel="noopener noreferrer">Twitter</a>
+          <span> · </span>
+          <a href="#" target="_blank" rel="noopener noreferrer">Instagram</a>
+          <span> · </span>
+          <a href="https://github.com/stagesoft" target="_blank" rel="noopener noreferrer">Github</a>
+        </p>
+
+        <div class="flex gap-4 items-center justify-center">
+          <a class="flex items-center gap-2 text-sm" href="#">
+            <app-icon icon="faq"></app-icon>
+            <span>F.A.Q</span>
+          </a>
+
+          <a class="flex items-center gap-2 text-sm" href="#">
+            <app-icon icon="contact"></app-icon>
+            <span>{{ 'contact' | translate }}</span>
+          </a>
+        </div>
+      </div>
+
+      <div>
+        <p class="text-sm font-normal text-center space-x-2">
+          <span>{{ getCurrentYear() }} Stagelab · 
+            <span> Made in Lleida </span>
+          </span>
+          <span> · </span>
+          <a href="#">Legal Advice</a>
+          <span> · </span>
+          <a href="#">Cookies Policy</a>
+        </p>
+      </div>
+
+
+      <div class="flex flex-col justify-center gap-4 my-8 lg:flex-row lg:gap-8">
+        <div class="mb-8">
+          <p class="text-xs pb-2 border-b mb-4">{{ 'footer.powered.text' | translate }}:</p>
+          <img width="140px" height="32px" src="assets/img/stagelab-logo.svg" alt="Stagelab">
+        </div>
+
+        <div class="mb-8">
+          <p class="text-xs pb-2 border-b mb-4">{{ 'footer.promoted.text' | translate }}:</p>
+          <img width="232px" height="32px" src="assets/img/promou-logos.svg" alt="Promou">
+        </div>
+
+        <div class="mb-8">
+          <p class="text-xs pb-2 border-b mb-4">{{ 'footer.financed.text' | translate }}:</p>
+          <img width="236px" height="49px" src="assets/img/finan-logos.svg" alt="Finan">
+        </div>
+      </div>
+    </div>
+
+    <div class="wrapper flex gap-6 items-center justify-center mb-4">
+      <ul class="flex space-x-4">
+          <li *ngFor="let lang of languages"
+              [class.font-bold]="isActive(lang.code)"
+              [class.text-primary]="isActive(lang.code)"
+              [class.text-gray-400]="!isActive(lang.code)"
+              class="cursor-pointer text-sm hover:text-primary transition-colors"
+              (click)="setLanguage(lang.code)">
+              {{ lang.code.toUpperCase() }}
+          </li>
+      </ul>
+
+      <div class="online-users">
+        <p class="text-xs flex items-center space-x-1">
+          <span>CueMs V0.0.1.6 by</span>
+          <a href="https://github.com/stagesoft" target="_blank" rel="noopener noreferrer">StageSoft</a>
+          <span class="flex items-center gap-1">
+            <span>· WebSocket: {{ 'online' | translate }}:</span>
+            <app-icon icon="formit" class="w-[16px] h-[16px] text-secondary"></app-icon>
+            <span class="text-secondary">{{ onlineUsers() }}</span>
+          </span>
+        </p>
+      </div>
+    </div>
+</footer>

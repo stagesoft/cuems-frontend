@@ -1,0 +1,80 @@
+.drawer-container {
+  transition: transform 0.3s ease-out, visibility 0.3s ease-out;
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.drawer-container.no-animation {
+  transition: none;
+}
+
+.drawer-open {
+  transform: translateX(0);
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.drawer-closed {
+  transform: translateX(100%);
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.drawer-content {
+  animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.drawer-backdrop {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.drawer-header-button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-header-button:hover {
+  transform: scale(1.05);
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.drawer-shadow {
+  box-shadow: 
+    -20px 0 25px -5px rgba(0, 0, 0, 0.1),
+    -8px 0 10px -6px rgba(0, 0, 0, 0.1);
+}
+
+.activity-item {
+  animation: slideInActivity 0.3s ease-out;
+}
+
+@keyframes slideInActivity {
+  0% {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

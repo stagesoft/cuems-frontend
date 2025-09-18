@@ -1,0 +1,104 @@
+<div class="py-4">
+  <div class="flex items-center justify-between p-4 border-b">
+    <h2 class="text-lg font-semibold">Audio Mixer</h2>
+    <div class="flex items-center gap-2 text-sm text-gray-400">
+      <app-icon icon="audio" class="w-4 h-4"></app-icon>
+      <span>{{ audioCues.length }} Audio Cues</span>
+    </div>
+  </div>
+
+  <div class="mt-4 space-y-6" *ngIf="audioCues.length > 0">
+    <div *ngFor="let cue of audioCues" class="bg-dark-300 rounded-lg overflow-hidden">
+      <div class="p-4 border-b border-dark-200">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-3">
+            <app-icon icon="audio" class="w-5 h-5 text-secondary"></app-icon>
+            <div>
+              <h3 class="font-medium text-white">{{ cue.name || 'Unnamed Audio Cue' }}</h3>
+              <p class="text-xs" *ngIf="cue.Media?.file_name">{{ cue.Media.file_name }}</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <div class="text-sm">Master Volume</div>
+            <div class="text-lg font-medium text-white">{{ cue.master_vol || 0 }}%</div>
+          </div>
+        </div>
+        
+        <div class="mt-4">
+          <div class="flex items-center gap-4">
+            <label class="text-sm font-medium min-w-[80px]">Master:</label>
+            <div class="flex-1 flex items-center gap-3">
+              <input 
+                type="range" 
+                min="0" 
+                max="100" 
+                [value]="cue.master_vol || 0"
+                [disabled]="disabled"
+                (click)="onMasterVolumeChange(cue, +$any($event.target).value)"
+                (input)="onMasterVolumeChange(cue, +$any($event.target).value)"
+                class="flex-1 h-2 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb"
+                [class.opacity-50]="disabled">
+              <span class="text-sm min-w-[40px] text-right">{{ cue.master_vol || 0 }}%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-4" *ngIf="cue.outputs && cue.outputs.length > 0">
+        <div class="space-y-4">
+          <div *ngFor="let output of cue.outputs" class="border-l-2 border-gray-600 pl-4">
+            <div class="flex items-center justify-between mb-2">
+              <div class="flex items-center gap-2">
+                <app-icon icon="node" class="w-[12px] h-[12px]"></app-icon>
+                <span class="text-sm font-medium text-gray-200">{{ getOutputDisplayName(output.AudioCueOutput.output_name) }}</span>
+              </div>
+              <span class="text-sm text-gray-400">{{ output.AudioCueOutput.output_vol || 0 }}%</span>
+            </div>
+            
+            <div class="flex items-center gap-4 mb-3">
+              <label class="text-xs text-gray-400 min-w-[80px]">Output:</label>
+              <div class="flex-1 flex items-center gap-3">
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  [value]="output.AudioCueOutput.output_vol || 0"
+                  [disabled]="disabled"
+                  (click)="onOutputVolumeChange(cue, output, +$any($event.target).value)"
+                  (input)="onOutputVolumeChange(cue, output, +$any($event.target).value)"
+                  class="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb-small"
+                  [class.opacity-50]="disabled">
+                <span class="text-xs text-gray-400 min-w-[35px] text-right">{{ output.AudioCueOutput.output_vol || 0 }}%</span>
+              </div>
+            </div>
+
+            <div *ngIf="output.AudioCueOutput.channels && output.AudioCueOutput.channels.length > 0" class="space-y-2">
+              <div *ngFor="let channelWrapper of output.AudioCueOutput.channels" class="flex items-center gap-4">
+                <label class="text-xs text-gray-500 min-w-[80px]">Ch {{ channelWrapper.channel.channel_num }}:</label>
+                <div class="flex-1 flex items-center gap-3">
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="100" 
+                    [value]="channelWrapper.channel.channel_vol || 0"
+                    [disabled]="disabled"
+                    (click)="onChannelVolumeChange(cue, output, channelWrapper, +$any($event.target).value)"
+                    (input)="onChannelVolumeChange(cue, output, channelWrapper, +$any($event.target).value)"
+                    class="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb-channel"
+                    [class.opacity-50]="disabled">
+                  <span class="text-xs text-gray-500 min-w-[35px] text-right">{{ channelWrapper.channel.channel_vol || 0 }}%</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="audioCues.length === 0" class="mt-8 p-6 bg-dark-300 rounded-lg text-center">
+    <app-icon icon="audio" class="mx-auto h-12 w-12 text-gray-400"></app-icon>
+    <h3 class="mt-2 text-sm font-medium text-gray-300">No Audio Cues</h3>
+    <p class="mt-1 text-sm text-gray-500">This project doesn't have any audio cues yet.</p>
+  </div>
+</div>

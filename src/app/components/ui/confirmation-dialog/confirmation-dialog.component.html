@@ -1,0 +1,35 @@
+@if (isOpen) {
+  <app-modal [isOpen]="isOpen" (close)="onClose()">
+    <div class="flex flex-col space-y-2 text-center sm:text-left">
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-danger-light">
+          <app-icon icon="exclamationTriangle" class="w-5 h-5 text-danger" />
+        </div>
+        <div class="flex-1 space-y-2">
+          <h2 class="text-lg font-semibold text-dark-100">
+            {{ title }}
+          </h2>
+          <p class="text-sm text-muted">
+            {{ message }}
+          </p>
+        </div>
+      </div>
+    </div>
+    <div class="flex justify-end gap-3 mt-6">
+      <button
+        type="button"
+        class="btn btn-normal btn-muted"
+        (click)="onClose()"
+      >
+        {{ cancelText }}
+      </button>
+      <button
+        type="button"
+        class="btn btn-normal btn-tertiary"
+        (click)="onConfirm()"
+      >
+        {{ confirmText }}
+      </button>
+    </div>
+  </app-modal>
+} 

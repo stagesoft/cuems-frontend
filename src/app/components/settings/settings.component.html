@@ -1,0 +1,73 @@
+<div class="wrapper">
+  <app-page-header
+    title="settings"
+    icon="settings">
+  </app-page-header>
+</div>
+
+<div class="wrapper">
+  <div class="mt-6">
+    <h2 class="text-xl font-semibold mb-6">{{ 'nodes.settings.title' | translate }}</h2>
+    
+    <div *ngIf="!mappings" class="p-4 bg-dark-300 rounded-lg">
+      <p>{{ 'nodes.settings.loading.message' | translate }}</p>
+    </div>
+
+    <div *ngIf="mappings && mappings.value && mappings.value.nodes" class="space-y-6">
+      <div *ngFor="let nodeWrapper of mappings.value.nodes; let i = index" 
+           class="bg-dark-300 rounded-lg p-6">
+        
+        <h3 class="text-base font-semibold mb-4 flex items-center gap-2">
+          <app-icon icon="node" class="text-primary"></app-icon>
+          {{ getNodeName(i) }}
+        </h3>
+        
+        <div *ngIf="getVideoOutputs(nodeWrapper.node).length > 0" class="mb-6">
+          <h4 class="text-sm font-medium mb-3 flex items-center gap-2">
+            <app-icon icon="video" class="w-[12px] h-[12px]"></app-icon>
+            {{ 'nodes.settings.videoOutputs' | translate }}
+          </h4>
+          <div class="ml-5 space-y-2">
+            <div *ngFor="let output of getVideoOutputs(nodeWrapper.node); let videoIndex = index" 
+                 class="flex items-center gap-3 py-2 px-3 bg-dark-200 rounded">
+              <span class="text-sm">
+                {{ 'nodes.settings.videoOutput' | translate }} {{ formatNumber(videoIndex) }}:
+              </span>
+              <span class="text-sm font-medium text-white">
+                {{ getMappedName(output) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="getAudioOutputs(nodeWrapper.node).length > 0">
+          <h4 class="text-sm font-medium mb-3 flex items-center gap-2">
+            <app-icon icon="audio" class="w-[12px] h-[12px]"></app-icon>
+            {{ 'nodes.settings.audioOutputs' | translate }}
+          </h4>
+          <div class="ml-5 space-y-2">
+            <div *ngFor="let output of getAudioOutputs(nodeWrapper.node); let audioIndex = index" 
+                 class="flex items-center gap-3 py-2 px-3 bg-dark-200 rounded">
+              <span class="text-sm">
+                {{ 'nodes.settings.audioOutput' | translate }} {{ formatNumber(audioIndex) }}:
+              </span>
+              <span class="text-sm font-medium text-white">
+                {{ getMappedName(output) }}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div *ngIf="getVideoOutputs(nodeWrapper.node).length === 0 && getAudioOutputs(nodeWrapper.node).length === 0" 
+             class="text-gray-400 text-sm">
+            {{ 'nodes.settings.no.outputs.configured' | translate }}
+        </div>
+      </div>
+    </div>
+
+    <div *ngIf="mappings && (!mappings.value || !mappings.value.nodes || mappings.value.nodes.length === 0)" 
+         class="p-8 text-center bg-dark-300 rounded-lg">
+      <p class="text-gray-400">{{ 'nodes.settings.no.nodes.configured' | translate }}</p>
+    </div>
+  </div>
+</div>

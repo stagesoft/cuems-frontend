@@ -1,0 +1,1 @@
+export const ProjectIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"><path fill="currentColor" d="M20.8 4.222H10.255L8.378 2.326A1.092 1.092 0 0 0 7.6 2H3.2C1.987 2 1 2.997 1 4.222v15.556C1 21.003 1.987 22 3.2 22h17.6c1.213 0 2.2-.997 2.2-2.222V6.444c0-1.225-.987-2.222-2.2-2.222Z"/></svg>`;

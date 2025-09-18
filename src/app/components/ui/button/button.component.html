@@ -1,0 +1,38 @@
+<ng-template #content>
+  <ng-content></ng-content>
+</ng-template>
+
+@if (renderType === 'router-link') {
+  <a
+    [routerLink]="routerLink"
+    [class]="getButtonClasses()"
+    [attr.target]="target"
+    [attr.rel]="rel"
+    [attr.disabled]="disabled ? true : null"
+    (click)="onClick($event)"
+  >
+    <ng-container [ngTemplateOutlet]="content"></ng-container>
+  </a>
+}
+@else if (renderType === 'link') {
+  <a
+    [href]="href"
+    [class]="getButtonClasses()"
+    [attr.target]="target"
+    [attr.rel]="rel"
+    [attr.disabled]="disabled ? true : null"
+    (click)="onClick($event)"
+  >
+    <ng-container [ngTemplateOutlet]="content"></ng-container>
+  </a>
+}
+@else {
+  <button
+    [type]="type"
+    [disabled]="disabled"
+    [class]="getButtonClasses()"
+    (click)="onClick($event)"
+  >
+    <ng-container [ngTemplateOutlet]="content"></ng-container>
+  </button>
+}

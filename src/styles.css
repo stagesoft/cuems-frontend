@@ -1,0 +1,203 @@
+@font-face {
+    font-family: 'Roboto';
+    src: url('assets/fonts/roboto/roboto-100-normal.woff2') format('woff2');
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('assets/fonts/roboto/roboto-300-normal.woff2') format('woff2');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('assets/fonts/roboto/roboto-400-normal.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('assets/fonts/roboto/roboto-500-normal.woff2') format('woff2');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('assets/fonts/roboto/roboto-700-normal.woff2') format('woff2');
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('assets/fonts/roboto/roboto-900-normal.woff2') format('woff2');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@import "tailwindcss";
+
+@theme {
+    --color-dark-100: #1D2329;
+    --color-dark-200: #181D22;
+    --color-dark-300: #2C343A;
+
+    --color-gray-300: #3B4349;
+    --color-gray-200: #ADB1B7;
+    --color-gray-100: #CFD4DB;
+
+    --color-white: #FFFFFF;
+    --color-black: #000000;
+
+    --color-success: #48C589;
+    --color-success-light: #66D7A1;
+
+    --color-danger: #E74D88;
+    --color-danger-light: #F373A4;
+
+    --color-primary: #7D63FB;
+    --color-primary-light: #A896FF;
+
+    --color-secondary: var(--color-success);
+    --color-secondary-light: var(--color-success-light);
+
+    --color-tertiary: var(--color-danger);
+    --color-tertiary-light: var(--color-danger-light);
+
+    --color-muted: #3B4349;
+    --color-muted-light: #5E666D;
+
+    --font-sans: 'Roboto', sans-serif;
+}
+
+.wrapper {
+  @apply mx-auto max-w-7xl px-4 lg:px-8;
+}
+
+.btn {
+  @apply inline-flex items-center justify-center rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-primary-light focus:ring-primary;
+}
+
+.btn-secondary {
+  @apply bg-secondary text-white hover:bg-secondary-light focus:ring-secondary;
+}
+
+.btn-tertiary {
+  @apply bg-tertiary text-white hover:bg-tertiary-light focus:ring-tertiary;
+}
+
+.btn-muted {
+  @apply bg-muted text-white hover:bg-muted-light focus:ring-muted;
+}
+
+.btn-muted:disabled {
+  @apply text-dark-200 hover:bg-muted cursor-not-allowed;
+}
+
+
+.btn-small {
+  @apply px-3 py-1.5 font-normal text-sm;
+}
+
+.btn-normal {
+  @apply px-4 py-2 font-normal text-base;
+}
+
+.btn-large {
+  @apply px-20 py-6 font-bold text-4xl min-w-[300px];
+}
+
+/*
+** Forms
+*/
+
+.field {
+  @apply mb-4;
+}
+
+.label {
+  @apply block text-sm font-medium mb-2;
+}
+
+.label-inline {
+  @apply inline-block text-sm font-medium mb-2;
+}
+
+.input,
+.textarea {
+  @apply appearance-none;
+}
+
+.input {
+  @apply block w-full rounded-md bg-gray-300 border border-gray-300 px-3 py-3;
+}
+
+.textarea {
+  @apply block w-full rounded-md bg-gray-300 border border-gray-300 px-3 py-3;
+}
+
+.select {
+  @apply grid grid-cols-1;
+}
+
+.select select {
+  @apply col-start-1 row-start-1 w-full bg-gray-300 appearance-none rounded-md py-3 pr-8 pl-3 outline-1 -outline-offset-1 outline-gray-300 focus:outline-2 focus:-outline-offset-2;
+}
+
+.select .select-icon {
+  @apply pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end sm:size-4;
+}
+
+.checkbox {
+  @apply appearance-none w-5 h-5 border-2 border-gray-200 cursor-pointer relative;
+}
+
+.checkbox:checked {
+  @apply bg-gray-300;
+}
+
+.checkbox:checked::after {
+  content: "✓";
+  @apply absolute text-sm font-bold;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.radio {
+  @apply relative size-4 appearance-none rounded-full border border-gray-300 bg-white before:absolute before:inset-1 before:rounded-full before:bg-white not-checked:before:hidden checked:border-primary checked:bg-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:border-gray-300 disabled:bg-gray-100 disabled:before:bg-gray-400 forced-colors:appearance-auto forced-colors:before:hidden;
+}
+
+.help {
+  @apply block text-xs px-1 mt-2;
+}
+
+.help.is-error {
+  @apply text-red-500;
+}
+
+/* Animación de puntos para loading */
+@keyframes dots {
+  0% { content: ''; }
+  16.66% { content: '.'; }
+  33.33% { content: '..'; }
+  50% { content: '...'; }
+  66.66% { content: '....'; }
+  83.33% { content: '.....'; }
+  100% { content: '......'; }
+}

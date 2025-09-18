@@ -1,0 +1,36 @@
+@if (isOpen) {
+  <!-- Backdrop -->
+  <div class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm"
+    [class.animate-in]="isOpen"
+    [class.fade-in-0]="isOpen"
+    [class.animate-out]="!isOpen"
+    [class.fade-out-0]="!isOpen">
+  </div>
+  
+  <!-- Modal container -->
+  <div class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    [class.animate-in]="isOpen"
+    [class.fade-in-0]="isOpen"
+    [class.animate-out]="!isOpen"
+    [class.fade-out-0]="!isOpen"
+    (click)="closeModal()">
+    
+    <!-- Modal content  -->
+    <div class="relative w-full grid gap-4 border bg-white p-6 shadow-lg duration-200 rounded-lg"
+      [class.max-w-sm]="size === 'sm'"
+      [class.max-w-lg]="size === 'md'"
+      [class.max-w-2xl]="size === 'lg'"
+      [class.max-w-4xl]="size === 'xl'"
+      [class.max-w-[calc(100%-2rem)]="size === 'full'"
+      [class.animate-in]="isOpen"
+      [class.zoom-in-95]="isOpen"
+      [class.animate-out]="!isOpen"
+      [class.zoom-out-95]="!isOpen"
+      (click)="$event.stopPropagation()">
+      
+      <div class="max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <ng-content></ng-content>
+      </div>
+    </div>
+  </div>
+} 
