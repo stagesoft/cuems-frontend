@@ -211,6 +211,12 @@
     "nodes.settings.audioOutput": "Output d'Audio",
     "nodes.settings.no.nodes.configured": "No hi ha nodes configurats",
     "nodes.settings.no.outputs.configured": "No hi ha outputs configurats per aquest node",
+    "nodes.settings.remove.node": "Esteu a punt de suprimir aquest node.",
+    "nodes.settings.remove.node.description": "Aquest node sera eliminat de la llista de nodos actius",
+    "nodes.settings.add.node": "Esteu a punt d'afegir aquest node.",
+    "nodes.settings.add.node.description": "Aquest node sera afegit a la llista de nodos actius",
+    "nodes.settings.confirm": "Confirmar",
+    "nodes.settings.cancel": "Cancelar",
     "footer.powered.text": "Impulsat",
     "footer.promoted.text": "Promogut",
     "footer.financed.text": "Financiado"

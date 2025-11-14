@@ -211,6 +211,12 @@
     "nodes.settings.audioOutput": "Output de Audio",
     "nodes.settings.no.nodes.configured": "No hay nodos configurados",
     "nodes.settings.no.outputs.configured": "No hay outputs configurados para este nodo",
+    "nodes.settings.remove.node": "¿Eliminar este nodo?",
+    "nodes.settings.remove.node.description": "Se eliminara de la lista de nodos activos",
+    "nodes.settings.add.node": "¿Agregar este nodo?",
+    "nodes.settings.add.node.description": "Se añadira a la lista de nodos activos",
+    "nodes.settings.confirm": "Confirmar",
+    "nodes.settings.cancel": "Cancelar",
     "footer.powered.text": "Impulsado",
     "footer.promoted.text": "Promovido",
     "footer.financed.text": "Financiado"

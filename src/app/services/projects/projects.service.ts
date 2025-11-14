@@ -76,6 +76,41 @@ export interface InitialMappingsResponse {
         dmx: any;
       };
     }>;
+    new_nodes: Array<{
+      node: {
+        uuid: string;
+        mac: string;
+        audio: Array<{
+          outputs: Array<{
+            output: {
+              name: string;
+              mappings: Array<{
+                mapped_to: string;
+              }>;
+            };
+          }>;
+          inputs: Array<{
+            input: {
+              name: string;
+              mappings: Array<{
+                mapped_to: string;
+              }>;
+            };
+          }>;
+        }>;
+        video: Array<{
+          outputs: Array<{
+            output: {
+              name: string;
+              mappings: Array<{
+                mapped_to: string;
+              }>;
+            };
+          }>;
+        }>;
+        dmx: any;
+      };
+    }>;
     schemaLocation: string;
   };
 }
