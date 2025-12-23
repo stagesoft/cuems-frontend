@@ -163,7 +163,7 @@ export class OscService {
    * @param volume The volume to set for the node
    */
   public sendMasterVolumeUpdate(nodeUuid: string, volume: number): void {
-    const messageMasterVolumeUpdate = new OSC.Message(`${nodeUuid}/0/master/volume`, volume);
+    const messageMasterVolumeUpdate = new OSC.Message(`${nodeUuid}/audio/mixer/0/master/volume`, volume);
     console.log('volume', volume);
     const binaryMasterVolumeUpdate = messageMasterVolumeUpdate.pack();
     this.ws.next(binaryMasterVolumeUpdate);
@@ -177,7 +177,7 @@ export class OscService {
    * @param volume The volume to set for the node
    */
   public sendNodeVolumeUpdate(nodeUuid: string, channelIndex: number, volume: number): void {
-    const messageNodeVolumeUpdate = new OSC.Message(`${nodeUuid}/0/${channelIndex}/volume`, volume);
+    const messageNodeVolumeUpdate = new OSC.Message(`${nodeUuid}/audio/mixer/0/${channelIndex}/volume`, volume);
     const binaryNodeVolumeUpdate = messageNodeVolumeUpdate.pack();
     console.log('volume', volume);
     this.ws.next(binaryNodeVolumeUpdate);
