@@ -43,13 +43,25 @@
         @if (output.settingsExpanded && output.corners) {
         <div class="video-transform-container mt-4" [id]="'layer-' + output.id + '-transform'">
           <div class="absolute left-4 top-4 text-white top-left-inputs">
-            <div>x: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded x-input" [value]="output.corners.topLeft.x.toFixed(3).padStart(7, '0')"></div>
-            <div>y: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded y-input" [value]="output.corners.topLeft.y.toFixed(3).padStart(7, '0')"></div>
+            <div class="text-xs flex flex-col gap-1 p-2 bg-black rounded-sm">
+              <span class="font-bold">Corner 4</span>
+              <span class="text-white">x:  {{ output.corners.topLeft.x.toFixed(3) }}</span>
+              <span class="text-white">y:  {{ output.corners.topLeft.y.toFixed(3) }}</span>
+              <span class="text-white">MovX: {{ getMovementFromVisual('topLeft', output.corners.topLeft.x, output.corners.topLeft.y).x.toFixed(3) }}</span>
+              <span class="text-white">MovY: {{ getMovementFromVisual('topLeft', output.corners.topLeft.x, output.corners.topLeft.y).y.toFixed(3) }}</span>
+              <button (click)="resetCorner(output.id, 'topLeft')" class="text-xs text-white bg-gray-700 px-2 py-1 rounded-sm">Reset corner</button>
+            </div>
           </div>
           
           <div class="absolute right-4 top-4 text-white top-right-inputs">
-            <div>x: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded x-input" [value]="output.corners.topRight.x.toFixed(3).padStart(7, '0')"></div>
-            <div>y: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded y-input" [value]="output.corners.topRight.y.toFixed(3).padStart(7, '0')"></div>
+            <div class="text-xs flex flex-col gap-1 p-2 bg-black rounded-sm">
+              <span class="font-bold">Corner 3</span>
+              <span class="text-white">x:  {{ output.corners.topRight.x.toFixed(3) }}</span>
+              <span class="text-white">y:  {{ output.corners.topRight.y.toFixed(3) }}</span>
+              <span class="text-white">MovX: {{ getMovementFromVisual('topRight', output.corners.topRight.x, output.corners.topRight.y).x.toFixed(3) }}</span>
+              <span class="text-white">MovY: {{ getMovementFromVisual('topRight', output.corners.topRight.x, output.corners.topRight.y).y.toFixed(3) }}</span>
+              <button (click)="resetCorner(output.id, 'topRight')" class="text-xs text-white bg-gray-700 px-2 py-1 rounded-sm">Reset corner</button>
+            </div>
           </div>
           
 
@@ -61,43 +73,55 @@
             </div>
             
             <div 
-              class="corner-handle"
-              [style.left]="output.corners.topLeft.x + '%'"
-              [style.top]="output.corners.topLeft.y + '%'"
+              class="corner-handle top-left"
+              [style.left]="(output.corners.topLeft.x / 2 * 100) + '%'"
+              [style.top]="(output.corners.topLeft.y / 2 * 100) + '%'"
               [class.dragging]="draggedCorner() === 'topLeft' && activeLayerId() === output.id"
               (mousedown)="startDragForLayer(output.id, 'topLeft', $event)"
             ></div>
             <div 
-              class="corner-handle"
-              [style.left]="output.corners.topRight.x + '%'"
-              [style.top]="output.corners.topRight.y + '%'"
+              class="corner-handle top-right"
+              [style.left]="(output.corners.topRight.x / 2 * 100) + '%'"
+              [style.top]="(output.corners.topRight.y / 2 * 100) + '%'"
               [class.dragging]="draggedCorner() === 'topRight' && activeLayerId() === output.id"
               (mousedown)="startDragForLayer(output.id, 'topRight', $event)"
             ></div>
             <div 
-              class="corner-handle"
-              [style.left]="output.corners.bottomLeft.x + '%'"
-              [style.top]="output.corners.bottomLeft.y + '%'"
+              class="corner-handle bottom-left"
+              [style.left]="(output.corners.bottomLeft.x / 2 * 100) + '%'"
+              [style.top]="(output.corners.bottomLeft.y / 2 * 100) + '%'"
               [class.dragging]="draggedCorner() === 'bottomLeft' && activeLayerId() === output.id"
               (mousedown)="startDragForLayer(output.id, 'bottomLeft', $event)"
             ></div>
             <div 
-              class="corner-handle"
-              [style.left]="output.corners.bottomRight.x + '%'"
-              [style.top]="output.corners.bottomRight.y + '%'"
+              class="corner-handle bottom-right"
+              [style.left]="(output.corners.bottomRight.x / 2 * 100) + '%'"
+              [style.top]="(output.corners.bottomRight.y / 2 * 100) + '%'"
               [class.dragging]="draggedCorner() === 'bottomRight' && activeLayerId() === output.id"
               (mousedown)="startDragForLayer(output.id, 'bottomRight', $event)"
             ></div>
           </div>
           
           <div class="absolute left-4 bottom-4 text-white bottom-left-inputs">
-            <div>x: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded x-input" [value]="output.corners.bottomLeft.x.toFixed(3).padStart(7, '0')"></div>
-            <div>y: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded y-input" [value]="output.corners.bottomLeft.y.toFixed(3).padStart(7, '0')"></div>
+            <div class="text-xs flex flex-col gap-1 p-2 bg-black rounded-sm">
+              <span class="font-bold">Corner 1</span>
+              <span class="text-white">x:  {{ output.corners.bottomLeft.x.toFixed(3) }}</span>
+              <span class="text-white">y:  {{ output.corners.bottomLeft.y.toFixed(3) }}</span>
+              <span class="text-white">MovX: {{ getMovementFromVisual('bottomLeft', output.corners.bottomLeft.x, output.corners.bottomLeft.y).x.toFixed(3) }}</span>
+              <span class="text-white">MovY: {{ getMovementFromVisual('bottomLeft', output.corners.bottomLeft.x, output.corners.bottomLeft.y).y.toFixed(3) }}</span>
+              <button (click)="resetCorner(output.id, 'bottomLeft')" class="mt-1 text-xs text-white bg-gray-700 px-2 py-1 rounded-sm">Reset corner</button>
+            </div>
           </div>
           
           <div class="absolute right-4 bottom-4 text-white bottom-right-inputs">
-            <div>x: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded x-input" [value]="output.corners.bottomRight.x.toFixed(3).padStart(7, '0')"></div>
-            <div>y: <input type="text" class="bg-gray-700 w-20 px-2 py-1 rounded y-input" [value]="output.corners.bottomRight.y.toFixed(3).padStart(7, '0')"></div>
+            <div class="text-xs flex flex-col gap-1 p-2 bg-black rounded-sm">
+              <span class="font-bold">Corner 2</span>
+              <span class="text-white">x:  {{ output.corners.bottomRight.x.toFixed(3) }}</span>
+              <span class="text-white">y:  {{ output.corners.bottomRight.y.toFixed(3) }}</span>
+              <span class="text-white">MovX: {{ getMovementFromVisual('bottomRight', output.corners.bottomRight.x, output.corners.bottomRight.y).x.toFixed(3) }}</span>
+              <span class="text-white">MovY: {{ getMovementFromVisual('bottomRight', output.corners.bottomRight.x, output.corners.bottomRight.y).y.toFixed(3) }}</span>
+              <button (click)="resetCorner(output.id, 'bottomRight')" class="mt-1 text-xs text-white bg-gray-700 px-2 py-1 rounded-sm">Reset corner</button>
+            </div>
           </div>
         </div>
         }

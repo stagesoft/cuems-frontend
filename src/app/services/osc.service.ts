@@ -182,4 +182,35 @@ export class OscService {
     console.log('volume', volume);
     this.ws.next(binaryNodeVolumeUpdate);
   }
+
+  /**
+   * Video Mixer
+   * @param nodeUuid The UUID of the node to update the scale for
+   * @param outputIndex The index of the output to update the scale for
+   * @param xScale The x scale to set for the output
+   * @param yScale The y scale to set for the output
+   */
+  public sendVideoMixerScaleUpdate(nodeUuid: string, outputIndex: number, xScale: number, yScale: number): void {
+    const messageVideoMixerXScaleUpdate = new OSC.Message(`${nodeUuid}/video/mixer/${outputIndex}/xscale`, xScale);
+    const binaryVideoMixerXScaleUpdate = messageVideoMixerXScaleUpdate.pack();
+    this.ws.next(binaryVideoMixerXScaleUpdate);
+
+    const messageVideoMixerYScaleUpdate = new OSC.Message(`${nodeUuid}/video/mixer/${outputIndex}/yscale`, yScale);
+    const binaryVideoMixerYScaleUpdate = messageVideoMixerYScaleUpdate.pack();
+    this.ws.next(binaryVideoMixerYScaleUpdate);
+  }
+
+  /**
+   * Video Mixer
+   * @param nodeUuid The UUID of the node to update the corner for
+   * @param outputIndex The index of the output to update the corner for
+   * @param cornerPosition The position of the corner to update the corner for
+   * @param x The x position to set for the corner
+   * @param y The y position to set for the corner
+   */
+  public sendVideoMixerCornerUpdate(nodeUuid: string, outputIndex: number, cornerPosition: number, x: number, y: number): void {
+    const messageVideoMixerCornerUpdate = new OSC.Message(`${nodeUuid}/video/mixer/${outputIndex}/${cornerPosition}/corner${cornerPosition}`, x, y);
+    const binaryVideoMixerCornerUpdate = messageVideoMixerCornerUpdate.pack();
+    this.ws.next(binaryVideoMixerCornerUpdate);
+  }
 }

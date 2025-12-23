@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../../ui/icon/icon.component';
+import { OscService } from '../../../../services/osc.service';
 
 interface VideoOutputRaw {
   parentId: string;
@@ -22,17 +23,15 @@ interface VideoOutput {
   id: string;
   name: string;
   index: number;
-  
-  // UI state properties for each output
   scale: number;
   settingsExpanded?: boolean;
   corners?: Corners;
 }
 
 interface VideoNodeWithUI {
-  nodeUuid: string;        // UUID del nodo master
-  nodeIndex: number;       // Índice del nodo
-  outputs: VideoOutput[];  // Array de outputs con sus propiedades UI
+  nodeUuid: string;
+  nodeIndex: number;
+  outputs: VideoOutput[];
 }
 
 interface Point {
@@ -56,6 +55,7 @@ interface Corners {
 })
 export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
+  private oscService = inject(OscService);
   
   projectUuid: string | null = null;
   Math = Math;
@@ -67,11 +67,17 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
   
   draggedCorner = signal<string | null>(null);
   activeLayerId = signal<string | null>(null);
+
+  private readonly INITIAL_CORNERS = {
+    topLeft: { x: 0, y: 0 },
+    topRight: { x: 2, y: 0 },
+    bottomLeft: { x: 0, y: 2 },
+    bottomRight: { x: 2, y: 2 }
+  };
   
   ngOnInit() {
     this.route.parent?.params.subscribe(params => {
       this.projectUuid = params['uuid'];
-
       this.loadVideoNodesWithRetry();
     });
     
@@ -84,9 +90,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     window.removeEventListener('mouseup', this.handleGlobalMouseUp.bind(this));
   }
   
-  /**
-   * Get video nodes from localStorage and extract video outputs
-   */
   private getVideoNodesFromLocalStorage(): VideoNode[] {
     const mappingsData = localStorage.getItem('initial_mappings');
     if (!mappingsData) return [];
@@ -132,9 +135,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     }
   }
   
-  /**
-   * Load video nodes with retry mechanism
-   */
   private loadVideoNodesWithRetry(): void {
     this.tryLoadVideoNodes();
   }
@@ -153,9 +153,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     }
   }
   
-  /**
-   * Initialize video nodes with UI properties from the loaded video outputs
-   */
   private initializeVideoLayers(): void {
     const nodesWithUI: VideoNodeWithUI[] = [];
     
@@ -167,12 +164,7 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
         index: output.index,
         scale: 1,
         settingsExpanded: false,
-        corners: {
-          topLeft: { x: 0, y: 0 },
-          topRight: { x: 100, y: 0 },
-          bottomLeft: { x: 0, y: 100 },
-          bottomRight: { x: 100, y: 100 }
-        }
+        corners: this.INITIAL_CORNERS
       }));
       
       nodesWithUI.push({
@@ -183,12 +175,8 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     });
     
     this.videoNodesWithUI.set(nodesWithUI);
-    console.log('Video nodes with UI initialized:', nodesWithUI);
   }
   
-  /**
-   * Get the display name of an output (remove the UUID prefix)
-   */
   getOutputDisplayName(outputName: string): string {
     const parts = outputName.split('_');
     if (parts.length > 1) {
@@ -196,7 +184,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     }
     return outputName;
   }
-  
   
   toggleSettings(outputId: string) {
     this.videoNodesWithUI.update(nodes => 
@@ -209,7 +196,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
         )
       }))
     );
-    console.log(`Toggle settings for layer ${outputId}`);
   }
   
   getLayerCorners(outputId: string): Corners {
@@ -217,16 +203,40 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
       const output = node.outputs.find(o => o.id === outputId);
       if (output?.corners) return output.corners;
     }
-    return {
-      topLeft: { x: 0, y: 0 },
-      topRight: { x: 100, y: 0 },
-      bottomLeft: { x: 0, y: 100 },
-      bottomRight: { x: 100, y: 100 }
-    };
+    return this.INITIAL_CORNERS;
+  }
+  
+  // Convert screen coordinates to OSC movement
+  public getMovementFromVisual(corner: string, visualX: number, visualY: number): {x: number, y: number} {
+    switch (corner) {
+      case 'topLeft':
+        return { x: visualX, y: visualY };
+      case 'topRight':
+        return { x: 2 - visualX, y: visualY };
+      case 'bottomLeft':
+        return { x: visualX, y: 2 - visualY };
+      case 'bottomRight':
+        return { x: 2 - visualX, y: 2 - visualY };
+      default:
+        return { x: 0, y: 0 };
+    }
   }
   
   updateScale(outputId: string, event: Event) {
     const value = +(event.target as HTMLInputElement).value;
+    let outputIndex = 0;
+    let updatedOutput: any = null;
+    let nodeUuid = '';
+    for (const node of this.videoNodesWithUI()) {
+      for (const output of node.outputs) {
+        if (output.id === outputId) {
+          updatedOutput = {...output, scale: value};
+          outputIndex = output.index;
+          nodeUuid = node.nodeUuid;
+          break;
+        }
+      }
+    }
     this.videoNodesWithUI.update(nodes => 
       nodes.map(node => ({
         ...node,
@@ -237,7 +247,8 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
         )
       }))
     );
-    console.log(`Output ${outputId} scale updated to ${value}`);
+
+    this.syncScale(nodeUuid, updatedOutput, value);
   }
   
   startDrag(layerId: string, corner: string, event: MouseEvent) {
@@ -245,7 +256,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     event.stopPropagation();
     this.draggedCorner.set(corner);
     this.activeLayerId.set(layerId);
-    console.log(`Starting drag on corner: ${corner} for layer: ${layerId}`);
   }
   
   handleGlobalMouseMove(event: MouseEvent) {
@@ -258,16 +268,17 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     
     const rect = container.getBoundingClientRect();
     
-    const xPercent = Math.max(0, Math.min(100, 
-      ((event.clientX - rect.left) / rect.width) * 100
+    // Mouse position in coordinates, allowing to go out 0.6 in all directions
+    const xPercent = Math.max(-0.6, Math.min(2.6, 
+      ((event.clientX - rect.left) / rect.width) * 2
     ));
-    const yPercent = Math.max(0, Math.min(100, 
-      ((event.clientY - rect.top) / rect.height) * 100
+    const yPercent = Math.max(-0.6, Math.min(2.6, 
+      ((event.clientY - rect.top) / rect.height) * 2
     ));
     
     const corner = this.draggedCorner() as keyof Corners;
     
-    // Update the specific output's corners
+    // Update visualization
     this.videoNodesWithUI.update(nodes => 
       nodes.map(node => ({
         ...node,
@@ -287,21 +298,21 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     
     this.updateCornerInputs(layerId, corner, xPercent, yPercent);
     
-    console.log(`Dragging ${corner} for layer ${layerId}: x=${xPercent.toFixed(1)}%, y=${yPercent.toFixed(1)}%`);
+    // Calculate movement OSC from visual position
+    const movement = this.getMovementFromVisual(corner, xPercent, yPercent);
+    this.syncCornerMovement(layerId, corner, movement.x, movement.y);
   }
   
   handleGlobalMouseUp() {
-    if (this.draggedCorner()) {
-      console.log(`Stopped dragging ${this.draggedCorner()} for layer ${this.activeLayerId()}`);
+    if (this.draggedCorner() && this.activeLayerId()) {
       this.draggedCorner.set(null);
       this.activeLayerId.set(null);
     }
   }
   
   updateCornerInputs(layerId: string, corner: string, x: number, y: number) {
-    // Convert to format 000.000
-    const xFormatted = x.toFixed(3).padStart(7, '0');
-    const yFormatted = y.toFixed(3).padStart(7, '0');
+    const xFormatted = x.toFixed(3);
+    const yFormatted = y.toFixed(3);
     
     const position = 
       corner === 'topLeft' ? 'top-left' : 
@@ -309,7 +320,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
       corner === 'bottomLeft' ? 'bottom-left' : 
       'bottom-right';
     
-    // Escape the layerId for use in querySelector (in case it contains special characters)
     const escapedLayerId = CSS.escape(layerId);
     const transformArea = document.querySelector(`#layer-${escapedLayerId}-transform`);
     if (!transformArea) return;
@@ -322,7 +332,6 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
   }
   
   startDragForLayer(outputId: string, corner: string, event: MouseEvent) {
-    // First ensure the output's settings are expanded
     let outputFound = false;
     for (const node of this.videoNodesWithUI()) {
       const output = node.outputs.find(o => o.id === outputId);
@@ -335,5 +344,72 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     if (!outputFound) return;
     
     this.startDrag(outputId, corner, event);
+  }
+
+  private syncScale(nodeUuid: string, updatedOutput: VideoOutput, scale: number) {
+    const xScale = scale;
+    const yScale = scale;
+    this.oscService.sendVideoMixerScaleUpdate(nodeUuid, updatedOutput.index, xScale, yScale);
+  }
+  
+  private syncCornerMovement(layerId: string, corner: string, movementX: number, movementY: number) {
+    for (const node of this.videoNodesWithUI()) {
+      const output = node.outputs.find(o => o.id === layerId);
+      if (output) {
+        let outputIndex = output.index;
+        let cornerPosition: number = 0;
+        
+        switch (corner) {
+          case 'topLeft':
+            cornerPosition = 4;
+            break;
+          case 'topRight':
+            cornerPosition = 3;
+            break;
+          case 'bottomLeft':
+            cornerPosition = 1;
+            break;
+          case 'bottomRight':
+            cornerPosition = 2;
+            break;
+        }
+
+        this.oscService.sendVideoMixerCornerUpdate(node.nodeUuid, outputIndex, cornerPosition, Number(movementX.toFixed(3)), Number(movementY.toFixed(3)));
+        break;
+      }
+    }
+  }
+
+  resetCorner(outputId: string, corner: string) {
+    const cornerKey = corner as keyof Corners;
+    const { x, y } = this.INITIAL_CORNERS[cornerKey];
+    
+    // Update the corner values
+    this.videoNodesWithUI.update(nodes => 
+      nodes.map(node => ({
+        ...node,
+        outputs: node.outputs.map(output =>
+          output.id === outputId && output.corners
+            ? {
+                ...output,
+                corners: {
+                  ...output.corners,
+                  [cornerKey]: { x, y }
+                }
+              }
+            : output
+        )
+      }))
+    );
+    
+    // Send the values to OSC
+    for (const node of this.videoNodesWithUI()) {
+      const output = node.outputs.find(o => o.id === outputId);
+      if (output) {
+        const movement = this.getMovementFromVisual(corner, x, y);
+        this.syncCornerMovement(outputId, corner, Number(movement.x.toFixed(3)), Number(movement.y.toFixed(3)));
+        break;
+      }
+    }
   }
 }
