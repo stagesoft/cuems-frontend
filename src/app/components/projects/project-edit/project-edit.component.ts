@@ -21,7 +21,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private projectsService = inject(ProjectsService);
   private editStateService = inject(ProjectEditStateService);
   private drawerService = inject(DrawerService);
-  
+
   public project: any;
   public projectUuid: string | null = null;
   public hasUnsavedChanges: boolean = false;
@@ -32,12 +32,12 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.projectUuid = params['uuid'];
-      
+
       if (this.projectUuid) {
         if (this.projectsService.projects().length === 0) {
           this.projectsService.getProjectList();
         }
-        
+
         this.projectsService.loadProject(this.projectUuid);
       }
     });
@@ -56,7 +56,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             projectData.uuid = this.projectUuid;
           }
         }
-        
+
         this.project = projectData;
       }
     });
@@ -73,7 +73,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
       savedProjectUuid => {
         if (this.projectUuid && savedProjectUuid === this.projectUuid) {
           this.editStateService.markProjectAsSaved(this.projectUuid);
-          
+
           this.projectsService.loadProject(this.projectUuid);
         }
       }
@@ -84,7 +84,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     this.changesSubscription?.unsubscribe();
     this.projectLoadedSubscription?.unsubscribe();
     this.projectSavedSubscription?.unsubscribe();
-    
+
     if (this.projectUuid) {
       this.editStateService.clearTemporaryCues(this.projectUuid);
     }
@@ -108,13 +108,13 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
     try {
       const updatedProject = JSON.parse(JSON.stringify(this.project));
-      
+
       const modifiedData = this.editStateService.getProjectModifiedData(this.projectUuid);
-      
+
       if (!modifiedData || Object.keys(modifiedData).length === 0) {
         return;
       }
-      
+
       if (modifiedData.sequence) {
         if (!updatedProject.CuemsScript) {
           updatedProject.CuemsScript = {};
@@ -129,7 +129,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             updatedProject.CuemsScript.CueList.id = this.generateUUID();
             updatedProject.CuemsScript.CueList.contents = [];
           } else {
-            // Fallback 
+            // Fallback
             updatedProject.CuemsScript.CueList = {
               autoload: false,
               description: null,
@@ -148,7 +148,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             };
           }
         }
-        
+
         if (modifiedData.sequence.contents === null) {
           updatedProject.CuemsScript.CueList.contents = null;
         } else if (Array.isArray(modifiedData.sequence.contents) && modifiedData.sequence.contents.length === 0) {
@@ -157,11 +157,11 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
           updatedProject.CuemsScript.CueList.contents = modifiedData.sequence.contents;
         }
       }
-      
+
       if (!updatedProject.uuid && this.projectUuid) {
         updatedProject.uuid = this.projectUuid;
       }
-      
+
       this.projectsService.updateProject(updatedProject);
     } catch (error) {
       console.error('Error saving complete project:', error);
@@ -175,4 +175,4 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private generateUUID(): string {
     return uuidv4();
   }
-} 
+}
