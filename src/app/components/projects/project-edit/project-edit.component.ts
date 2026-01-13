@@ -10,7 +10,6 @@ import { IconComponent } from '../../ui/icon/icon.component';
 import { DrawerService } from '../../../services/ui/drawer.service';
 import { v4 as uuidv4 } from 'uuid';
 import { FormsModule } from '@angular/forms';
-import { WebsocketService } from '../../../services/websocket.service';
 
 @Component({
   selector: 'app-project-edit',
@@ -201,7 +200,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     this.project.name = this.editName;
     this.project.description = this.editDescription;
 
-    // Enviar al backend si tienes servicio
+    // Enviar al backend
     // this.projectsService.updateProject(this.project); //(modificar)
 
     this.isEditing = false;

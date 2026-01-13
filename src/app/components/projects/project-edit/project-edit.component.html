@@ -20,10 +20,8 @@
         </div>
 
         <div *ngIf="isEditing">
-          <label for="">{{'project.edit' | translate}}</label>
-          <input [(ngModel)]="editName" class="w-full mb-2 p-1 bg-dark-400">
-          <label for="textArea">{{'Description'}}</label>
-          <textarea [(ngModel)]="editDescription" class="w-full p-1 bg-dark-400" rows="2"></textarea>
+          <label for="">{{'project.edit.editing' | translate}} <input [(ngModel)]="editName" class="w-full mb-2 p-1 bg-dark-400"></label>
+          <textarea [(ngModel)]="editDescription" class="w-full p-1 bg-dark-400" rows="2">{{project?.description | translate}}</textarea>
         </div>
         <!--
         <p class="flex">{{ 'project.edit.editing' | translate }}: {{ project?.name }}</p>
