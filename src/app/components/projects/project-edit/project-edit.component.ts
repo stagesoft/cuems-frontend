@@ -9,11 +9,13 @@ import { ProjectEditStateService } from '../../../services/projects/project-edit
 import { IconComponent } from '../../ui/icon/icon.component';
 import { DrawerService } from '../../../services/ui/drawer.service';
 import { v4 as uuidv4 } from 'uuid';
+import { FormsModule } from '@angular/forms';
+import { WebsocketService } from '../../../services/websocket.service';
 
 @Component({
   selector: 'app-project-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent],
+  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent, FormsModule],
   templateUrl: './project-edit.component.html'
 })
 export class ProjectEditComponent implements OnInit, OnDestroy {
@@ -28,6 +30,12 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private changesSubscription?: Subscription;
   private projectLoadedSubscription?: Subscription;
   private projectSavedSubscription?: Subscription;
+
+  //edición de descripción y nombre de proyectos=
+  public isEditing: boolean = false;
+  public editName: string = '';
+  public editDescription: string = '';
+
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
@@ -174,5 +182,28 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
   private generateUUID(): string {
     return uuidv4();
+  }
+
+  //métodos de edición de nombre y descripción
+  startEdit(): void {
+    this.isEditing = true;
+    this.editName = this.project?.name || '';
+    this.editDescription = this.project?.description || '';
+  }
+
+  cancelEdit(): void {
+    this.isEditing = false;
+  }
+
+  saveEdit(): void {
+    if (!this.project || !this.editName.trim()) return;
+
+    this.project.name = this.editName;
+    this.project.description = this.editDescription;
+
+    // Enviar al backend si tienes servicio
+    // this.projectsService.updateProject(this.project); //(modificar)
+
+    this.isEditing = false;
   }
 }
