@@ -17,7 +17,7 @@ interface TemporaryCuesData {
 
 export class ProjectEditStateService {
   public hasUnsavedChanges = signal(false);
-  
+
   private changesSubject = new BehaviorSubject<boolean>(false);
   public changes$ = this.changesSubject.asObservable();
 
@@ -27,12 +27,12 @@ export class ProjectEditStateService {
 
   markComponentAsChanged(componentName: string, projectUuid: string, data?: any): void {
     const key = `${projectUuid}-${componentName}`;
-    
+
     this.componentStates.set(key, {
       hasChanges: true,
       data: data || null
     });
-    
+
     this.updateGlobalState();
   }
 
@@ -65,14 +65,14 @@ export class ProjectEditStateService {
 
   getProjectModifiedData(projectUuid: string): any {
     const modifiedData: any = {};
-    
+
     this.componentStates.forEach((state, key) => {
       if (key.startsWith(`${projectUuid}-`) && state.hasChanges) {
         const componentName = key.substring(`${projectUuid}-`.length);
         modifiedData[componentName] = state.data;
       }
     });
-    
+
     return modifiedData;
   }
 
@@ -85,9 +85,9 @@ export class ProjectEditStateService {
         });
       }
     });
-    
+
     this.clearTemporaryCues(projectUuid);
-    
+
     this.updateGlobalState();
   }
 
@@ -108,7 +108,7 @@ export class ProjectEditStateService {
         break;
       }
     }
-    
+
     this.hasUnsavedChanges.set(hasChanges);
     this.changesSubject.next(hasChanges);
   }
@@ -126,13 +126,13 @@ export class ProjectEditStateService {
         keysToDelete.push(key);
       }
     });
-    
+
     keysToDelete.forEach(key => {
       this.componentStates.delete(key);
     });
-    
+
     this.clearTemporaryCues(projectUuid);
-    
+
     this.updateGlobalState();
   }
 
@@ -164,4 +164,22 @@ export class ProjectEditStateService {
       });
     }
   }
-} 
+
+  //método para project-edit.component.ts (guardar cambios de modificación de nombre y descripción)
+  setProjectMetadata(
+    projectUuid: string,
+    metadata: { name?: string; description?: string }
+  ): void {
+    const key = `${projectUuid}-metadata`;
+
+    this.componentStates.set(key, {
+      hasChanges: true,
+      data: {
+        ...(this.componentStates.get(key)?.data || {}),
+        ...metadata
+      }
+    });
+
+    this.updateGlobalState();
+  }
+}

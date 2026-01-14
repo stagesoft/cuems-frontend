@@ -22,7 +22,7 @@ export interface ProjectList {
   unix_name: string;
   created: string;
   modified: string;
-  CuemsScript?: any;
+  CuemsScript?: any; //define el comportamiento del proyecto
 }
 
 export type ProjectTemplate = Record<string, any>;

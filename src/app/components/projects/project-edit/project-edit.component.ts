@@ -123,6 +123,15 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
         return;
       }
 
+      //guardar cambios de nombre y descripción
+      if (modifiedData.metadata) {
+        updatedProject.name =
+        modifiedData.metadata.name ?? updatedProject.name;
+
+        updatedProject.description =
+        modifiedData.metadata.description ?? updatedProject.description;
+      }
+
       if (modifiedData.sequence) {
         if (!updatedProject.CuemsScript) {
           updatedProject.CuemsScript = {};
@@ -174,6 +183,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     } catch (error) {
       console.error('Error saving complete project:', error);
     }
+
   }
 
   toggleActivityDrawer(): void {
@@ -196,13 +206,18 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   }
 
   saveEdit(): void {
-    if (!this.project || !this.editName.trim()) return;
+    if (!this.project || !this.projectUuid) return;
+    if (!this.editName.trim()) return;
 
+    // Actualiza UI inmediatamente
     this.project.name = this.editName;
     this.project.description = this.editDescription;
 
-    // Enviar al backend
-    // this.projectsService.updateProject(this.project); //(modificar)
+    // Registra el cambio en el estado global
+    this.editStateService.setProjectMetadata(this.projectUuid, {
+      name: this.editName,
+      description: this.editDescription
+    });
 
     this.isEditing = false;
   }
