@@ -18,9 +18,11 @@ import {
 export interface ProjectList {
   uuid: string;
   name: string;
+  description?: string;
   unix_name: string;
   created: string;
   modified: string;
+  CuemsScript?: any;
 }
 
 export type ProjectTemplate = Record<string, any>;
@@ -101,7 +103,7 @@ export class ProjectsService {
 
   public projectRestored = new EventEmitter<string>();
   public projectPermanentlyDeleted = new EventEmitter<string>();
-  
+
   public projectSaved = new EventEmitter<string>();
 
   public projects = signal<ProjectList[]>([]);
@@ -112,7 +114,7 @@ export class ProjectsService {
 
   public projectLoaded = new EventEmitter<any>();
 
-  constructor() {    
+  constructor() {
     const savedTemplate = localStorage.getItem('initial_template');
     if (savedTemplate) {
       try {
@@ -125,7 +127,7 @@ export class ProjectsService {
     if (savedMappings) {
       try {
         const parsedMappings = JSON.parse(savedMappings);
-        
+
         let mappingsToSet: InitialMappingsResponse;
         if (parsedMappings.type === 'initial_mappings') {
           mappingsToSet = parsedMappings;
@@ -135,10 +137,10 @@ export class ProjectsService {
             value: parsedMappings
           };
         }
-        
+
         this.initialMappings.set(mappingsToSet);
-        
-        this.extractMappingOptions(mappingsToSet.value);        
+
+        this.extractMappingOptions(mappingsToSet.value);
       } catch (e) {
         console.error('ProjectsService constructor - error parsing mappings:', e);
       }
@@ -152,10 +154,10 @@ export class ProjectsService {
         },
         error: (err) => {
           console.error('ProjectsService - websocket error:', err);
-          this.errorEvent.emit({ 
-            action: 'websocket_error', 
+          this.errorEvent.emit({
+            action: 'websocket_error',
             message: 'Error de conexión',
-            raw: err 
+            raw: err
           });
         }
       });
@@ -165,14 +167,14 @@ export class ProjectsService {
       .subscribe({
         next: (error: WebSocketError) => {
           const projectActions = [
-            'project_new', 'project_save', 'project_delete', 'project_restore', 
-            'project_trash_delete', 'project_list', 'project_trash_list', 
+            'project_new', 'project_save', 'project_delete', 'project_restore',
+            'project_trash_delete', 'project_list', 'project_trash_list',
             'project_load', 'initial_template', 'initial_mappings'
           ];
-          
+
           if (error.action && projectActions.includes(error.action)) {
             this.errorEvent.emit(error);
-            
+
             if (error.action === 'project_new') {
               this.notificationService.showError(error.message || 'Error al crear el proyecto');
               this.newProjectCreated.emit('');
@@ -184,7 +186,7 @@ export class ProjectsService {
           }
         }
       });
-    
+
   }
 
   public handleWebsocketResponse(response: any): void {
@@ -199,17 +201,17 @@ export class ProjectsService {
     if (response && response.type === 'initial_mappings' && (response.value || response)) {
       try {
         const mappingsData = response.value || response;
-        
+
         const completeResponse: InitialMappingsResponse = {
           type: 'initial_mappings',
           value: mappingsData
         };
-        
+
         this.initialMappings.set(completeResponse);
-        
+
         // Extract mapping options for the multiselect
         this.extractMappingOptions(mappingsData);
-        
+
         localStorage.setItem('initial_mappings', JSON.stringify(completeResponse));
       } catch (e) {
         console.error('Error processing initial mappings:', e);
@@ -227,56 +229,56 @@ export class ProjectsService {
 
     if (response && response.type === 'project_new' && response.value) {
       const projectUuid = response.value;
-      
+
       this.notificationService.showSuccess('Proyecto creado exitosamente');
-      
+
       this.newProjectCreated.emit(projectUuid);
-      
+
       this.router.navigate(['/projects', projectUuid, 'edit']).then(() => {
       }).catch(err => {
 
       });
-      
+
       this.getProjectList();
     }
 
     if (response && response.type === 'project_save' && response.value) {
       const projectUuid = response.value;
-      
+
       this.notificationService.showSuccess('Proyecto actualizado exitosamente');
-      
+
       this.projectSaved.emit(projectUuid);
-      
+
       this.getProjectList();
     }
 
     if (response && response.type === 'project_delete' && response.value) {
       const projectUuid = response.value;
-      
+
       this.notificationService.showSuccess('Proyecto movido a la papelera');
-      
+
       this.getProjectList();
       this.getProjectTrashList();
     }
 
     if (response && response.type === 'project_recover' && response.value) {
       const projectUuid = response.value;
-      
+
       this.notificationService.showSuccess('Proyecto restaurado exitosamente');
-      
+
       this.projectRestored.emit(projectUuid);
-      
+
       this.getProjectList();
       this.getProjectTrashList();
     }
 
     if (response && response.type === 'project_trash_delete' && response.value) {
       const projectUuid = response.value;
-      
+
       this.notificationService.showSuccess('Proyecto eliminado permanentemente');
-      
+
       this.projectPermanentlyDeleted.emit(projectUuid);
-      
+
       this.getProjectTrashList();
     }
 
@@ -290,9 +292,9 @@ export class ProjectsService {
         message: response.value || 'Error desconocido',
         raw: response
       };
-      
+
       this.errorEvent.emit(error);
-      
+
       if (error.action === 'project_new') {
         this.notificationService.showError(error.message || 'Error al crear el proyecto');
         this.newProjectCreated.emit('');
@@ -318,13 +320,13 @@ export class ProjectsService {
     });
   }
 
-  createProject(projectData: CreateProjectParams): void {    
+  createProject(projectData: CreateProjectParams): void {
     if (!this.projectTemplate()) {
       this.notificationService.showError('Error: No hay template disponible');
-      this.errorEvent.emit({ 
-        action: 'project_new', 
+      this.errorEvent.emit({
+        action: 'project_new',
         message: 'No hay template disponible',
-        raw: null 
+        raw: null
       });
       this.newProjectCreated.emit('');
       return;
@@ -332,10 +334,10 @@ export class ProjectsService {
 
     if (!this.initialMappings() || !this.mappingOptions() || this.mappingOptions().length === 0) {
       this.notificationService.showError('Error: No hay mappings disponibles');
-      this.errorEvent.emit({ 
-        action: 'project_new', 
+      this.errorEvent.emit({
+        action: 'project_new',
         message: 'No hay mappings disponibles',
-        raw: null 
+        raw: null
       });
       this.newProjectCreated.emit('');
       return;
@@ -392,7 +394,7 @@ export class ProjectsService {
     }
   }
 
-  updateProject(projectData: any): void {    
+  updateProject(projectData: any): void {
     this.wsService.ws.next({
       action: 'project_save',
       value: projectData
@@ -415,7 +417,7 @@ export class ProjectsService {
    */
   private extractMappingOptions(mappingsData: any): void {
     const mappingOptions: InitialMapping[] = [];
-    
+
     if (mappingsData.nodes && Array.isArray(mappingsData.nodes)) {
       mappingsData.nodes.forEach((nodeData: any, index: number) => {
         console.log('---NODE DATA---', nodeData);
@@ -437,7 +439,7 @@ export class ProjectsService {
             }
           });
         }
-        
+
         if (nodeData.node.video && Array.isArray(nodeData.node.video)) {
           nodeData.node.video.forEach((videoGroup: any, videoIndex: number) => {
             if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
@@ -454,7 +456,7 @@ export class ProjectsService {
         }
       });
     }
-    
+
     this.mappingOptions.set(mappingOptions);
   }
 
@@ -465,18 +467,18 @@ export class ProjectsService {
     if (!outputString || typeof outputString !== 'string') {
       return null;
     }
-    
+
     // Search for the pattern: 36 characters (uuidv4) + "_" + rest
     const uuidPattern = /^([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})_(.+)$/;
     const match = outputString.match(uuidPattern);
-    
+
     if (match) {
       return {
         uuid: match[1],
         name: match[2]
       };
     }
-    
+
     console.warn('Could not parse output string:', outputString);
     return null;
   }
@@ -489,7 +491,7 @@ export class ProjectsService {
     if (!mappingsResponse?.value?.nodes) {
       return null;
     }
-    
+
     const nodeIndex = mappingsResponse.value.nodes.findIndex((nodeData: any) => nodeData.node.uuid === nodeUuid);
     return nodeIndex !== -1 ? nodeIndex + 1 : null; // +1 to start from node1
   }
@@ -502,12 +504,12 @@ export class ProjectsService {
     if (!parsedOutput) {
       return outputString; // Fallback to the original string
     }
-    
+
     const nodeNumber = this.getNodeNumberByUuid(parsedOutput.uuid);
     if (nodeNumber) {
       return `node${nodeNumber}:${parsedOutput.name}`;
     }
-    
+
     return outputString; // Fallback to the original string
   }
 
@@ -519,13 +521,13 @@ export class ProjectsService {
     if (!mappingsResponse?.value?.nodes) {
       return null;
     }
-    
+
     const node = mappingsResponse.value.nodes.find((nodeData: any) => nodeData.node.uuid === uuid);
     if (!node) {
       console.warn('Node not found for UUID:', uuid);
       return null;
     }
-    
+
     if (node.node.audio && Array.isArray(node.node.audio)) {
       for (const audioGroup of node.node.audio) {
         if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
@@ -536,7 +538,7 @@ export class ProjectsService {
         }
       }
     }
-    
+
     if (node.node.video && Array.isArray(node.node.video)) {
       for (const videoGroup of node.node.video) {
         if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
@@ -547,7 +549,7 @@ export class ProjectsService {
         }
       }
     }
-    
+
     console.warn('Output not found for UUID:', uuid, 'and name:', name);
     return null;
   }

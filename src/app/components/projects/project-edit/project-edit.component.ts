@@ -55,6 +55,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
         if (basicProjectData) {
           if (!projectData.uuid) projectData.uuid = basicProjectData.uuid;
           if (!projectData.name) projectData.name = basicProjectData.name;
+          if (!projectData.description) projectData.description = basicProjectData.description; //revisar ProjectList
           if (!projectData.unix_name) projectData.unix_name = basicProjectData.unix_name;
           if (!projectData.created) projectData.created = basicProjectData.created;
           if (!projectData.modified) projectData.modified = basicProjectData.modified;
