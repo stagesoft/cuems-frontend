@@ -16,7 +16,8 @@
         <!--Editor de nombre y description (modificar a que la description sea traducible como el nombre de proyecto)-->
         <div *ngIf="!isEditing">
           <p><strong>{{'project.edit.editing' | translate}}: {{ project?.name }}</strong></p>
-          <p>{{ project?.description || 'No description' | translate }}</p>
+          <p>{{ project?.description !== undefined && project?.description !== null ? project.description : ('No description' | translate) }}</p>
+
         </div>
 
         <div *ngIf="isEditing">
@@ -26,6 +27,8 @@
         <!--
         <p class="flex">{{ 'project.edit.editing' | translate }}: {{ project?.name }}</p>
         <p class="flex">{{'Description' | translate }}: {{project?.description}}</p>
+        Mapeo automático de la descripción:
+        <p>{{ project?.description ?? project?.CuemsScript?.description ?? ('No description' | translate) }}</p>
         -->
       </div>
 

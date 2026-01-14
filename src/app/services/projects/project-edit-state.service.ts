@@ -73,6 +73,8 @@ export class ProjectEditStateService {
       }
     });
 
+    console.log('getProjectModifiedData', projectUuid, modifiedData); //debug
+
     return modifiedData;
   }
 
@@ -179,6 +181,8 @@ export class ProjectEditStateService {
         ...metadata
       }
     });
+
+    console.log('setProjectMetadata', key, this.componentStates.get(key)); //debug
 
     this.updateGlobalState();
   }

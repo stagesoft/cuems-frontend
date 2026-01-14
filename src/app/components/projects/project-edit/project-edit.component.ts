@@ -52,10 +52,18 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     this.projectLoadedSubscription = this.projectsService.projectLoaded.subscribe(projectData => {
       if (projectData) {
         const basicProjectData = this.projectsService.projects().find(p => p.uuid === this.projectUuid);
+
+        //Mapear descripción desde CuemsScript si no existe
+        if (!projectData.description && projectData.CuemsScript?.description) {
+          projectData.description = projectData.CuemsScript.description;
+        }
+
         if (basicProjectData) {
           if (!projectData.uuid) projectData.uuid = basicProjectData.uuid;
           if (!projectData.name) projectData.name = basicProjectData.name;
-          if (!projectData.description) projectData.description = basicProjectData.description; //revisar ProjectList
+
+          if (!projectData.description && basicProjectData.description) projectData.description = basicProjectData.description; //revisar ProjectList
+
           if (!projectData.unix_name) projectData.unix_name = basicProjectData.unix_name;
           if (!projectData.created) projectData.created = basicProjectData.created;
           if (!projectData.modified) projectData.modified = basicProjectData.modified;
@@ -66,6 +74,10 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
         }
 
         this.project = projectData;
+
+        //Actualizar los campos de edición
+        this.editName = this.project.name;
+        this.editDescription = this.project.description;
       }
     });
 
@@ -125,11 +137,13 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
       //guardar cambios de nombre y descripción
       if (modifiedData.metadata) {
-        updatedProject.name =
-        modifiedData.metadata.name ?? updatedProject.name;
+        if (modifiedData.metadata.name !== undefined && modifiedData.metadata.name.trim() !== '') {
+          updatedProject.name = modifiedData.metadata.name;
+        }
 
-        updatedProject.description =
-        modifiedData.metadata.description ?? updatedProject.description;
+        if (modifiedData.metadata.description !== undefined) {
+          updatedProject.description = modifiedData.metadata.description;
+        }
       }
 
       if (modifiedData.sequence) {
