@@ -16,12 +16,14 @@
         <!--Editor de nombre y description (modificar a que la description sea traducible como el nombre de proyecto)-->
         <div *ngIf="!isEditing">
           <p><strong>{{'project.edit.editing' | translate}}: {{ project?.name }}</strong></p>
-          <p>{{ project?.description !== undefined && project?.description !== null ? project.description : ('No description' | translate) }}</p>
+          <p>{{ project?.description !== undefined && project?.description !== null ? project.description : 'No description' }}</p>
 
         </div>
 
         <div *ngIf="isEditing">
-          <label for="">{{'project.edit.editing' | translate}} <input [(ngModel)]="editName" class="w-full mb-2 p-1 bg-dark-400"></label>
+          <label for="">{{'project.edit.editing' | translate}}</label>
+          <hr><br>
+          <input [(ngModel)]="editName" class="w-full mb-2 p-1 bg-dark-400">
           <textarea [(ngModel)]="editDescription" class="w-full p-1 bg-dark-400" rows="2"></textarea>
         </div>
         <!--
@@ -46,10 +48,10 @@
         </button>
 
         <button *ngIf="isEditing" class="btn btn-normal btn-primary" (click)="saveEdit()">
-          Guardar
+          {{'save' | translate}}
         </button>
         <button *ngIf="isEditing" class="btn btn-normal btn-muted ml-2" (click)="cancelEdit()">
-          Cancelar
+          {{'cancel' | translate}}
         </button>
 
         <a [routerLink]="['/projects', project?.uuid]" class="btn btn-normal btn-muted">{{ 'project.show' | translate }}</a>

@@ -106,6 +106,7 @@
     "project.list.no.projects.available.description": "Create your first project or click refresh to load existing projects.",
     "project.list.new.project": "New project",
     "project.list.name": "Name",
+    "project.list.description": "Description",
     "project.list.unix_name": "Unix_name",
     "project.list.created": "Created",
     "project.list.modified": "Modified",
@@ -212,6 +213,6 @@
     "nodes.settings.no.nodes.configured": "No nodes configured",
     "nodes.settings.no.outputs.configured": "No outputs configured for this node",
     "footer.powered.text": "Powered",
-    "footer.promoted.text": "Promoted", 
+    "footer.promoted.text": "Promoted",
     "footer.financed.text": "Financed"
 }
