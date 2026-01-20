@@ -59,7 +59,7 @@
                 <input class="checkbox" type="checkbox" (click)="$event.stopPropagation(); selectAllProjects()" [checked]="selectedProjects.length === getSelectableProjects().length" [disabled]="isBulkDeleting">
               </th>
               <th scope="col" class="w-64 py-3.5 pr-3 pl-4 text-left text-sm font-semibold sm:pl-0">{{ 'project.list.name' | translate }}</th>
-              <th scope="col" class="w-40 px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.description' | translate }}</th> <!--modificar para sacar el Unix_name-->
+              <th scope="col" class="w-40 px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.description' | translate }}</th>
               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.created' | translate }}</th>
               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.modified' | translate }}</th>
               <th scope="col" class="relative py-3.5 pr-4 pl-3 sm:pr-0">
@@ -74,7 +74,7 @@
                   <input class="checkbox" type="checkbox" (click)="selectProject(project.uuid)" [checked]="selectedProjects.includes(project.uuid)" [disabled]="isProjectBeingDeleted(project.uuid) || isBulkDeleting">
                 </td>
               <td class="w-64 py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap sm:pl-0">{{ project.name }}</td>
-              <td class="w-40 px-3 py-4 text-sm whitespace-nowrap">{{ project?.description }}</td>  <!--Modificar para sacar el project Unix_name y dejarlo como un hover o similar-->
+              <td class="w-40 px-3 py-4 text-sm whitespace-nowrap cursor-help" [attr.title]="project.description">{{ truncateWords(project.description, 5) }}</td>
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.created | date:'medium' }}</td>
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.modified | date:'medium' }}</td>
               <td class="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
