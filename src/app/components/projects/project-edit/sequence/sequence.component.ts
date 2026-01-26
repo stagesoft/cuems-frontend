@@ -34,6 +34,7 @@ interface CueData {
   activeTab: 'notes' | 'edit' | 'media';
   selectedMediaFile?: {uuid: string, file: any};
   selectedAudioOutput?: string;
+  selectedDmxOutput?: string;
   selectedVideoOutput?: string;
   selectedOutputs?: string[];
   dmx_channels?: Array<{channel: number, value: number}>;
@@ -110,7 +111,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       this.editStateService.changes$.subscribe(hasChanges => {
         if (this.projectUuid) {
           this.hasProjectChanges = this.editStateService.hasProjectChanges(this.projectUuid);
-          
+
           if (!this.hasProjectChanges && this.hasUnsavedChanges) {
             this.hasUnsavedChanges = false;
             this.originalCues = JSON.parse(JSON.stringify(this.cues));
@@ -124,7 +125,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         if (this.projectUuid && savedProjectUuid === this.projectUuid) {
           this.hasUnsavedChanges = false;
           this.originalCues = JSON.parse(JSON.stringify(this.cues));
-          
+
           this.editStateService.clearTemporaryCues(this.projectUuid);
         }
       })
@@ -160,30 +161,30 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   private loadProjectCues(projectData: any) {
     try {
       const expandedStates = this.saveExpandedStates();
-      
+
       let shouldUseTemporaryCues = false;
       let temporaryCuesData = null;
-      
+
       if (this.projectUuid) {
         temporaryCuesData = this.editStateService.getTemporaryCues(this.projectUuid);
         shouldUseTemporaryCues = temporaryCuesData !== null && temporaryCuesData.cues.length > 0;
       }
-      
+
       if (shouldUseTemporaryCues && temporaryCuesData) {
         this.cues = JSON.parse(JSON.stringify(temporaryCuesData.cues));
         this.hasUnsavedChanges = temporaryCuesData.hasUnsavedChanges;
-        
+
         this.restoreExpandedStates(expandedStates);
-        
+
         this.originalCues = JSON.parse(JSON.stringify(this.cues));
       } else {
         if (projectData.CuemsScript?.['CueList']?.['contents']) {
-          
+
           this.cues = this.transformCuesFromProject(projectData.CuemsScript['CueList']['contents']);
 
           this.restoreExpandedStates(expandedStates);
-          
-          this.originalCues = JSON.parse(JSON.stringify(this.cues)); 
+
+          this.originalCues = JSON.parse(JSON.stringify(this.cues));
         } else {
           this.cues = [];
           this.originalCues = [];
@@ -204,7 +205,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
    */
   private saveExpandedStates(): Map<string, { expanded: boolean, activeTab: 'notes' | 'edit' | 'media' }> {
     const states = new Map<string, { expanded: boolean, activeTab: 'notes' | 'edit' | 'media' }>();
-    
+
     this.cues.forEach(cue => {
       if (cue.expanded) {
         const stableKey = `${cue.order}_${cue.name}_${cue.type}`;
@@ -214,7 +215,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         });
       }
     });
-    
+
     return states;
   }
 
@@ -222,7 +223,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     this.cues.forEach(cue => {
       const stableKey = `${cue.order}_${cue.name}_${cue.type}`;
       const savedState = states.get(stableKey);
-      
+
       if (savedState) {
         cue.expanded = savedState.expanded;
         cue.activeTab = savedState.activeTab;
@@ -231,7 +232,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Transform the cues structure 
+   * Transform the cues structure
    */
   private transformCuesFromProject(projectCues: any[]): CueData[] {
     return projectCues.map((cueItem, index) => {
@@ -278,10 +279,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       let selectedVideoOutput: string | undefined = undefined;
       let selectedOutputs: string[] = [];
 
-      
-      if (cueType === 'audio') {         
+
+      if (cueType === 'audio') {
         let audioOutputs: string[] = [];
-        
+
         if (cueData.AudioCueOutput?.output_name) {
           audioOutputs.push(cueData.AudioCueOutput.output_name);
         } else if (cueData.outputs && Array.isArray(cueData.outputs)) {
@@ -298,10 +299,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             }
           }
         }
-        
+
         if (audioOutputs.length > 0) {
           const validOutputs: string[] = [];
-          
+
           for (const audioOutput of audioOutputs) {
             const parsedOutput = this.projectsService.parseOutputString(audioOutput);
             if (parsedOutput) {
@@ -311,7 +312,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
               }
             }
           }
-          
+
           if (validOutputs.length > 0) {
             selectedOutputs = validOutputs;
             selectedAudioOutput = validOutputs[0];
@@ -328,11 +329,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             }
           }
         }
-      } 
-      
-      if (cueType === 'video') {       
+      }
+
+      if (cueType === 'video') {
         let videoOutputs: string[] = [];
-        
+
         if (cueData.VideoCueOutput?.output_name) {
           videoOutputs.push(cueData.VideoCueOutput.output_name);
         } else if (cueData.outputs && Array.isArray(cueData.outputs)) {
@@ -349,10 +350,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             }
           }
         }
-        
+
         if (videoOutputs.length > 0) {
           const validOutputs: string[] = [];
-          
+
           for (const videoOutput of videoOutputs) {
             const parsedOutput = this.projectsService.parseOutputString(videoOutput);
             if (parsedOutput) {
@@ -362,7 +363,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
               }
             }
           }
-          
+
           if (validOutputs.length > 0) {
             selectedOutputs = validOutputs;
             selectedVideoOutput = validOutputs[0];
@@ -490,7 +491,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   public clearUnsavedChangesState(): void {
     this.hasUnsavedChanges = false;
     this.originalCues = JSON.parse(JSON.stringify(this.cues));
-    
+
     if (this.projectUuid) {
       this.editStateService.clearTemporaryCues(this.projectUuid);
     }
@@ -590,20 +591,20 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     };
 
     newCue.selectedOutputs = [];
-    
+
     if (this.audioMappingOptions.length === 0 || this.videoMappingOptions.length === 0) {
       this.loadInitialMappings();
     }
-    
+
     const mappingsResponse = this.projectsService.initialMappings();
     let defaultAudioOutput = '';
     let defaultVideoOutput = '';
-    
+
     if (mappingsResponse?.value) {
       defaultAudioOutput = mappingsResponse.value.default_audio_output || '';
       defaultVideoOutput = mappingsResponse.value.default_video_output || '';
     }
-    
+
     if (type === 'audio') {
       const template = this.projectsService.projectTemplate();
       newCue.master_vol = template?.['CuemsScript']?.['CueList']?.['contents']?.find((item: any) => item.AudioCue)?.AudioCue?.master_vol || 20;
@@ -617,7 +618,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         newCue.selectedOutputs = [];
       }
     }
-    
+
     if (type === 'video') {
       if (this.videoMappingOptions.length > 0) {
         newCue.selectedVideoOutput = this.videoMappingOptions[0].value;
@@ -629,18 +630,18 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         newCue.selectedOutputs = [];
       }
     }
-    
+
     if (type === 'dmx') {
       const template = this.projectsService.projectTemplate();
       let initialChannels = [{
         channel: 0,
         value: 0
       }];
-      
+
       if (template?.['CuemsScript']?.['CueList']?.['contents']) {
         const contents = template['CuemsScript']['CueList']['contents'];
         const dmxTemplate = contents.find((item: any) => item.DmxCue);
-        
+
         if (dmxTemplate?.DmxCue?.DmxScene?.DmxUniverse?.dmx_channels) {
           initialChannels = dmxTemplate.DmxCue.DmxScene.DmxUniverse.dmx_channels.map((channelWrapper: any) => {
             const channelData = channelWrapper.DmxChannel || channelWrapper;
@@ -651,14 +652,14 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           });
         }
       }
-      
+
       newCue.dmx_channels = initialChannels;
     }
-    
+
     if (type !== 'audio' && type !== 'video' && type !== 'dmx') {
       newCue.selectedOutputs = [];
     }
-    
+
     const newCueIndex = this.cues.length;
 
     this.cues.push(newCue);
@@ -679,17 +680,17 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
    */
   private scrollToNewCue(cueIndex: number): void {
     const cueRow = document.querySelector(`[data-cue-index="${cueIndex}"]`) as HTMLElement;
-    
+
     if (cueRow) {
       cueRow.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
         inline: 'nearest'
       });
-      
+
       cueRow.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
       cueRow.style.transition = 'background-color 0.3s ease';
-      
+
       setTimeout(() => {
         cueRow.style.backgroundColor = '';
       }, 2000);
@@ -705,17 +706,17 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   saveProject(): void {
     if (this.projectUuid && this.hasProjectChanges) {
       const modifiedData = this.editStateService.getProjectModifiedData(this.projectUuid);
-      
+
       if (modifiedData && Object.keys(modifiedData).length > 0) {
         const updatedProject = JSON.parse(JSON.stringify(this.projectData));
-        
+
         if (modifiedData.sequence) {
           if (!updatedProject.CuemsScript) {
             updatedProject.CuemsScript = {};
           }
           if (!updatedProject.CuemsScript.CueList) {
             const template = this.projectsService.projectTemplate();
-            if (template?.['CuemsScript']?.['CueList']) {             
+            if (template?.['CuemsScript']?.['CueList']) {
               updatedProject.CuemsScript.CueList = JSON.parse(JSON.stringify(template['CuemsScript']['CueList']));
               // Merge the ID and set contents as an empty array
               updatedProject.CuemsScript.CueList.id = this.generateUUID();
@@ -740,7 +741,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
               };
             }
           }
-          
+
           if (modifiedData.sequence.contents === null) {
             updatedProject.CuemsScript.CueList.contents = null;
           } else if (Array.isArray(modifiedData.sequence.contents) && modifiedData.sequence.contents.length === 0) {
@@ -748,7 +749,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           } else {
             updatedProject.CuemsScript.CueList.contents = modifiedData.sequence.contents;
           }
-          
+
 
           if (updatedProject.CuemsScript.CueList.contents) {
             updatedProject.CuemsScript.CueList.contents.forEach((cueItem: any, index: number) => {
@@ -762,11 +763,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             });
           }
         }
-        
+
         if (!updatedProject.uuid && this.projectUuid) {
           updatedProject.uuid = this.projectUuid;
         }
-      
+
         this.projectsService.updateProject(updatedProject);
       }
     }
@@ -856,7 +857,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
       if (cue.type === 'audio') {
         let selectedOutputs: string[] = [];
-        
+
         if (cue.selectedOutputs && Array.isArray(cue.selectedOutputs) && cue.selectedOutputs.length > 0) {
           selectedOutputs = cue.selectedOutputs;
         } else if (cue.selectedAudioOutput) {
@@ -866,13 +867,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         this.assignMultipleAudioOutputs(newCue, selectedOutputs);
       } else if (cue.type === 'video') {
         let selectedOutputs: string[] = [];
-        
+
         if (cue.selectedOutputs && Array.isArray(cue.selectedOutputs) && cue.selectedOutputs.length > 0) {
           selectedOutputs = cue.selectedOutputs;
         } else if (cue.selectedVideoOutput) {
           selectedOutputs = [cue.selectedVideoOutput];
         }
-        
+
         this.assignMultipleVideoOutputs(newCue, selectedOutputs);
       }
     }
@@ -895,7 +896,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             universe_num: cue.universe_num ?? 0
           };
         }
-        
+
         // Assign the DMX channels wrapped in DmxChannel
         newCue.DmxScene.DmxUniverse.dmx_channels = cue.dmx_channels.map(ch => ({
           DmxChannel: {
@@ -903,7 +904,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             value: Number(ch.value)
           }
         }));
-        
+
         newCue.DmxScene.DmxUniverse.universe_num = cue.universe_num ?? 0;
       } else {
         if (newCue.DmxScene && newCue.DmxScene.DmxUniverse) {
@@ -914,7 +915,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
 
     const result = { [cueTypeKey]: newCue };
-    
+
     return result;
   }
 
@@ -962,12 +963,12 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
   public getCueTypeKey(originalData: any): string | null {
     if (!originalData) return null;
-    
+
     const keys = Object.keys(originalData);
-    const cueTypeKeys = keys.filter(key => 
+    const cueTypeKeys = keys.filter(key =>
       key === 'AudioCue' || key === 'VideoCue' || key === 'ActionCue' || key === 'DmxCue'
     );
-    
+
     return cueTypeKeys[0] || null;
   }
 
@@ -1000,7 +1001,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   public onMediaFileSelect(cue: CueData, uuid: string): void {
     const files = this.getMediaFilesByType(cue.type as 'audio' | 'video');
     const selectedFile = files.find(f => f.uuid === uuid);
-    
+
     if (selectedFile) {
       cue.selectedMediaFile = selectedFile;
       this.checkForChanges();
@@ -1097,7 +1098,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       if (this.projectUuid) {
         this.editStateService.clearTemporaryCues(this.projectUuid);
       }
-      
+
       this.loadProjectCues(this.projectData);
     }
   }
@@ -1105,24 +1106,25 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   mappingOptions: { value: string, label: string }[] = [];
   audioMappingOptions: { value: string, label: string }[] = [];
   videoMappingOptions: { value: string, label: string }[] = [];
+  dmxMappingOptions: { value: string, label: string}[]= [];
 
   getMappingOptionsForCue(cue: CueData): { value: string, label: string }[] {
     let options: { value: string, label: string }[] = [];
-    
+
     if (cue.type === 'audio') {
       options = this.audioMappingOptions;
     }
-    
+
     if (cue.type === 'video') {
       options = this.videoMappingOptions;
     }
-    
+
     return options;
   }
 
   getSelectedOutputsForCue(cue: CueData): string[] {
     let selectedValues: string[] = [];
-    
+
     if (cue.selectedOutputs && cue.selectedOutputs.length > 0) {
       selectedValues = cue.selectedOutputs;
     } else if (cue.type === 'audio' && cue.selectedAudioOutput) {
@@ -1130,7 +1132,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     } else if (cue.type === 'video' && cue.selectedVideoOutput) {
       selectedValues = [cue.selectedVideoOutput];
     }
-    
+
     return selectedValues;
   }
 
@@ -1143,9 +1145,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     return 'Selecciona opciones';
   }
 
-  onOutputSelectionChange(selectedValues: string[], cue: CueData): void { 
+  onOutputSelectionChange(selectedValues: string[], cue: CueData): void {
     // Fallback for maintaining one by default
-    if (!selectedValues || selectedValues.length === 0) {    
+    if (!selectedValues || selectedValues.length === 0) {
       // Use the first available output as fallback
       if (cue.type === 'audio' && this.audioMappingOptions.length > 0) {
         selectedValues = [this.audioMappingOptions[0].value];
@@ -1153,38 +1155,45 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         selectedValues = [this.videoMappingOptions[0].value];
       }
     }
-    
+
     cue.selectedOutputs = selectedValues || [];
-    
+
     if (cue.type === 'audio') {
       cue.selectedAudioOutput = selectedValues && selectedValues.length > 0 ? selectedValues[0] : undefined;
     } else if (cue.type === 'video') {
       cue.selectedVideoOutput = selectedValues && selectedValues.length > 0 ? selectedValues[0] : undefined;
     }
-    
+
     this.checkForChanges();
   }
 
 
   private loadInitialMappings(): void {
     const mappings = this.projectsService.mappingOptions();
-    
+
     if (mappings && mappings.length > 0) {
-      this.audioMappingOptions = mappings.filter(mapping => 
+      this.audioMappingOptions = mappings.filter(mapping =>
         mapping.type === 'audio'
       ).map(mapping => ({
         value: mapping.uuid,
         label: mapping.name
       }));
-      
-      this.videoMappingOptions = mappings.filter(mapping => 
+
+      this.videoMappingOptions = mappings.filter(mapping =>
         mapping.type === 'video'
       ).map(mapping => ({
         value: mapping.uuid,
         label: mapping.name
       }));
-      
-      this.mappingOptions = [...this.audioMappingOptions, ...this.videoMappingOptions];
+
+      this.dmxMappingOptions = mappings.filter(mapping =>
+        mapping.type === 'dmx'
+      ) .map(mapping => ({
+        value: mapping.uuid,
+        label: mapping.name
+      }));
+
+      this.mappingOptions = [...this.audioMappingOptions, ...this.videoMappingOptions, ...this.dmxMappingOptions];
     }
   }
 
@@ -1200,7 +1209,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
 
     audioCue.outputs = [];
-    
+
     selectedOutputs.forEach((selectedOutput, index) => {
       let outputToAssign = selectedOutput;
       const parsedOutput = this.projectsService.parseOutputString(selectedOutput);
@@ -1241,7 +1250,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
 
     videoCue.outputs = [];
-    
+
     selectedOutputs.forEach((selectedOutput, index) => {
       let outputToAssign = selectedOutput;
       const parsedOutput = this.projectsService.parseOutputString(selectedOutput);
@@ -1275,51 +1284,51 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
    */
   addDmxChannel(cue: CueData): void {
     if (cue.type !== 'dmx') return;
-    
+
     if (!cue.dmx_channels) {
       cue.dmx_channels = [];
     }
-    
+
     // Find the next available number
     let nextChannel = 0;
     const existingChannels = cue.dmx_channels.map(ch => ch.channel);
     while (existingChannels.includes(nextChannel)) {
       nextChannel++;
     }
-    
+
     cue.dmx_channels.push({
       channel: nextChannel,
       value: 0
     });
-    
+
     this.checkForChanges();
   }
-  
+
   removeDmxChannel(cue: CueData, index: number): void {
     if (cue.type !== 'dmx' || !cue.dmx_channels) return;
-    
+
     cue.dmx_channels.splice(index, 1);
     this.checkForChanges();
   }
-  
+
   /**
    * Validate that the channel number is not duplicated
    */
   isDmxChannelNumValid(cue: CueData, channel: number, currentIndex: number): boolean {
     if (cue.type !== 'dmx' || !cue.dmx_channels) return true;
-    
+
     return !cue.dmx_channels.some((ch, index) => ch.channel === channel && index !== currentIndex);
   }
-  
+
   /**
    * Handle the change of DMX channel number
    */
   onDmxChannelNumChange(cue: CueData, index: number, event: Event): void {
     const input = event.target as HTMLInputElement;
     const newChannel = parseInt(input.value);
-    
+
     if (cue.type !== 'dmx' || !cue.dmx_channels || !cue.dmx_channels[index]) return;
-    
+
     if (this.isDmxChannelNumValid(cue, newChannel, index)) {
       cue.dmx_channels[index].channel = newChannel;
       this.checkForChanges();
@@ -1330,13 +1339,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       });
     }
   }
-  
+
   onDmxChannelValueChange(cue: CueData, index: number, event: Event): void {
     const input = event.target as HTMLInputElement;
     const newValue = parseInt(input.value);
-    
+
     if (cue.type !== 'dmx' || !cue.dmx_channels || !cue.dmx_channels[index]) return;
-    
+
     cue.dmx_channels[index].value = newValue;
     this.checkForChanges();
   }
@@ -1347,19 +1356,19 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
   onUniverseNumChange(cue: CueData, value: any): void {
     console.log('Raw value received:', value, 'Type:', typeof value);
-    
+
     // Handle empty string or null/undefined values
     if (value === '' || value === null || value === undefined) {
       cue.universe_num = 0;
       this.checkForChanges();
       return;
     }
-    
+
     const newValue = parseInt(value.toString());
     console.log('Parsed newValue:', newValue, 'IsNaN:', isNaN(newValue));
-    
+
     if (cue.type !== 'dmx') return;
-    
+
     // Validate range: 0-999
     if (isNaN(newValue)) {
       cue.universe_num = 0;
@@ -1370,23 +1379,23 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     } else {
       cue.universe_num = newValue;
     }
-    
+
     console.log('Final cue.universe_num:', cue.universe_num);
     this.checkForChanges();
   }
 
   private getTemplateOutputStructure(cueType: 'audio' | 'video'): any | null {
     const template = this.projectsService.projectTemplate();
-    
+
     if (!template?.['CuemsScript']?.['CueList']?.['contents']) {
       return null;
     }
 
     const contents = template['CuemsScript']['CueList']['contents'];
-    
+
     for (const item of contents) {
       const itemKeys = Object.keys(item);
-      
+
       if (cueType === 'audio' && itemKeys.includes('AudioCue')) {
         const audioCue = item['AudioCue'];
         // Search in outputs if it exists
@@ -1419,7 +1428,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         break;
       }
     }
-    
+
     return null;
   }
 
