@@ -1119,6 +1119,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       options = this.videoMappingOptions;
     }
 
+    if (cue.type === 'dmx') {
+      options = this.dmxMappingOptions;
+    }
+
     return options;
   }
 
@@ -1131,6 +1135,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       selectedValues = [cue.selectedAudioOutput];
     } else if (cue.type === 'video' && cue.selectedVideoOutput) {
       selectedValues = [cue.selectedVideoOutput];
+    } else if (cue.type === 'dmx' && cue.selectedDmxOutput) {
+      selectedValues = [cue.selectedDmxOutput];
     }
 
     return selectedValues;
@@ -1153,6 +1159,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         selectedValues = [this.audioMappingOptions[0].value];
       } else if (cue.type === 'video' && this.videoMappingOptions.length > 0) {
         selectedValues = [this.videoMappingOptions[0].value];
+      } else if (cue.type === 'dmx' && this.dmxMappingOptions.length > 0) {
+        selectedValues = [this.dmxMappingOptions[0].value];
       }
     }
 
@@ -1162,6 +1170,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       cue.selectedAudioOutput = selectedValues && selectedValues.length > 0 ? selectedValues[0] : undefined;
     } else if (cue.type === 'video') {
       cue.selectedVideoOutput = selectedValues && selectedValues.length > 0 ? selectedValues[0] : undefined;
+    } else if (cue.type === 'dmx') {
+      cue.selectedDmxOutput = selectedValues && selectedValues.length > 0 ? selectedValues[0] : undefined;
     }
 
     this.checkForChanges();

@@ -73,7 +73,16 @@ export interface InitialMappingsResponse {
             };
           }>;
         }>;
-        dmx: any;
+        dmx: Array<{
+          outputs: Array<{
+            output: {
+              name: string;
+              mappings: Array<{
+                mapped_to: string;
+              }>;
+            };
+          }>;
+        }>;
       };
     }>;
     schemaLocation: string;
@@ -454,14 +463,23 @@ export class ProjectsService {
         }
 
         if (nodeData.node.dmx && Array.isArray(nodeData.node.dmx)) {
-          nodeData.node.dmx.forEach((dmxGroup: any) => {
+          console.log('DMX GROUPS FOUND:', nodeData.node.dmx);
+
+          nodeData.node.dmx.forEach((dmxGroup: any, i: number) => {
+            console.log('DMX GROUP', i, dmxGroup);
+
             if (dmxGroup.outputs && Array.isArray(dmxGroup.outputs)) {
+              console.log('DMX OUTPUTS FOUND:', dmxGroup.outputs);
+
               dmxGroup.outputs.forEach((outputData: any) => {
+                console.log('ADDING DMX OUTPUT:', outputData);
+
                 const mapping: InitialMapping = {
                   uuid: `${nodeUuid}_${outputData.output.name}`,
                   name: `node${nodeNumber}:${outputData.output.name}`,
                   type: 'dmx'
                 };
+
                 mappingOptions.push(mapping);
               });
             }
