@@ -31,7 +31,16 @@ export const routes: Routes = [
       { path: 'sequence', component: ProjectShowSequenceComponent },
       { path: 'audio-mixer', component: ProjectShowAudioMixerComponent },
       { path: 'video-mixer', component: ProjectShowVideoMixerComponent },
-      { path: 'dmx-mixer', component: ProjectShowDmxMixerComponent },
+      {
+        path: 'dmx-mixer',
+        component: ProjectShowDmxMixerComponent,
+        children: [
+          {
+            path: ':nodeId',
+            component: ProjectEditDmxMixerComponent,
+          }
+        ],
+      },
     ]
   },
   {
