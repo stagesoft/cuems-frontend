@@ -1,8 +1,20 @@
 <div class="p-4">
   <h2 class="text-xl font-bold mb-4">DMX Mixer</h2>
-  <div class="bg-dark-300 p-4 rounded-lg">
-    <div>
-      <iframe src="http://formitgo.local:9090" width="100%" height="750px" style="min-height: 700px; border: none;"></iframe>
+
+  <div *ngIf="nodeIds.length === 0">
+    No hay nodos DMX en este proyecto
+  </div>
+
+  <div *ngFor="let node of nodeIds" class="mb-10">
+    <h3 class="text-lg font-semibold mb-2">Nodo {{ node.nodeId }}</h3>
+
+    <div class="bg-dark-300 p-4 rounded-lg">
+      <iframe
+        [src]="node.url"
+        width="100%"
+        height="750"
+        style="min-height:700px;border:none;">
+      </iframe>
     </div>
   </div>
-</div> 
+</div>

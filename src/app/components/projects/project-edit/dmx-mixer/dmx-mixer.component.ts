@@ -1,10 +1,11 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, RouterModule } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 
-interface DmxNode {
+interface Node {
+  uuid: string;
   nodeId: string;
   url: SafeResourceUrl;
 }
@@ -12,7 +13,7 @@ interface DmxNode {
 @Component({
   selector: 'app-dmx-mixer',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './dmx-mixer.component.html'
 })
 export class ProjectEditDmxMixerComponent implements OnInit {
@@ -22,8 +23,9 @@ export class ProjectEditDmxMixerComponent implements OnInit {
   private uuid: string = '';
 
   projectUuid: string | null = null;
-  dmxNodes: DmxNode[] = [];
   dmxMixerUrl: SafeResourceUrl | null = null;
+
+  nodeIds: Node[] = [];
 
   ngOnInit() {
     this.route.parent?.params.subscribe(params => {
@@ -37,33 +39,30 @@ export class ProjectEditDmxMixerComponent implements OnInit {
 
   //cargar los mappings iniciales
   private loadDmxMapping(projectUuid: string): void {
-    this.http.get<any>(`/api/projects/${projectUuid}/mappings/initial_mappings`).subscribe({
-      next: (response) => {
-        const mappingValue = response?.value?.default_dmx_output ?? null;
-        const nodeId = this.extractNodeId(mappingValue);
+        this.http
+      .get<any>(`/api/projects/${projectUuid}/mappings/initial_mappings`)
+      .subscribe({
+        next: (response) => {
+          const nodes = response?.value?.nodes ?? [];
 
-        if (nodeId) {
-          const url = `http://${nodeId}.local:9090`;
-          this.dmxMixerUrl = this.sanitizer.bypassSecurityTrustResourceUrl(url);
-
-          } else {
-            console.warn('No DMX node found in mappings');
-          }
+          this.nodeIds = nodes
+            .map((n: any) => {
+              const uuid: string = n?.node?.uuid;
+              const lastPart = uuid.split('-').pop() ?? '';
+              if (/^\d{12}$/.test(lastPart)) {
+                const url = `http://${lastPart}.local:9090`;
+                return {
+                  uuid,
+                  nodeId: lastPart,
+                  url: this.sanitizer.bypassSecurityTrustResourceUrl(url)
+                };
+              }
+              return null;
+            })
+            .filter((n: Node | null): n is Node => !!n);
         },
-      error: (err) => {
-        console.error('Error loading initial mappings', err);
-      }
-    });
-  }
-
-  // Extrae los últimos 12 dígitos del UUID del nodo
-  private extractNodeId(mappingValue: string | null): string | null {
-    if (!mappingValue) return null;
-
-    const parts = mappingValue.split('-');
-    const lastPart = parts[parts.length - 1];
-
-    return /^\d{12}$/.test(lastPart) ? lastPart : null;
+        error: (err) => console.error('Error loading DMX mappings', err)
+      });
   }
 
 }
