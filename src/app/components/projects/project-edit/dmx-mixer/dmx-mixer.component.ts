@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule, Router, NavigationEnd } from '@angular/router';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { ProjectsService } from '../../../../services/projects';
+import { TranslateModule } from '@ngx-translate/core';
 import { Subject, filter } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 
@@ -15,7 +16,7 @@ interface Node {
 @Component({
   selector: 'app-dmx-mixer',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule, RouterModule, TranslateModule],
   templateUrl: './dmx-mixer.component.html'
 })
 export class ProjectEditDmxMixerComponent implements OnInit, OnDestroy {
@@ -253,7 +254,3 @@ export class ProjectEditDmxMixerComponent implements OnInit, OnDestroy {
       });
   }
 }
-
-
-
-
