@@ -379,6 +379,19 @@
 
                         <!-- DMX Cues - Configuración de canales -->
                         <div *ngIf="cue.type === 'dmx'" class="space-y-4">
+                          <div class="fadein-time-field">
+                            <label class="label" for="fadein-time-{{i}}">Fade In Time (s)</label>
+                            <input
+                              id="fadein-time-{{i}}"
+                              type="number"
+                              class="fadein-time-input"
+                              [(ngModel)]="cue.fadein_time"
+                              (ngModelChange)="checkForChanges()"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              >
+                          </div>
                           <div class="field">
                             <label class="label">{{ 'dmx.universe' | translate }}</label>
                             <input

@@ -17,7 +17,7 @@ import { Subscription } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { filter } from 'rxjs/operators';
 
-interface CueData {
+  interface CueData {
   id: string | number;
   order: number;
   name: string;
@@ -41,6 +41,7 @@ interface CueData {
   universe_num?: number;
   master_vol?: number;
   originalData?: any;
+    fadein_time?: string;
 }
 
 @Component({
@@ -258,9 +259,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       }
 
       // Extract media file information if it exists
-      let selectedMediaFile: {uuid: string, file: any} | undefined;
-      if (cueData.Media && cueData.Media.file_name) {
-        // Search the file in the current list of files
+      let selectedMediaFile: {uuid: string, file: any} | undefined = undefined;
+      if (cueData.Media && typeof cueData.Media === 'object' && 'file_name' in cueData.Media && cueData.Media.file_name) {
         const fileList = this.mediaService.fileList();
         for (const fileObj of fileList) {
           const fileKeys = Object.keys(fileObj);
@@ -381,9 +381,19 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         }
       }
 
+
       let universe_num = 0;
-      if (cueType === 'dmx' && cueData.DmxScene?.DmxUniverse?.universe_num) {
-        universe_num = cueData.DmxScene.DmxUniverse.universe_num;
+      let fadein_time = '0.0';
+      if (cueType === 'dmx') {
+        if (cueData.DmxScene?.DmxUniverse?.universe_num) {
+          universe_num = cueData.DmxScene.DmxUniverse.universe_num;
+        }
+        // Map fadein_time from initial_template if present
+        if (typeof cueData.fadein_time === 'number' || typeof cueData.fadein_time === 'string') {
+          fadein_time = String(cueData.fadein_time);
+        } else if (typeof cueData.DmxScene?.fadein_time === 'number' || typeof cueData.DmxScene?.fadein_time === 'string') {
+          fadein_time = String(cueData.DmxScene.fadein_time);
+        }
       }
 
       let dmx_channels: Array<{channel: number, value: number}> = [];
@@ -418,6 +428,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         selectedOutputs,
         dmx_channels,
         universe_num,
+        fadein_time,
         master_vol: cueData.master_vol || 20,
         originalData: cueItem // Keep original data
       };
@@ -637,6 +648,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         channel: 0,
         value: 0
       }];
+      let fadein_time = '0.0';
 
       if (template?.['CuemsScript']?.['CueList']?.['contents']) {
         const contents = template['CuemsScript']['CueList']['contents'];
@@ -651,9 +663,15 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             };
           });
         }
+        if (typeof dmxTemplate?.DmxCue?.fadein_time === 'number' || typeof dmxTemplate?.DmxCue?.fadein_time === 'string') {
+          fadein_time = String(dmxTemplate.DmxCue.fadein_time);
+        } else if (typeof dmxTemplate?.DmxCue?.DmxScene?.fadein_time === 'number' || typeof dmxTemplate?.DmxCue?.DmxScene?.fadein_time === 'string') {
+          fadein_time = String(dmxTemplate.DmxCue.DmxScene.fadein_time);
+        }
       }
 
       newCue.dmx_channels = initialChannels;
+      newCue.fadein_time = String(fadein_time);
     }
 
     if (type !== 'audio' && type !== 'video' && type !== 'dmx') {
@@ -906,6 +924,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         }));
 
         newCue.DmxScene.DmxUniverse.universe_num = cue.universe_num ?? 0;
+        // Guardar fadein_time en el objeto DmxCue
+        if (typeof cue.fadein_time === 'string' || typeof cue.fadein_time === 'number') {
+          newCue.fadein_time = String(cue.fadein_time);
+        }
       } else {
         if (newCue.DmxScene && newCue.DmxScene.DmxUniverse) {
           newCue.DmxScene.DmxUniverse.dmx_channels = [];
