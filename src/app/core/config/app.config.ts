@@ -1,3 +1,3 @@
 export const AppConfig = {
-    websocketBaseUrl: 'wss://dev.stagelab.coop'
+    websocketBaseUrl: 'ws://10.16.10.2'
 } as const;
