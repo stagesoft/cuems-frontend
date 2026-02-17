@@ -390,6 +390,17 @@
                               max="999">
                           </div>
                           <div class="field">
+                            <label class="label">{{ 'dmx.fade.time' | translate }}</label>
+                            <input 
+                              type="number" 
+                              class="input"
+                              [ngModel]="cue.fade_in_time"
+                              (ngModelChange)="onDmxFadeTimeChange(cue, $event)"
+                              min="0"
+                              step="0.1"
+                              placeholder="0">
+                          </div>
+                          <div class="field">
                             <label class="label">{{ 'dmx.channels' | translate }}</label>
                             
                             <!-- Lista de canales DMX -->
@@ -406,9 +417,9 @@
                                     [value]="channel.channel"
                                     (input)="onDmxChannelNumChange(cue, channelIndex, $event)"
                                     [class.border-red-500]="!isDmxChannelNumValid(cue, channel.channel, channelIndex)"
-                                    min="0"
-                                    max="1000"
-                                    placeholder="0">
+                                    min="1"
+                                    max="512"
+                                    placeholder="1">
                                   <div *ngIf="!isDmxChannelNumValid(cue, channel.channel, channelIndex)" 
                                        class="text-xs text-red-400 mt-1">
                                     {{ 'dmx.channel.duplicate.error' | translate }}

@@ -38,6 +38,7 @@ interface CueData {
   selectedOutputs?: string[];
   dmx_channels?: Array<{channel: number, value: number}>;
   universe_num?: number;
+  fade_in_time?: number;
   master_vol?: number;
   originalData?: any;
 }
@@ -389,8 +390,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       if (cueType === 'dmx' && cueData.DmxScene?.DmxUniverse?.dmx_channels) {
         dmx_channels = cueData.DmxScene.DmxUniverse.dmx_channels.map((channelWrapper: any) => {
           const channelData = channelWrapper.DmxChannel || channelWrapper;
+          const rawChannel = channelData.channel ?? 0;
           return {
-            channel: channelData.channel || 0,
+            channel: rawChannel + 1,
             value: channelData.value || 0
           };
         });
@@ -417,6 +419,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         selectedOutputs,
         dmx_channels,
         universe_num,
+        fade_in_time: cueType === 'dmx' ? (() => { const ms = cueData.fadein_time ?? cueData.fade_in_time; return ms != null ? Number(ms) / 1000 : 0; })() : undefined,
         master_vol: cueData.master_vol || 20,
         originalData: cueItem // Keep original data
       };
@@ -633,7 +636,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     if (type === 'dmx') {
       const template = this.projectsService.projectTemplate();
       let initialChannels = [{
-        channel: 0,
+        channel: 1,
         value: 0
       }];
       
@@ -644,8 +647,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         if (dmxTemplate?.DmxCue?.DmxScene?.DmxUniverse?.dmx_channels) {
           initialChannels = dmxTemplate.DmxCue.DmxScene.DmxUniverse.dmx_channels.map((channelWrapper: any) => {
             const channelData = channelWrapper.DmxChannel || channelWrapper;
+            const rawChannel = Number(channelData.channel ?? 0);
             return {
-              channel: Number(channelData.channel || 0),
+              channel: rawChannel + 1,
               value: Number(channelData.value || 0)
             };
           });
@@ -653,6 +657,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       }
       
       newCue.dmx_channels = initialChannels;
+      newCue.fade_in_time = 0;
     }
     
     if (type !== 'audio' && type !== 'video' && type !== 'dmx') {
@@ -896,10 +901,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           };
         }
         
-        // Assign the DMX channels wrapped in DmxChannel
+        // Assign the DMX channels: UI is 1-based (1–512), project/engine/dmxplayer use 0-based buffer index (OLA channel 1 = index 0)
         newCue.DmxScene.DmxUniverse.dmx_channels = cue.dmx_channels.map(ch => ({
           DmxChannel: {
-            channel: Number(ch.channel),
+            channel: Math.max(0, Number(ch.channel) - 1),
             value: Number(ch.value)
           }
         }));
@@ -911,6 +916,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           newCue.DmxScene.DmxUniverse.universe_num = cue.universe_num ?? 0;
         }
       }
+      newCue.fadein_time = Math.round((cue.fade_in_time ?? 0) * 1000);
     }
 
     const result = { [cueTypeKey]: newCue };
@@ -1280,8 +1286,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       cue.dmx_channels = [];
     }
     
-    // Find the next available number
-    let nextChannel = 0;
+    // Find the next available channel number (DMX channels start at 1)
+    let nextChannel = 1;
     const existingChannels = cue.dmx_channels.map(ch => ch.channel);
     while (existingChannels.includes(nextChannel)) {
       nextChannel++;
@@ -1316,15 +1322,17 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
    */
   onDmxChannelNumChange(cue: CueData, index: number, event: Event): void {
     const input = event.target as HTMLInputElement;
-    const newChannel = parseInt(input.value);
+    let newChannel = parseInt(input.value, 10);
+    if (isNaN(newChannel) || newChannel < 1) newChannel = 1;
+    if (newChannel > 512) newChannel = 512;
     
     if (cue.type !== 'dmx' || !cue.dmx_channels || !cue.dmx_channels[index]) return;
     
     if (this.isDmxChannelNumValid(cue, newChannel, index)) {
       cue.dmx_channels[index].channel = newChannel;
+      input.value = String(newChannel);
       this.checkForChanges();
     } else {
-      // If the number is duplicated, revert to the previous value
       setTimeout(() => {
         input.value = cue.dmx_channels![index].channel.toString();
       });
@@ -1372,6 +1380,18 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
     
     console.log('Final cue.universe_num:', cue.universe_num);
+    this.checkForChanges();
+  }
+
+  onDmxFadeTimeChange(cue: CueData, value: any): void {
+    if (cue.type !== 'dmx') return;
+    if (value === '' || value === null || value === undefined) {
+      cue.fade_in_time = 0;
+      this.checkForChanges();
+      return;
+    }
+    const num = parseFloat(value.toString());
+    cue.fade_in_time = isNaN(num) || num < 0 ? 0 : num;
     this.checkForChanges();
   }
 

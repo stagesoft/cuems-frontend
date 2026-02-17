@@ -147,6 +147,7 @@
     "dmx.channel.value": "Valor",
     "dmx.channel.add": "Añadir canal",
     "dmx.channel.duplicate.error": "Este número de canal ya está en uso",
+    "dmx.fade.time": "Tiempo de fade (s)",
     "cue.notes": "Notas",
     "cue.edit": "Editar",
     "cue.media": "Media",
