@@ -5,6 +5,9 @@ import { AppConfig } from '../core/config/app.config';
 import { Subject } from 'rxjs';
 import OSC from 'osc-js';
 
+/** Fixed frame rate for SMPTE display (25 fps = 40 ms per frame). */
+const SMPTE_FRAMES_PER_SECOND = 25;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -23,6 +26,18 @@ export class OscService {
   public currentCues = signal<string[]>([]);
 
   public nextCue = signal<string | null>(null);
+
+  /** Engine armed: Go button enabled when true. */
+  public armed = signal(false);
+
+  /** Timecode in milliseconds (from /engine/status/timecode). */
+  public timecodeMs = signal<number | null>(null);
+
+  /** Loaded project name (from /engine/status/load). */
+  public loadedProject = signal<string>('');
+
+  /** Engine running: playing when true (from /engine/status/running). */
+  public running = signal(false);
 
   constructor() {
     console.log('OscService initialized');
@@ -133,8 +148,44 @@ export class OscService {
         // Update next cue
         this.nextCue.set(msg.args[0]);
         break;
-      // /engine/status/running
+
+      case '/engine/status/armed':
+        this.armed.set(msg.args[0] === 'yes');
+        break;
+
+      case '/engine/status/timecode':
+        this.timecodeMs.set(Number(msg.args[0]));
+        break;
+
+      case '/engine/status/load':
+        this.loadedProject.set(String(msg.args[0] ?? ''));
+        break;
+
+      case '/engine/status/running':
+        this.running.set(msg.args[0] === 'yes');
+        break;
     }
+  }
+
+  /**
+   * Convert timecode in milliseconds to SMPTE string HH:MM:SS:FF at 25 fps.
+   * Negative ms is treated as 0; max display 99:59:59:24.
+   */
+  public timecodeToSMPTE(ms: number): string {
+    if (ms < 0) ms = 0;
+    const totalSeconds = ms / 1000;
+    const maxSeconds = 99 * 3600 + 59 * 60 + 59 + 24 / SMPTE_FRAMES_PER_SECOND;
+    const clamped = Math.min(totalSeconds, maxSeconds);
+    const hours = Math.floor(clamped / 3600);
+    const minutes = Math.floor((clamped % 3600) / 60);
+    const seconds = Math.floor(clamped % 60);
+    const frames = Math.floor((clamped % 1) * SMPTE_FRAMES_PER_SECOND);
+    return [
+      String(hours).padStart(2, '0'),
+      String(minutes).padStart(2, '0'),
+      String(seconds).padStart(2, '0'),
+      String(frames).padStart(2, '0')
+    ].join(':');
   }
 
   public go(): void {

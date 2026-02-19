@@ -1,0 +1,35 @@
+<div class="flex flex-wrap items-center gap-3">
+  <div class="flex items-center gap-2">
+    <button
+      type="button"
+      class="btn btn-small"
+      [class.btn-secondary]="oscService.armed()"
+      [class.btn-muted]="!oscService.armed()"
+      [disabled]="!oscService.armed()"
+      (click)="oscService.go()">
+      {{ 'playControls.go' | translate }}
+    </button>
+    <button
+      type="button"
+      class="btn btn-small btn-muted"
+      (click)="oscService.stop()">
+      {{ 'playControls.stop' | translate }}
+    </button>
+  </div>
+  <div class="flex items-center gap-2 text-sm text-gray-500">
+    <span class="font-medium">{{ 'playControls.project' | translate }}:</span>
+    <span class="text-gray-700 min-w-0 truncate max-w-[160px]" [title]="oscService.loadedProject() || ''">
+      {{ oscService.loadedProject() || '—' }}
+    </span>
+  </div>
+  <div class="flex items-center gap-2 text-sm text-gray-500">
+    <span class="font-medium">{{ 'playControls.timecode' | translate }}:</span>
+    <span class="font-mono text-gray-700 tabular-nums">{{ timecodeDisplay }}</span>
+  </div>
+  <div class="flex items-center gap-2 text-sm">
+    <span class="font-medium text-gray-500">{{ 'playControls.status' | translate }}:</span>
+    <span [class.text-secondary]="oscService.running()" [class.text-gray-600]="!oscService.running()">
+      {{ (oscService.running() ? 'playControls.playing' : 'playControls.stopped') | translate }}
+    </span>
+  </div>
+</div>

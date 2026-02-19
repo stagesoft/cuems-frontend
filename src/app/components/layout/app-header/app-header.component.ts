@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { RouterModule, RouterLink, RouterLinkActive } from '@angular/router';
 import { IconComponent } from '../../ui/icon/icon.component';
+import { PlayControlsComponent } from '../play-controls/play-controls.component';
 
 @Component({
   selector: 'app-header',
@@ -13,7 +14,8 @@ import { IconComponent } from '../../ui/icon/icon.component';
     RouterModule,
     RouterLink,
     RouterLinkActive,
-    IconComponent
+    IconComponent,
+    PlayControlsComponent
   ],
   templateUrl: './app-header.component.html',
   styleUrl: './app-header.component.css',
