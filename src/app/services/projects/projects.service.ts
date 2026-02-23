@@ -453,18 +453,17 @@ export class ProjectsService {
     
     if (mappingsData.nodes && Array.isArray(mappingsData.nodes)) {
       mappingsData.nodes.forEach((nodeData: any, index: number) => {
-        console.log('---NODE DATA---', nodeData);
         const nodeUuid = nodeData.node.uuid;
-        const nodeNumber = index + 1; // Start from node1
+        const nodeNumber = index + 1;
 
         if (nodeData.node.audio && Array.isArray(nodeData.node.audio)) {
-          nodeData.node.audio.forEach((audioGroup: any, audioIndex: number) => {
+          nodeData.node.audio.forEach((audioGroup: any) => {
             if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
-
               audioGroup.outputs.forEach((outputData: any) => {
+                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
                 const mapping: InitialMapping = {
                   uuid: `${nodeUuid}_${outputData.output.name}`,
-                  name: `node${nodeNumber}:${outputData.output.name}`,
+                  name: displayName,
                   type: 'audio'
                 };
                 mappingOptions.push(mapping);
@@ -474,12 +473,13 @@ export class ProjectsService {
         }
         
         if (nodeData.node.video && Array.isArray(nodeData.node.video)) {
-          nodeData.node.video.forEach((videoGroup: any, videoIndex: number) => {
+          nodeData.node.video.forEach((videoGroup: any) => {
             if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
               videoGroup.outputs.forEach((outputData: any) => {
+                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
                 const mapping: InitialMapping = {
                   uuid: `${nodeUuid}_${outputData.output.name}`,
-                  name: `node${nodeNumber}:${outputData.output.name}`,
+                  name: displayName,
                   type: 'video'
                 };
                 mappingOptions.push(mapping);
@@ -491,6 +491,14 @@ export class ProjectsService {
     }
     
     this.mappingOptions.set(mappingOptions);
+  }
+
+  private getOutputDisplayName(outputData: any, nodeNumber: number): string {
+    const mappings = outputData.output?.mappings;
+    if (mappings && Array.isArray(mappings) && mappings.length > 0 && mappings[0].mapped_to) {
+      return mappings[0].mapped_to;
+    }
+    return `node${nodeNumber}:${outputData.output.name}`;
   }
 
   /**
