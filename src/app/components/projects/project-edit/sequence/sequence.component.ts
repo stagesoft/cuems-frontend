@@ -133,6 +133,12 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     this.mediaService.getFileList();
 
+    this.subscription.add(
+      this.mediaService.fileListLoaded.subscribe(() => {
+        this.rematchMediaFiles();
+      })
+    );
+
     this.loadInitialMappings();
 
     this.subscription.add(
@@ -198,6 +204,37 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
 
     this.loadInitialMappings();
+  }
+
+  private rematchMediaFiles(): void {
+    const fileList = this.mediaService.fileList();
+    if (!fileList || fileList.length === 0) return;
+
+    let changed = false;
+    for (const cue of this.cues) {
+      if (cue.selectedMediaFile) continue;
+
+      const cueTypeKey = this.getCueTypeKey(cue.originalData);
+      const cueData = cueTypeKey ? cue.originalData[cueTypeKey] : null;
+      if (!cueData?.Media?.file_name) continue;
+
+      for (const fileObj of fileList) {
+        const fileKeys = Object.keys(fileObj);
+        if (fileKeys.length > 0) {
+          const uuid = fileKeys[0];
+          const file = fileObj[uuid];
+          if (file && file.unix_name === cueData.Media.file_name) {
+            cue.selectedMediaFile = { uuid, file };
+            changed = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (changed) {
+      this.originalCues = JSON.parse(JSON.stringify(this.cues));
+    }
   }
 
   /**
