@@ -48,6 +48,7 @@ export interface InitialMappingsResponse {
         audio: Array<{
           outputs: Array<{
             output: {
+              id?: number;
               name: string;
               mappings: Array<{
                 mapped_to: string;
@@ -56,6 +57,7 @@ export interface InitialMappingsResponse {
           }>;
           inputs: Array<{
             input: {
+              id?: number;
               name: string;
               mappings: Array<{
                 mapped_to: string;
@@ -66,6 +68,7 @@ export interface InitialMappingsResponse {
         video: Array<{
           outputs: Array<{
             output: {
+              id?: number;
               name: string;
               mappings: Array<{
                 mapped_to: string;
@@ -83,6 +86,7 @@ export interface InitialMappingsResponse {
         audio: Array<{
           outputs: Array<{
             output: {
+              id?: number;
               name: string;
               mappings: Array<{
                 mapped_to: string;
@@ -91,6 +95,7 @@ export interface InitialMappingsResponse {
           }>;
           inputs: Array<{
             input: {
+              id?: number;
               name: string;
               mappings: Array<{
                 mapped_to: string;
@@ -101,6 +106,7 @@ export interface InitialMappingsResponse {
         video: Array<{
           outputs: Array<{
             output: {
+              id?: number;
               name: string;
               mappings: Array<{
                 mapped_to: string;
@@ -461,8 +467,9 @@ export class ProjectsService {
             if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
               audioGroup.outputs.forEach((outputData: any) => {
                 const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const outputRef = outputData.output.id ?? outputData.output.name;
                 const mapping: InitialMapping = {
-                  uuid: `${nodeUuid}_${outputData.output.name}`,
+                  uuid: `${nodeUuid}_${outputRef}`,
                   name: displayName,
                   type: 'audio'
                 };
@@ -477,8 +484,9 @@ export class ProjectsService {
             if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
               videoGroup.outputs.forEach((outputData: any) => {
                 const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const outputRef = outputData.output.id ?? outputData.output.name;
                 const mapping: InitialMapping = {
-                  uuid: `${nodeUuid}_${outputData.output.name}`,
+                  uuid: `${nodeUuid}_${outputRef}`,
                   name: displayName,
                   type: 'video'
                 };
@@ -494,11 +502,7 @@ export class ProjectsService {
   }
 
   private getOutputDisplayName(outputData: any, nodeNumber: number): string {
-    const mappings = outputData.output?.mappings;
-    if (mappings && Array.isArray(mappings) && mappings.length > 0 && mappings[0].mapped_to) {
-      return mappings[0].mapped_to;
-    }
-    return `node${nodeNumber}:${outputData.output.name}`;
+    return outputData.output?.name || `node${nodeNumber}:unknown`;
   }
 
   /**

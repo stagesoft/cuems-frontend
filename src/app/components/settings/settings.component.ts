@@ -89,9 +89,6 @@ export class SettingsComponent implements OnInit {
   }
 
   getMappedName(output: any): string {
-    if (output.output && output.output.mappings && output.output.mappings.length > 0) {
-      return output.output.mappings[0].mapped_to;
-    }
     return output.output?.name || 'Sin nombre';
   }
 
