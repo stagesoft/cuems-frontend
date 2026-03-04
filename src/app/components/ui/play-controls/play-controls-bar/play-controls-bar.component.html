@@ -1,8 +1,8 @@
-<div class="flex flex-wrap items-center gap-3">
+<div class="flex flex-wrap items-center gap-6 font-mono">
     <div class="flex items-center gap-2">
       <button
         type="button"
-        class="btn btn-small"
+        class="btn btn-small w-10 h-10"
         [class.btn-secondary]="oscService.armed()"
         [class.btn-muted]="!oscService.armed()"
         [disabled]="!oscService.armed()"
@@ -11,25 +11,25 @@
       </button>
       <button
         type="button"
-        class="btn btn-small btn-muted"
-        (click)="oscService.stop()">
-        {{ 'playControls.stop' | translate }}
+        class="btn btn-small btn-muted w-10 h-10"
+        (click)="oscService.stop()"
+        [disabled]="!oscService.armed()">
+          <app-icon icon="stop"></app-icon>
+      </button>
+      <button
+        type="button"
+        class="btn btn-small btn-muted w-10 h-10"
+        (click)="oscService.pause()"
+        [disabled]="!oscService.armed()">
+          <app-icon icon="pause"></app-icon>
       </button>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-500">
-      <span class="font-medium">{{ 'playControls.project' | translate }}:</span>
-      <span class="text-gray-700 min-w-0 truncate max-w-[160px]" [title]="oscService.loadedProject() || ''">
-        {{ oscService.loadedProject() || '—' }}
-      </span>
+    <div class="overflow-hidden max-w-[320px] opacity-0" [class.opacity-100]="oscService.running()">
+      <div class="flex w-max whitespace-nowrap text-xs text-gray-500 animate-marquee">
+        <!-- original -->
+        <app-play-controls-bar-info />
+        <!-- duplicated loop without jump -->
+        <app-play-controls-bar-info aria-hidden="true" />
+      </div>
     </div>
-    <div class="flex items-center gap-2 text-sm text-gray-500">
-      <span class="font-medium">{{ 'playControls.timecode' | translate }}:</span>
-      <span class="font-mono text-gray-700 tabular-nums">{{ timecodeDisplay }}</span>
-    </div>
-    <div class="flex items-center gap-2 text-sm">
-      <span class="font-medium text-gray-500">{{ 'playControls.status' | translate }}:</span>
-      <span [class.text-secondary]="oscService.running()" [class.text-gray-600]="!oscService.running()">
-        {{ (oscService.running() ? 'playControls.playing' : 'playControls.stopped') | translate }}
-      </span>
-    </div>
-</div>
+  </div>
