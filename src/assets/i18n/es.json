@@ -11,6 +11,7 @@
     "settings": "Ajustes",
     "playControls.go": "Go",
     "playControls.stop": "Stop",
+    "playControls.pause": "Pause",
     "playControls.playing": "Reproduciendo",
     "playControls.stopped": "Parado",
     "playControls.project": "Proyecto",

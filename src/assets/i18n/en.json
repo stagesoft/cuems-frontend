@@ -11,6 +11,7 @@
     "settings": "Settings",
     "playControls.go": "Go",
     "playControls.stop": "Stop",
+    "playControls.pause": "Pause",
     "playControls.playing": "Playing",
     "playControls.stopped": "Stopped",
     "playControls.project": "Project",
