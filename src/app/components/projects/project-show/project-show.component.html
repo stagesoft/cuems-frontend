@@ -88,27 +88,8 @@
   </div>
 </div>
 
-
-
-<div *ngIf="isShowActiveSequence" class="fixed left-0 bottom-0 right-0 w-full bg-dark-300 px-4 py-6 flex items-center justify-center gap-4">
-  <div>
-    <button (click)="pause()" class="btn btn-small btn-muted">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
-      </svg>      
-    </button>
+@if (isShowActiveSequence) {
+  <div class="fixed bottom-6 right-6 z-50 w-[360px]">
+    <app-play-controls-panel />
   </div>
-  <div>
-    <button (click)="stop()" class="btn btn-small btn-muted">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
-      </svg>
-      
-    </button>
-  </div>
-  <div>
-    <button (click)="go()" class="btn btn-small btn-secondary">
-      GO
-    </button>
-  </div>
-</div>
+}
