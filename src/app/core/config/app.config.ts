@@ -1,3 +1,3 @@
-export const AppConfig = {
-    websocketBaseUrl: 'ws://10.16.10.2'
-} as const;
+import config from './app-config.json';
+
+export const AppConfig = config;
