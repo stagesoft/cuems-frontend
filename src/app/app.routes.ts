@@ -34,12 +34,6 @@ export const routes: Routes = [
       {
         path: 'dmx-mixer',
         component: ProjectShowDmxMixerComponent,
-        children: [
-          {
-            path: ':nodeId',
-            component: ProjectEditDmxMixerComponent,
-          }
-        ],
       },
     ]
   },

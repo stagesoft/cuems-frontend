@@ -47,7 +47,8 @@
 
   <!-- Vista de nodo individual -->
   <div *ngIf="isViewingNode" class="flex flex-col h-full">
-    <!-- Header con botón de volver -->
+
+    <!-- Header -->
     <div class="mb-4 flex items-center justify-between bg-dark-300 p-4 rounded-lg border border-dark-500">
       <div>
         <h2 class="text-xl font-bold text-white">{{'dmxmixer.ola.node' | translate}} - {{ selectedNodeId }}</h2>
@@ -61,18 +62,21 @@
       </button>
     </div>
 
-    <!-- Contenedor del iframe -->
-    <div class="flex-wrap bg-dark-300 rounded-lg border border-dark-500 overflow-hidden flex flex-col">
-      <div *ngIf="!selectedNodeUrl" class="flex-wrap flex items-center justify-center">
-        <p class="text-gray-400">{{'dmxmixer.ola.loading' | translate}}</p>
+    <!-- Contenedor de iframes -->
+    <div class="flex-wrap bg-dark-300 rounded-lg border border-dark-500 overflow-hidden flex flex-col h-full">
+
+      <div *ngFor="let node of nodeIds"
+           [hidden]="selectedNodeId !== node.nodeId"
+           class="w-full h-full flex flex-col">
+
+        <iframe
+          [src]="node.url"
+          class="w-full h-full border-none"
+          title="DMX Node Control Panel">
+        </iframe>
+
       </div>
-        
-      <iframe
-        *ngIf="selectedNodeUrl"
-        [src]="selectedNodeUrl"
-        class="w-full h-full flex-wrap border-none"
-        title="DMX Node Control Panel">
-      </iframe>
+
     </div>
   </div>
 </div>
