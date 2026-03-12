@@ -7,7 +7,7 @@ import { IconComponent } from '../../icon/icon.component';
   selector: 'app-play-controls-bar-info',
   imports: [TranslateModule],
   template: `
-    <span class="flex gap-2 shrink-0 ml-4">
+    <span class="flex gap-2 shrink-0 px-4">
       <span>
         <span class="font-medium">{{ 'playControls.project' | translate }}:</span>
         <span class="text-primary ml-1">{{ oscService.loadedProject() || '—' }}</span>
