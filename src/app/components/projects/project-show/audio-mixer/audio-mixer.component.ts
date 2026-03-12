@@ -98,7 +98,7 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
               audioSection.outputs.forEach((outputWrapper: any, outputIndex: number) => {
                 outputs.push({
                   parentId: node.uuid,
-                  id: `${node.uuid}_${outputWrapper.output.name}`,
+                  id: `${node.uuid}_${outputWrapper.output.id ?? outputWrapper.output.name}`,
                   name: outputWrapper.output.name,
                   volume: 100,
                   index: outputIndex
