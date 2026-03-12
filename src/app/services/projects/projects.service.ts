@@ -576,7 +576,8 @@ export class ProjectsService {
     if (node.node.audio && Array.isArray(node.node.audio)) {
       for (const audioGroup of node.node.audio) {
         if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
-          const output = audioGroup.outputs.find((outputData: any) => outputData.output.name === name);
+          const output = audioGroup.outputs.find((outputData: any) =>
+            outputData.output.name === name || String(outputData.output.id) === name);
           if (output) {
             return { type: 'audio', output, node: node.node };
           }
@@ -587,7 +588,8 @@ export class ProjectsService {
     if (node.node.video && Array.isArray(node.node.video)) {
       for (const videoGroup of node.node.video) {
         if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
-          const output = videoGroup.outputs.find((outputData: any) => outputData.output.name === name);
+          const output = videoGroup.outputs.find((outputData: any) =>
+            outputData.output.name === name || String(outputData.output.id) === name);
           if (output) {
             return { type: 'video', output, node: node.node };
           }
