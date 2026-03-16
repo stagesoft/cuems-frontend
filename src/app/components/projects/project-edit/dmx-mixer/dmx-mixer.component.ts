@@ -135,7 +135,7 @@ export class ProjectEditDmxMixerComponent implements OnInit, OnDestroy {
 
     const lastPart = uuid.split('-').pop() ?? '';
 
-    if (/^\d{12}$/.test(lastPart)) {
+    if (/^[0-9a-fA-F]{12}$/.test(lastPart)) {
       const url = `http://${lastPart}.local:9090`;
       return {
         uuid,

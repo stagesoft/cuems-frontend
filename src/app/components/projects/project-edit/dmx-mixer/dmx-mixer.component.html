@@ -62,6 +62,19 @@
       </button>
     </div>
 
+    <div class="flex gap-2 mb-3 overflow-x-auto">
+      <button
+        *ngFor="let node of nodeIds"
+        (click)="selectedNodeId = node.nodeId"
+        class="px-4 py-2 rounded-t-lg border border-dark-500 whitespace-nowrap transition-colors"
+        [ngClass]="{
+          'bg-dark-500 text-white border-blue-500': selectedNodeId === node.nodeId,
+          'bg-dark-300 text-gray-300 hover:bg-dark-400': selectedNodeId !== node.nodeId
+        }">
+        {{ node.nodeId }}
+      </button>
+    </div>
+
     <!-- Contenedor de iframes -->
     <div class="flex-wrap bg-dark-300 rounded-lg border border-dark-500 overflow-hidden flex flex-col h-full">
 
