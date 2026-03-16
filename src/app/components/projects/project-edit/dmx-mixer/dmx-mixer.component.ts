@@ -121,6 +121,10 @@ export class ProjectEditDmxMixerComponent implements OnInit, OnDestroy {
 
     this.nodeIds = Array.from(nodeMap.values());
 
+    if (this.nodeIds.length > 0 && !this.selectedNodeId) {
+      this.selectedNodeId = this.nodeIds[0].nodeId;
+    }
+
     this.cdr.markForCheck();
 
     if (this.selectedNodeId) {
