@@ -17,15 +17,6 @@
     </div>
   </div>
 
-  <!-- Estado vacío -->
-  <div *ngIf="nodeIds.length === 0" class="flex-1 flex items-center justify-center">
-    <div class="text-center">
-      <div class="text-4xl mb-3 text-gray-500">○</div>
-      <p class="text-gray-400 text-lg">{{'dmxmixer.ola.noNodes' | translate}}</p>
-      <p class="text-gray-500 text-sm mt-2">{{'dmxmixer.ola.noNodes2' | translate}}</p>
-    </div>
-  </div>
-
   <!-- Barra de pestañas -->
   <div *ngIf="nodeIds.length > 0" class="flex flex-col flex-1 min-h-0">
 
