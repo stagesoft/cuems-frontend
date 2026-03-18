@@ -27,14 +27,14 @@
         class="px-4 py-2 rounded-t-lg border border-b-0 border-dark-500 whitespace-nowrap transition-colors"
         [ngClass]="{
           'bg-dark-500 text-white border-blue-500': selectedNodeId === node.nodeId,
-          'bg-dark-300 text-gray-300 hover:bg-dark-400': selectedNodeId !== node.nodeId
+          'bg-dark-300 text-gray-140 hover:bg-dark-400': selectedNodeId !== node.nodeId
         }">
         {{ node.nodeId }}
       </button>
     </div>
 
     <!-- Contenedor de iframes -->
-    <div class="bg-dark-300 rounded-b-lg border border-dark-500 overflow-hidden h-[70vh]">
+    <div class="bg-dark-300 rounded-b-lg border border-dark-500 overflow-hidden h-[calc(100vh-250px)]">
 
       <div *ngFor="let node of nodeIds"
            [hidden]="selectedNodeId !== node.nodeId"
