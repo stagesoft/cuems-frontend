@@ -236,12 +236,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   //mostrar descripción de proyecto
-  truncateWords(text: string | undefined, maxWords: number): string {
+  truncateText(text: string, maxLength: number = 17): string {
     if (!text) return '';
-    const words = text.trim().split(/\s+/);
-    if (words.length <= maxWords) {
-      return text;
-    }
-    return words.slice(0, maxWords).join(' ') + '...';
+    return text.length > maxLength
+      ? text.substring(0, maxLength) + '...'
+      : text;
   }
 }

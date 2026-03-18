@@ -74,7 +74,7 @@
                   <input class="checkbox" type="checkbox" (click)="selectProject(project.uuid)" [checked]="selectedProjects.includes(project.uuid)" [disabled]="isProjectBeingDeleted(project.uuid) || isBulkDeleting">
                 </td>
               <td class="w-64 py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap sm:pl-0">{{ project.name }}</td>
-              <td class="w-40 px-3 py-4 text-sm whitespace-nowrap cursor-help" [attr.title]="project.description">{{ truncateWords(project.description, 5) }}</td>
+              <td class="w-40 px-3 py-4 text-sm whitespace-nowrap cursor-pointer" [attr.title]="project.description">{{ truncateText(project.description || '', 17) }}</td>
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.created | date:'medium' }}</td>
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.modified | date:'medium' }}</td>
               <td class="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
