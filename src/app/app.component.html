@@ -6,3 +6,13 @@
   </main>
   <app-footer></app-footer>
 </div>
+
+
+<app-confirmation-dialog
+  [isOpen]="workspace.showConfirmClose()"
+  title="Unsaved changes"
+  message="This project has unsaved changes. Are you sure you want to close it?"
+  confirmText="Close anyway"
+  cancelText="Cancel"
+  (confirm)="onConfirmClose()"
+  (close)="workspace.onCancelClose()" />

@@ -1,10 +1,13 @@
 <div class="wrapper">
   <app-page-header icon="project" [title]="'Editar Proyecto'">
     <div actions>
-      <a class="flex items-center gap-2" routerLink="/projects">
+      <button
+        type="button"
+        class="flex items-center gap-2"
+        (click)="closeWorkspaceProject()">
         <app-icon icon="closeCircle" class="w-4 h-4"></app-icon>
         <span class="text-sm">{{ 'close' | translate }} {{ 'project' | translate }}</span>
-      </a>
+      </button>
     </div>
   </app-page-header>
 </div>
