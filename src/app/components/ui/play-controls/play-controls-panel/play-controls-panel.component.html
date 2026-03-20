@@ -3,13 +3,22 @@
 
   <!-- Header label -->
   <div class="text-[10px] font-mono tracking-[0.2em] uppercase text-muted-light mb-4">
-    Transport Control
+    <div class="flex items-center gap-2">
+      <div class="w-2 h-2 rounded-full transition-all duration-300"
+           [class.bg-secondary]="oscService.running()"
+           [class.bg-muted]="!oscService.running()"
+           [style.box-shadow]="oscService.running() ? '0 0 8px rgba(72,197,137,0.7)' : 'none'">
+      </div>
+      <span class="font-mono text-[11px] tracking-widest uppercase text-gray-200">
+        {{ (oscService.running() ? 'playControls.playing' : 'playControls.stopped') | translate }}
+      </span>
+    </div>
   </div>
 
   <!-- Timecode display -->
-  <div class="bg-black border border-gray-300 rounded-lg px-4 py-3 mb-4 text-center"
+  <div class="bg-black border border-gray-300 rounded-sm px-4 py-2 mb-4 text-center"
        style="box-shadow: inset 0 2px 6px rgba(0,0,0,0.6)">
-    <span class="font-mono text-3xl tracking-widest tabular-nums transition-colors duration-300"
+    <span class="font-mono text-2xl tracking-widest tabular-nums transition-colors duration-300"
           [class.text-secondary]="oscService.running()"
           [class.text-muted-light]="!oscService.running()"
           [style.text-shadow]="oscService.running() ? '0 0 16px rgba(72,197,137,0.4)' : 'none'">
@@ -20,13 +29,8 @@
   <!-- Status row -->
   <div class="flex items-center justify-between mb-5">
     <div class="flex items-center gap-2">
-      <div class="w-2 h-2 rounded-full transition-all duration-300"
-           [class.bg-secondary]="oscService.running()"
-           [class.bg-muted]="!oscService.running()"
-           [style.box-shadow]="oscService.running() ? '0 0 8px rgba(72,197,137,0.7)' : 'none'">
-      </div>
-      <span class="font-mono text-[11px] tracking-widest uppercase text-gray-200">
-        {{ (oscService.running() ? 'playControls.playing' : 'playControls.stopped') | translate }}
+      <span class="font-mono text-[11px] uppercase text-gray-200">
+        NEXT CUE: {{ oscService.nextCue() || '—' }}
       </span>
     </div>
     <div class="font-mono text-[11px] text-muted-light truncate max-w-[140px]"
@@ -41,7 +45,7 @@
     <!-- GO -->
     <button
       type="button"
-      class="flex flex-col items-center gap-2 flex-1 rounded-lg px-3 py-4 border transition-all duration-150 active:scale-95"
+      class="flex flex-col items-center gap-2 flex-1 rounded-lg px-3 py-2 border transition-all duration-150 active:scale-95"
       [class.border-secondary]="oscService.armed()"
       [class.bg-dark-300]="oscService.armed()"
       [class.text-secondary]="oscService.armed()"
@@ -63,7 +67,7 @@
     <!-- PAUSE -->
     <button
       type="button"
-      class="flex flex-col items-center gap-2 flex-1 rounded-lg px-3 py-4 border transition-all duration-150 active:scale-95"
+      class="flex flex-col items-center gap-2 flex-1 rounded-lg px-3 py-2 border transition-all duration-150 active:scale-95"
       [class.border-gray-300]="oscService.running()"
       [class.bg-dark-300]="oscService.running()"
       [class.text-gray-100]="oscService.running()"
@@ -85,7 +89,7 @@
     <!-- STOP -->
     <button
       type="button"
-      class="flex flex-col items-center gap-2 flex-1 rounded-lg px-3 py-4 border border-tertiary bg-dark-300 text-tertiary hover:bg-dark-100 hover:text-tertiary-light transition-all duration-150 active:scale-95"
+      class="flex flex-col items-center gap-2 flex-1 rounded-lg px-3 py-2 border border-tertiary bg-dark-300 text-tertiary hover:bg-dark-100 hover:text-tertiary-light transition-all duration-150 active:scale-95"
       (click)="oscService.stop()">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
         <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 7.5A2.25 2.25 0 0 1 7.5 5.25h9a2.25 2.25 0 0 1 2.25 2.25v9a2.25 2.25 0 0 1-2.25 2.25h-9a2.25 2.25 0 0 1-2.25-2.25v-9Z" />
@@ -96,10 +100,4 @@
     </button>
 
   </div>
-
-  
-  <!-- DEV ONLY -->
-<button (click)="simulateRunning()" class="mt-8 text-[10px] font-mono text-muted-light w-full text-center hover:text-gray-100">
-  {{ simulateInterval ? 'stop simulate' : 'simulate' }}
-</button>
 </div>
