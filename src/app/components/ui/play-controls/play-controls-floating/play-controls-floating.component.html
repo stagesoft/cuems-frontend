@@ -15,9 +15,9 @@
       <span class="text-muted-light hover:text-gray-100 select-none">⠿</span>
       <button
         type="button"
-        class="btn btn-small btn-muted"
+        class="flex items-center justify-center w-8 h-8 cursor-pointer hover:text-white"
         (click)="toggle(); $event.stopPropagation()">
-        <app-icon icon="chevronDown" />
+        <app-icon icon="chevronDown" class="w-[16px] h-[16px]" />
       </button>
     </div>
     <app-play-controls-panel />
@@ -28,8 +28,8 @@
 @if (collapsed()) {
   <div class="fixed bottom-4 right-4 z-[9998] flex items-center gap-2">
     <app-play-controls-bar />
-    <button type="button" class="btn btn-small btn-muted" (click)="toggle()">
-      <app-icon icon="chevronUp" />
+    <button type="button" class="flex items-center justify-center w-8 h-8 cursor-pointer hover:text-white" (click)="toggle()">
+      <app-icon icon="chevronUp" class="w-[16px] h-[16px]" />
     </button>
   </div>
 }

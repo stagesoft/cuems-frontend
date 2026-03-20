@@ -43,6 +43,8 @@ import { PostGoGoAtEndIcon } from './icons/post_go-go_at_end';
 import { PlayIcon } from './icons/play';
 import { PauseIcon } from './icons/pause';
 import { StopIcon } from './icons/stop';
+import { ChevronUpIcon } from './icons/chevron-up';
+import { ChevronDownIcon } from './icons/chevron-down';
 
 @Injectable({
   providedIn: 'root'
@@ -73,6 +75,8 @@ export class IconService {
     'search': SearchIcon,
     'closeCircle': CloseCircleIcon,
     'closeAlt': CloseAltIcon,
+    'chevronDown': ChevronDownIcon,
+    'chevronUp': ChevronUpIcon,
     'xMark': XMarkIcon,
     'trash': TrashIcon,
     'trashAlt': TrashAltIcon,
