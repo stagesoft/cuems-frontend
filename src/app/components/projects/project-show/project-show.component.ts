@@ -10,12 +10,12 @@ import { DrawerService } from '../../../services/ui/drawer.service';
 import { WebsocketService } from '../../../services/websocket.service';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
-import { PlayControlsPanelComponent } from '../../ui/play-controls/play-controls-panel/play-controls-panel.component';
+import { PlayControlsFloatingComponent } from '../../ui/play-controls/play-controls-floating/play-controls-floating.component';
 
 @Component({
   selector: 'app-project-show',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent, PlayControlsPanelComponent],
+  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent, PlayControlsFloatingComponent],
   templateUrl: './project-show.component.html'
 })
 export class ProjectShowComponent implements OnInit, OnDestroy {
