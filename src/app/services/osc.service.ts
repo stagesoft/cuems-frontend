@@ -207,23 +207,21 @@ export class OscService {
   }
 
   /**
-   * Convert timecode in milliseconds to SMPTE string HH:MM:SS:FF at 25 fps.
-   * Negative ms is treated as 0; max display 99:59:59:24.
+   * Convert timecode in milliseconds to HH:MM:SS string.
+   * Negative ms is treated as 0; max display 99:59:59.
    */
-  public timecodeToSMPTE(ms: number): string {
+  public timecodeToHHMMSS(ms: number): string {
     if (ms < 0) ms = 0;
     const totalSeconds = ms / 1000;
-    const maxSeconds = 99 * 3600 + 59 * 60 + 59 + 24 / SMPTE_FRAMES_PER_SECOND;
+    const maxSeconds = 99 * 3600 + 59 * 60 + 59;
     const clamped = Math.min(totalSeconds, maxSeconds);
     const hours = Math.floor(clamped / 3600);
     const minutes = Math.floor((clamped % 3600) / 60);
     const seconds = Math.floor(clamped % 60);
-    const frames = Math.floor((clamped % 1) * SMPTE_FRAMES_PER_SECOND);
     return [
       String(hours).padStart(2, '0'),
       String(minutes).padStart(2, '0'),
-      String(seconds).padStart(2, '0'),
-      String(frames).padStart(2, '0')
+      String(seconds).padStart(2, '0')
     ].join(':');
   }
 

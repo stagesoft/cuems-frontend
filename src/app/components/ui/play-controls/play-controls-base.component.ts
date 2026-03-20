@@ -6,7 +6,7 @@ export abstract class PlayControlsBase {
 
   get timecodeDisplay(): string {
     const ms = this.oscService.timecodeMs();
-    return ms != null ? this.oscService.timecodeToSMPTE(ms) : '--:--:--:--';
+    return ms != null ? this.oscService.timecodeToHHMMSS(ms) : '--:--:--';
   }
 
   protected simulateInterval: ReturnType<typeof setInterval> | null = null;
