@@ -39,6 +39,9 @@ export class OscService {
   /** Engine running: playing when true (from /engine/status/running). */
   public running = signal(false);
 
+  /** Map of cue UUID -> status (0=unplayed, 1-99=playing %, 100=played, -1=error) */
+  public cueStatuses = signal<Record<string, number>>({});
+
   constructor() {
     console.log('OscService initialized');
 
@@ -105,12 +108,11 @@ export class OscService {
   }
 
   private handleIncomingMessage(messageEvent: MessageEvent): any {
-    console.log('handleIncomingMessage', messageEvent);
-    console.log('messageEvent.data', messageEvent.data);
     const dataView = new DataView(messageEvent.data);
     const msg = new OSC.Message('');
+
     msg.unpack(dataView);
-    console.log('msg', msg);
+
     if (messageEvent.data instanceof ArrayBuffer) {
       return this.handleBinaryMessage(messageEvent.data);
     } else {
@@ -132,6 +134,20 @@ export class OscService {
   }
 
   private processOscMessage(msg: any): void {
+    // Handle dynamic UUID cue status messages first
+    if (msg.address.startsWith('/engine/status/cue/')) {
+      const uuid = msg.address.split('/engine/status/cue/')[1];
+      const status = Number(msg.args[0]);
+
+      console.log('RAW cue:', uuid, '| raw arg:', msg.args[0], '| parsed:', status, '| type:', typeof msg.args[0]);
+      
+      this.cueStatuses.update(statuses => ({
+        ...statuses,
+        [uuid]: status
+      }));
+      return;
+    }
+
     switch (msg.address) {
       case '/engine/status/currentcue':
         const newCurrentCue = msg.args[0];
@@ -145,6 +161,7 @@ export class OscService {
         break;
         
       case '/engine/status/nextcue':
+        console.log('next cue', msg.args[0]);
         // Update next cue
         this.nextCue.set(msg.args[0]);
         break;
@@ -154,7 +171,7 @@ export class OscService {
         break;
 
       case '/engine/status/timecode':
-        this.timecodeMs.set(Number(msg.args[0]));
+          this.timecodeMs.set(Number(msg.args[0]));
         break;
 
       case '/engine/status/load':
@@ -165,6 +182,28 @@ export class OscService {
         this.running.set(msg.args[0] === 'yes');
         break;
     }
+  }
+
+  /**
+   * Returns the current playback status for a cue by UUID
+   * @param uuid The UUID of the cue to get the status for
+   * @returns The status of the cue (0=unplayed, 1-99=playing %, 100=played, -1=error)
+   */
+  public getCueStatus(uuid: string): number {
+    return this.cueStatuses()[uuid] ?? 0;
+  }
+  
+  public isCuePlaying(uuid: string): boolean {
+    const status = this.getCueStatus(uuid);
+    return status >= 1 && status < 100;
+  }
+  
+  public isCuePlayed(uuid: string): boolean {
+    return this.getCueStatus(uuid) === 100;
+  }
+  
+  public isCueNext(uuid: string): boolean {
+    return this.nextCue() === uuid;
   }
 
   /**

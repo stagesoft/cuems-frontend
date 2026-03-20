@@ -135,17 +135,26 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
 
   getCuePlaybackClasses(cueItem: any): string {
     const cueId = this.getCueId(cueItem);
-    const isCurrentCue = this.oscService.currentCues().includes(cueId);
     const isNextCue = this.oscService.nextCue() === cueId;
-    
-    let classes = 'hover:bg-dark-200 transition-colors';
-    
+    const status = this.oscService.getCueStatus(cueId);
+    const isPlaying = status >= 1 && status < 100;
+    const isPlayed = status === 100;
+  
+    //console.log('cueId:', cueId, 'status:', status, 'all statuses:', this.oscService.cueStatuses());
+
     if (isNextCue) {
-      classes += ' bg-primary-light hover:bg-primary text-dark-100 font-semibold'; 
-    } else if (isCurrentCue) {
-      classes += ' bg-secondary-light hover:bg-secondary text-dark-100 font-semibold';
+      return 'hover:bg-primary transition-colors bg-primary-light text-dark-100 font-semibold';
     }
-    
-    return classes;
+  
+    if (isPlaying) {
+      return 'hover:bg-secondary transition-colors bg-secondary-light text-dark-100 font-semibold';
+    }
+  
+    if (isPlayed) {
+      return 'hover:bg-dark-200 transition-colors opacity-40 text-gray-500';
+    }
+  
+    // unplayed default
+    return 'hover:bg-dark-200 transition-colors';
   }  
 }
