@@ -16,6 +16,7 @@ import { TimecodeMaskDirective } from '../../../../core/directives';
 import { Subscription } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { filter } from 'rxjs/operators';
+import { ProjectWorkspaceService } from '../../../../services/project-workspace.service';
 
 interface CueData {
   id: string | number;
@@ -68,6 +69,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   private translateService = inject(TranslateService);
   public drawerService = inject(DrawerService);
   private subscription = new Subscription();
+  workspace = inject(ProjectWorkspaceService);
 
   readonly DRAWER_WIDTH = 500; // px
 

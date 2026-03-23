@@ -36,9 +36,11 @@
               </div>
             </div>
 
-            <div class="hidden lg:flex lg:flex-1 lg:items-center lg:justify-start lg:ml-6">
+            <div class="hidden lg:flex lg:flex-1 lg:items-center lg:justify-start lg:ml-6 gap-4">
               <app-open-projects-dropdown />
-            </div>
+              
+              <app-show-project-loaded-indicator />
+            </div>          
             
             <div class="flex items-center lg:hidden">
               <!-- Mobile menu button -->
@@ -153,6 +155,9 @@
             </a>
             <div class="border-t border-gray-200 pt-3 pb-2 px-4">
               <app-open-projects-dropdown />
+            </div>
+            <div class="border-t border-gray-200 pt-3 pb-2 px-4">
+              <app-show-project-loaded-indicator />
             </div>
           </div>
           <div class="border-t border-gray-200 pt-4 pb-3">

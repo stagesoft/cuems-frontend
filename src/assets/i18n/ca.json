@@ -132,6 +132,7 @@
     "projects.workspace.no.open.edit": "No hi ha projectes oberts en mode edició",
     "project.show.engine.running": "Motor de reproducció en execució per a aquest projecte",
     "project.show.engine.running.project": "Motor de reproducció en execució per a l' projecte",
+    "project.edit.in.show": "No es pot editar un projecte que estigui en mode show",
     "file": "fitxer",
     "files": "fitxers",
     "delete.file": "Esteu a punt de suprimir aquest fitxer. N'esteu segur?",

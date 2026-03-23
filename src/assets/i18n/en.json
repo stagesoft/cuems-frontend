@@ -131,6 +131,7 @@
     "projects.workspace.no.open.edit": "No open projects in edit mode",
     "project.show.engine.running": "Engine running this project",
     "project.show.engine.running.project": "Engine running for the project",
+    "project.edit.in.show": "You cannot edit a project that is in show mode",
     "file": "file",
     "files": "files",
     "delete.file": "This will delete this file. Are you sure?",

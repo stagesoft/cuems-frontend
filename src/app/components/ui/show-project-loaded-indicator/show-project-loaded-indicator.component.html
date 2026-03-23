@@ -1,0 +1,14 @@
+<div class="flex items-center gap-2 text-sm font-mono">
+    <div class="w-2 h-2 rounded-full"
+         [class.bg-secondary]="workspace.showProject()"
+         [class.bg-muted]="!workspace.showProject()">
+    </div>
+    @if (workspace.showProject()) {
+      <a [routerLink]="['/projects', workspace.showProject()!.uuid, 'sequence']"
+         class="text-white truncate max-w-[140px]">
+        {{ workspace.showProject()!.name }}
+      </a>
+    } @else {
+      <span class="text-muted-light text-xs">—</span>
+    }
+  </div>

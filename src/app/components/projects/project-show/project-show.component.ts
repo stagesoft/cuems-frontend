@@ -67,7 +67,9 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
         this.project = projectData;
 
         if (this.projectUuid && this.project.name) {
-          this.workspace.openInShow(this.projectUuid, this.project.name);
+          if (!this.oscService.running()) {
+            this.workspace.openInShow(this.projectUuid, this.project.name);
+          }
         }
       }
     });
