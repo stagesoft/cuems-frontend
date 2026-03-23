@@ -42,6 +42,8 @@ export class OscService {
   /** Map of cue UUID -> status (0=unplayed, 1-99=playing %, 100=played, -1=error) */
   public cueStatuses = signal<Record<string, number>>({});
 
+  public cueNames = signal<Record<string, string>>({});
+
   constructor() {
     console.log('OscService initialized');
 

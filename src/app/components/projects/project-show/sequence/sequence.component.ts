@@ -50,6 +50,16 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
         }
         
         this.project = projectData;
+
+        if (projectData?.CuemsScript?.CueList?.contents) {
+          const namesMap: Record<string, string> = {};
+          projectData.CuemsScript.CueList.contents.forEach((cueItem: any) => {
+            const id = this.getCueId(cueItem);
+            const name = this.getCueName(cueItem);
+            if (id !== 'unknown') namesMap[id] = name;
+          });
+          this.oscService.cueNames.set(namesMap);
+        }        
       }
     });
   }
