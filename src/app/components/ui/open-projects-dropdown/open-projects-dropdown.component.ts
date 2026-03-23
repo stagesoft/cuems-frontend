@@ -33,7 +33,11 @@ export class OpenProjectsDropdownComponent {
 
   navigateTo(uuid: string): void {
     this.isOpen.set(false);
-    this.router.navigate(['/projects', uuid, 'edit']);
+    
+    // force component recreation by navigating away first
+    this.router.navigateByUrl('/projects', { skipLocationChange: true }).then(() => {
+      this.router.navigate(['/projects', uuid, 'edit']);
+    });
   }
 
   close(uuid: string, event: MouseEvent): void {
