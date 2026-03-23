@@ -129,6 +129,8 @@
     "projects.workspace.open.one": "1 open project",
     "projects.workspace.open.many": "{{count}} open projects",
     "projects.workspace.no.open.edit": "No open projects in edit mode",
+    "project.show.engine.running": "Engine running this project",
+    "project.show.engine.running.project": "Engine running for the project",
     "file": "file",
     "files": "files",
     "delete.file": "This will delete this file. Are you sure?",

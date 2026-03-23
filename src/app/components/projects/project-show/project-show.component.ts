@@ -11,6 +11,7 @@ import { WebsocketService } from '../../../services/websocket.service';
 import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { PlayControlsFloatingComponent } from '../../ui/play-controls/play-controls-floating/play-controls-floating.component';
+import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
 
 @Component({
   selector: 'app-project-show',
@@ -24,6 +25,7 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
   private websocketService = inject(WebsocketService);
   private oscService = inject(OscService);
   public drawerService = inject(DrawerService);
+  private workspace = inject(ProjectWorkspaceService);
   
   readonly DRAWER_WIDTH = 500;
   
@@ -41,7 +43,6 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.projectUuid = params['uuid'];
-      console.log('Project UUID:', this.projectUuid);
 
       if (this.projectsService.projects().length === 0) {
         this.projectsService.getProjectList();
@@ -64,6 +65,10 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
         }
         
         this.project = projectData;
+
+        if (this.projectUuid && this.project.name) {
+          this.workspace.openInShow(this.projectUuid, this.project.name);
+        }
       }
     });
 
@@ -102,6 +107,11 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
 
   private checkProjectReady(): void {
     if (this.projectUuid) {
+      if (this.oscService.running()) {
+        this.isCheckingEngine = false;
+        return;
+      }
+
       this.isCheckingEngine = true;
       this.engineError = null;
       this.isProjectReady = false;
@@ -153,4 +163,20 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
     console.log('PAUSE!!!!');
     this.oscService.pause();
   }
+
+  get isEngineRunning(): boolean {
+    return this.oscService.running();
+  }
+
+  get isDifferentProjectRunning(): boolean {
+    return this.oscService.running() &&
+           this.oscService.loadedProject() !== '' &&
+           this.oscService.loadedProject().toLowerCase() !== this.project?.name?.toLowerCase();
+  }
+
+  get runningProject() {
+    return this.projectsService.projects().find(
+      p => p.name.toLowerCase() === this.oscService.loadedProject().toLowerCase()
+    ) ?? null;
+  } 
 } 

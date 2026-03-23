@@ -35,22 +35,33 @@
   <div class="mt-4 p-3 bg-dark-300 rounded-lg">
     <div *ngIf="isCheckingEngine" class="flex items-center gap-3">
       <div class="w-4 h-4 bg-primary rounded-full animate-pulse"></div>
-              <span class="text-sm font-medium">
-          Inicializando motor de reproducción <span class="after:content-[''] after:animate-[dots_2s_infinite]"></span>
-        </span>
+      <span class="text-sm font-medium">Inicializando motor de reproducción</span>
     </div>
-    
-    <div *ngIf="isProjectReady && !isCheckingEngine" class="flex items-center gap-3">
-      <div class="w-4 h-4 bg-secondary rounded-full"></div>
-      <span class="text-sm font-medium">Motor de reproducción listo</span>
+    <div *ngIf="!isCheckingEngine && isDifferentProjectRunning" class="flex items-center gap-3">
+      <div class="w-4 h-4 bg-tertiary rounded-full animate-pulse"></div>
+      <span class="text-sm font-medium">
+        {{ 'project.show.engine.running.project' | translate }}
+        <a *ngIf="runningProject"
+        [routerLink]="['/projects', runningProject.uuid, 'sequence']"
+        class="text-tertiary underline ml-1">
+          {{ runningProject.name }}
+        </a>
+      </span>
     </div>
-    
-    <div *ngIf="engineError && !isCheckingEngine">
+    <div *ngIf="!isCheckingEngine && isEngineRunning && !isDifferentProjectRunning" class="flex items-center gap-3">
+      <div class="w-4 h-4 bg-tertiary rounded-full animate-pulse"></div>
+      <span class="text-sm font-medium">{{ 'project.show.engine.running' | translate }}</span>
+    </div>
+    <div *ngIf="!isCheckingEngine && !isEngineRunning && engineError">
       <div class="flex items-center gap-3 mb-2">
         <div class="w-4 h-4 bg-tertiary rounded-full"></div>
         <span class="text-sm font-medium">Error del motor de reproducción</span>
       </div>
       <p class="text-xs ml-7">{{ engineError }}</p>
+    </div>
+    <div *ngIf="!isCheckingEngine && !isEngineRunning && !engineError && isProjectReady" class="flex items-center gap-3">
+      <div class="w-4 h-4 bg-secondary rounded-full"></div>
+      <span class="text-sm font-medium">Motor de reproducción listo</span>
     </div>
   </div>
   
