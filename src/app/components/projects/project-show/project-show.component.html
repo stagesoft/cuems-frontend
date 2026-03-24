@@ -1,5 +1,5 @@
 <div class="wrapper">
-  <app-page-header icon="project" [title]="'Proyecto'">
+  <app-page-header icon="radio" [title]="project?.name">
     <div actions>
       <a class="flex items-center gap-2" routerLink="/projects">
         <app-icon icon="closeCircle" class="w-4 h-4"></app-icon>
@@ -10,28 +10,6 @@
 </div>
 
 <div class="wrapper">
-  <div class="flex flex-wrap flex-col gap-4 md:flex-row">
-    <div class="flex flex-wrap flex-1 items-center gap-4 p-6 bg-dark-300 rounded-lg">
-      <div class="flex-1 min-w-[240px]">
-        <p>{{ project?.name }}</p>
-      </div>
-  
-      <div class="flex gap-4">
-        <a [routerLink]="['/projects', projectUuid, 'edit']" class="btn btn-normal btn-muted">{{ 'project.edit' | translate }}</a>
-        <span class="btn btn-normal btn-primary">{{ 'project.show' | translate }}</span>
-      </div>
-    </div>
-
-    <div>
-      <button 
-        class="btn btn-large" 
-        [class.btn-secondary]="isProjectReady" 
-        [class.btn-muted]="!isProjectReady"
-        [disabled]="!isProjectReady"
-        (click)="go()">GO</button>
-    </div>
-  </div>
-
   <div class="mt-4">
     <app-engine-status
       [status]="engineStatus"

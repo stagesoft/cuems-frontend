@@ -42,6 +42,8 @@ import { PostGoGoIcon } from './icons/post_go-go';
 import { PostGoGoAtEndIcon } from './icons/post_go-go_at_end';
 import { PlayIcon } from './icons/play';
 import { PauseIcon } from './icons/pause';
+import { PencilIcon } from './icons/pencil';
+import { RadioIcon } from './icons/radio';
 import { StopIcon } from './icons/stop';
 import { ChevronUpIcon } from './icons/chevron-up';
 import { ChevronDownIcon } from './icons/chevron-down';
@@ -108,7 +110,9 @@ export class IconService {
     'post_go_go_at_end': PostGoGoAtEndIcon,
     'play': PlayIcon,
     'pause': PauseIcon,
-    'stop': StopIcon
+    'stop': StopIcon,
+    'pencil': PencilIcon,
+    'radio': RadioIcon
   };
 
   private cache = new Map<string, SafeHtml>();
