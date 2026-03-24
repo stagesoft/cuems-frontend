@@ -2,7 +2,7 @@ import { Injectable, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
 import { AppConfig } from '../core/config/app.config';
-import { Subject } from 'rxjs';
+import { Subject, Subscription } from 'rxjs';
 import OSC from 'osc-js';
 
 /** Fixed frame rate for SMPTE display (25 fps = 40 ms per frame). */
@@ -20,6 +20,8 @@ export class OscService {
   public isConnected = signal(false);
   
   public ws: WebSocketSubject<any>;
+
+  private wsSubscription?: Subscription;
   
   public messages = new Subject<any>();
 
@@ -60,12 +62,12 @@ export class OscService {
       }
     });
 
-    // Automatically connect
-    this.ws
+    this.wsSubscription = this.ws
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (message) => this.messages.next(message),
         error: (error) => {
+          if (error instanceof CloseEvent && error.code === 1000) return;
           console.error('Error:', error);
           this.reconnect();
         }
@@ -73,6 +75,7 @@ export class OscService {
   }
 
   disconnect(): void {
+    this.wsSubscription?.unsubscribe();
     if (this.ws) {
       this.ws.complete();
       this.isConnected.set(false);
@@ -83,7 +86,6 @@ export class OscService {
   reconnect(): void {
     this.disconnect();
     setTimeout(() => {
-      // Recreate the connection
       this.ws = webSocket({
         url: this.host,
         deserializer: (data: any) => this.handleIncomingMessage(data),
@@ -97,24 +99,18 @@ export class OscService {
         }
       });
 
-      this.ws
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe({
-          next: (message) => this.messages.next(message),
-          error: (error) => {
-            console.error('Error:', error);
-            this.reconnect();
-          }
-        });
+      this.wsSubscription = this.ws.subscribe({
+        next: (message) => this.messages.next(message),
+        error: (error) => {
+          if (error instanceof CloseEvent && error.code === 1000) return;
+          console.error('Error:', error);
+          this.reconnect();
+        }
+      });
     }, 1000);
   }
 
   private handleIncomingMessage(messageEvent: MessageEvent): any {
-    const dataView = new DataView(messageEvent.data);
-    const msg = new OSC.Message('');
-
-    msg.unpack(dataView);
-
     if (messageEvent.data instanceof ArrayBuffer) {
       return this.handleBinaryMessage(messageEvent.data);
     } else {
@@ -127,8 +123,7 @@ export class OscService {
     const msg = new OSC.Message('');
     msg.unpack(dataView);
     this.processOscMessage(msg);
-    
-    return msg
+    return msg;
   }
 
   private handleJsonMessage(data: any): any {
@@ -136,11 +131,9 @@ export class OscService {
   }
 
   private processOscMessage(msg: any): void {
-    // Handle dynamic UUID cue status messages first
     if (msg.address.startsWith('/engine/status/cue/')) {
       const uuid = msg.address.split('/engine/status/cue/')[1];
       const status = Number(msg.args[0]);
-      
       this.cueStatuses.update(statuses => ({
         ...statuses,
         [uuid]: status
@@ -151,7 +144,6 @@ export class OscService {
     switch (msg.address) {
       case '/engine/status/currentcue':
         const newCurrentCue = msg.args[0];
-        // Add to active current cues
         this.currentCues.update(cues => {
           if (!cues.includes(newCurrentCue)) {
             return [...cues, newCurrentCue];
@@ -161,7 +153,6 @@ export class OscService {
         break;
         
       case '/engine/status/nextcue':
-        // Update next cue
         this.nextCue.set(msg.args[0]);
         break;
 
@@ -170,7 +161,7 @@ export class OscService {
         break;
 
       case '/engine/status/timecode':
-          this.timecodeMs.set(Number(msg.args[0]));
+        this.timecodeMs.set(Number(msg.args[0]));
         break;
 
       case '/engine/status/load':
@@ -251,7 +242,7 @@ export class OscService {
     const message = new OSC.Message('/engine/command/setnextcue', cueUuid);
     const binary = message.pack();
     this.ws.next(binary);
-  }  
+  }
 
   /**
    * Audio Mixer
