@@ -32,11 +32,13 @@
     </div>
   </div>
 
-  <app-engine-status
-    [status]="engineStatus"
-    [engineError]="engineError"
-    [runningProject]="runningProject">
-  </app-engine-status>
+  <div class="mt-4">
+    <app-engine-status
+      [status]="engineStatus"
+      [engineError]="engineError"
+      [runningProject]="runningProject">
+    </app-engine-status>
+  </div>
   
   <div class="mt-6 border-b border-dark-300">
     <div class="flex justify-between">
