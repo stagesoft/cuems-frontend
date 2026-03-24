@@ -30,7 +30,7 @@
   <div class="flex items-center justify-between mb-5">
     <div class="flex items-center gap-2">
       <span class="font-mono text-[11px] uppercase text-gray-200 truncate max-w-[140px] block">
-        NEXT CUE: {{ oscService.cueNames()[oscService.nextCue() ?? ''] || oscService.nextCue() || '—' }}
+        {{ 'playControls.nextCue' | translate }}: {{ oscService.cueNames()[oscService.nextCue() ?? ''] || oscService.nextCue() || '—' }}
       </span>
     </div>
     <div class="font-mono text-[11px] text-muted-light truncate max-w-[200px]"
