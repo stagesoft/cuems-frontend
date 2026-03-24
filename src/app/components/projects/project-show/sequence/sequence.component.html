@@ -24,7 +24,8 @@
           <tbody class="divide-y divide-gray-200">
             <tr *ngFor="let cueItem of project.CuemsScript.CueList.contents; let i = index"
                 [class]="getCuePlaybackClasses(cueItem)"
-                class="hover:bg-dark-200 transition-colors">
+                class="hover:bg-dark-200 transition-colors cursor-pointer"
+                (click)="onClickSetNextCue(cueItem)">
               <!-- Type Icon -->
               <td class="px-4 py-3">
                 <app-icon [icon]="getCueTypeIcon(cueItem)" class="w-[16px] h-[16px]"></app-icon>

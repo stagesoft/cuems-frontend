@@ -140,8 +140,6 @@ export class OscService {
     if (msg.address.startsWith('/engine/status/cue/')) {
       const uuid = msg.address.split('/engine/status/cue/')[1];
       const status = Number(msg.args[0]);
-
-      console.log('RAW cue:', uuid, '| raw arg:', msg.args[0], '| parsed:', status, '| type:', typeof msg.args[0]);
       
       this.cueStatuses.update(statuses => ({
         ...statuses,
@@ -163,7 +161,6 @@ export class OscService {
         break;
         
       case '/engine/status/nextcue':
-        console.log('next cue', msg.args[0]);
         // Update next cue
         this.nextCue.set(msg.args[0]);
         break;
@@ -245,6 +242,16 @@ export class OscService {
     const binaryPause = messagePause.pack();
     this.ws.next(binaryPause);
   }
+
+  /**
+   * Sets the next cue to be executed
+   * @param cueUuid The UUID of the cue to set as next
+   */
+  public setNextCue(cueUuid: string): void {
+    const message = new OSC.Message('/engine/command/setnextcue', cueUuid);
+    const binary = message.pack();
+    this.ws.next(binary);
+  }  
 
   /**
    * Audio Mixer

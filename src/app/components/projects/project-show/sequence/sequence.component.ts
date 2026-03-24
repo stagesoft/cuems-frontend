@@ -166,5 +166,10 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   
     // unplayed default
     return 'hover:bg-dark-200 transition-colors';
+  }
+
+  onClickSetNextCue(cueItem: any): void {
+    const uuid = this.getCueId(cueItem);
+    this.oscService.setNextCue(uuid);
   }  
 }
