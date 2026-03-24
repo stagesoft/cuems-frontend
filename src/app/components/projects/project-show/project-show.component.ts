@@ -12,11 +12,12 @@ import { Subscription } from 'rxjs';
 import { Router } from '@angular/router';
 import { PlayControlsFloatingComponent } from '../../ui/play-controls/play-controls-floating/play-controls-floating.component';
 import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
+import { EngineStatusComponent } from '../../ui/engine-status/engine-status.component';
 
 @Component({
   selector: 'app-project-show',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent, PlayControlsFloatingComponent],
+  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent, PlayControlsFloatingComponent, EngineStatusComponent],
   templateUrl: './project-show.component.html'
 })
 export class ProjectShowComponent implements OnInit, OnDestroy {
@@ -50,7 +51,7 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
 
       this.projectsService.loadProject(this.projectUuid);
       
-      this.checkProjectReady();
+      //this.checkProjectReady();
     });
 
     this.projectLoadedSubscription = this.projectsService.projectLoaded.subscribe(projectData => {
@@ -69,6 +70,12 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
         if (this.projectUuid && this.project.name) {
           if (!this.oscService.running()) {
             this.workspace.openInShow(this.projectUuid, this.project.name);
+            this.checkProjectReady();
+          } else {
+            this.isCheckingEngine = false;
+            if (this.isSameProjectRunning) {
+              this.isProjectReady = true;
+            }            
           }
         }
       }
@@ -169,16 +176,31 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
   get isEngineRunning(): boolean {
     return this.oscService.running();
   }
-
-  get isDifferentProjectRunning(): boolean {
-    return this.oscService.running() &&
-           this.oscService.loadedProject() !== '' &&
-           this.oscService.loadedProject().toLowerCase() !== this.project?.name?.toLowerCase();
-  }
-
+  
   get runningProject() {
     return this.projectsService.projects().find(
-      p => p.name.toLowerCase() === this.oscService.loadedProject().toLowerCase()
+      p => p.unix_name?.toLowerCase() === this.oscService.loadedProject().toLowerCase()
     ) ?? null;
-  } 
+  }
+  
+  get isSameProjectRunning(): boolean {
+    if (!this.project?.unix_name) return false;
+    return this.oscService.loadedProject().toLowerCase() === this.project.unix_name.toLowerCase();
+  }
+  
+  get isDifferentProjectRunning(): boolean {
+    return this.isEngineRunning &&
+           this.oscService.loadedProject() !== '' &&
+           !this.isSameProjectRunning;
+  }
+  
+  get engineStatus() {
+    if (this.isCheckingEngine) return 'checking';
+    if (this.isEngineRunning && !this.project) return 'checking';
+    if (this.isDifferentProjectRunning) return 'different-project';
+    if (this.isEngineRunning) return 'running';
+    if (this.engineError) return 'error';
+    if (this.isProjectReady) return 'ready';
+    return 'idle';
+  }
 } 

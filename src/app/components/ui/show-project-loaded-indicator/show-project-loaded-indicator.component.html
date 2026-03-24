@@ -4,11 +4,10 @@
          [class.bg-muted]="!workspace.showProject()">
     </div>
     @if (workspace.showProject()) {
-      <a [routerLink]="['/projects', workspace.showProject()!.uuid, 'sequence']"
-         class="text-white truncate max-w-[140px]">
+      <a (click)="navigateToProject(workspace.showProject()!.uuid)" class="text-white truncate max-w-[140px] cursor-pointer">
         {{ workspace.showProject()!.name }}
       </a>
     } @else {
       <span class="text-muted-light text-xs">—</span>
     }
-  </div>
+</div>

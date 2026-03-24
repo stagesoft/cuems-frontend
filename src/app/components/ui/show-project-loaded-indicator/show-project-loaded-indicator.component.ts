@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
 
 @Component({
@@ -10,4 +10,11 @@ import { ProjectWorkspaceService } from '../../../services/project-workspace.ser
 })
 export class ShowProjectLoadedIndicatorComponent {
   workspace = inject(ProjectWorkspaceService);
+  router = inject(Router);
+  
+  navigateToProject(uuid: string): void {
+    this.router.navigateByUrl('/projects', { skipLocationChange: true }).then(() => {
+      this.router.navigate(['/projects', uuid, 'sequence']);
+    });
+  }  
 }
