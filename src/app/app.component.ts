@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy, PLATFORM_ID, Inject, inject } from '@angular/core';
 import { Router, RouterOutlet, RouteReuseStrategy } from '@angular/router';
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { AppHeaderComponent } from './components/layout/app-header/app-header.component';
 import { AppFooterComponent } from './components/layout/app-footer/app-footer.component';
 import { LanguageService } from './services/language.service';
@@ -22,6 +22,7 @@ import { ConfirmationDialogComponent } from './components/ui/confirmation-dialog
     AppFooterComponent,
     NotificationsComponent,
     ConfirmationDialogComponent,
+    TranslateModule,
   ],
   templateUrl: './app.component.html',
 })

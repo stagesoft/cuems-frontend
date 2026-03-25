@@ -10,9 +10,9 @@
 
 <app-confirmation-dialog
   [isOpen]="workspace.showConfirmClose()"
-  title="Unsaved changes"
-  message="This project has unsaved changes. Are you sure you want to close it?"
-  confirmText="Close anyway"
-  cancelText="Cancel"
+  title="{{'projects.workspace.edit.confirm.title.unsaved-changes' | translate }}"
+  message="{{'projects.workspace.edit.confirm.message.unsaved-changes' | translate}}"
+  confirmText="{{'projects.workspace.edit.confirm.text.close-anyway' | translate}}"
+  cancelText="{{'projects.workspace.edit.confirm.text.cancel' | translate}}"
   (confirm)="onConfirmClose()"
   (close)="workspace.onCancelClose()" />
