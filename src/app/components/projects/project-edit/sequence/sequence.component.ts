@@ -42,6 +42,8 @@ interface CueData {
   fade_in_time?: number;
   master_vol?: number;
   originalData?: any;
+  action_target?: string | null;
+  action_type?: string;
 }
 
 @Component({
@@ -460,6 +462,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         universe_num,
         fade_in_time: cueType === 'dmx' ? (() => { const ms = cueData.fadein_time ?? cueData.fade_in_time; return ms != null ? Number(ms) / 1000 : 0; })() : undefined,
         master_vol: cueData.master_vol || 20,
+        action_target: cueType === 'action' ? (cueData.action_target || null) : undefined,
+        action_type: cueType === 'action' ? (cueData.action_type || 'play') : undefined,
         originalData: cueItem // Keep original data
       };
     }).filter(cue => cue !== null) as CueData[];
@@ -594,8 +598,17 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     const confirmMessage = this.translateService.instant('delete.cue');
 
     if (confirm(confirmMessage)) {
+      const deletedCueId = String(this.cues[index].id);
+
       this.cues.splice(index, 1);
 
+      // Nullify action_target if it pointed to the deleted cue
+      this.cues.forEach(cue => {
+        if (cue.type === 'action' && cue.action_target === deletedCueId) {
+          cue.action_target = null;
+        }
+      });      
+      
       // Reorder the numbers of order
       this.cues.forEach((cue, i) => {
         cue.order = i + 1;
@@ -697,6 +710,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       
       newCue.dmx_channels = initialChannels;
       newCue.fade_in_time = 0;
+    }
+
+    if (type === 'action') {
+      newCue.action_target = null;
+      newCue.action_type = 'play';
     }
     
     if (type !== 'audio' && type !== 'video' && type !== 'dmx') {
@@ -857,7 +875,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     newCue.name = cue.name;
     newCue.description = cue.notes;
-    newCue.id = this.generateUUID();
+    newCue.id = cue.id && typeof cue.id === 'string' && cue.id.includes('-')  ? cue.id  : this.generateUUID();
     newCue.post_go = cue.post_go;
     newCue.offset = { CTimecode: this.ensureMilliseconds(cue.time) };
     newCue.prewait = { CTimecode: this.ensureMilliseconds(cue.prewait) };
@@ -874,6 +892,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     if (cue.type === 'action' && newCue.Media) {
       delete newCue.Media;
     }
+
+    if (cue.type === 'action') {
+      newCue.action_target = cue.action_target || null;
+      newCue.action_type = cue.action_type || 'play';
+    }    
 
     if (cue.type === 'audio' || cue.type === 'video') {
       if (newCue.Media) {
@@ -1211,6 +1234,27 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
 
+  getCueOptionsForAction(currentCue: CueData): { value: string, label: string }[] {
+    const options = this.cues
+      .filter(c => c !== currentCue)
+      .map(c => ({
+        value: String(c.id),
+        label: `${c.order}. ${c.name}`
+      }));
+    
+    return options;
+  }
+  
+  onActionTargetChange(selectedValue: string | string[], cue: CueData): void {
+    if (Array.isArray(selectedValue)) {
+      cue.action_target = selectedValue.length > 0 ? selectedValue[0] : null;
+    } else {
+      cue.action_target = selectedValue || null;
+    }
+
+    this.checkForChanges();
+  } 
+
   private loadInitialMappings(): void {
     const mappings = this.projectsService.mappingOptions();
     
@@ -1393,8 +1437,6 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
   onUniverseNumChange(cue: CueData, value: any): void {
-    console.log('Raw value received:', value, 'Type:', typeof value);
-    
     // Handle empty string or null/undefined values
     if (value === '' || value === null || value === undefined) {
       cue.universe_num = 0;
@@ -1403,7 +1445,6 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
     
     const newValue = parseInt(value.toString());
-    console.log('Parsed newValue:', newValue, 'IsNaN:', isNaN(newValue));
     
     if (cue.type !== 'dmx') return;
     
@@ -1418,7 +1459,6 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       cue.universe_num = newValue;
     }
     
-    console.log('Final cue.universe_num:', cue.universe_num);
     this.checkForChanges();
   }
 

@@ -473,6 +473,32 @@
                               </button>
                             </div>
                           </div>
+
+                          <!-- Action Cues -->
+                          <div *ngIf="cue.type === 'action'" class="space-y-4">
+                            <div class="field">
+                              <label class="label">{{ 'action.type' | translate }}</label>
+                              <select 
+                                class="input"
+                                [(ngModel)]="cue.action_type"
+                                (ngModelChange)="checkForChanges()">
+                                <option value="play">{{ 'action.type.play' | translate }}</option>
+                                <option value="stop">{{ 'action.type.stop' | translate }}</option>
+                                <option value="fade">{{ 'action.type.fade' | translate }}</option>
+                              </select>
+                            </div>
+
+                            <div class="field">
+                              <label class="label">{{ 'action.target.cue' | translate }}</label>
+                              <app-multiselect
+                                [options]="getCueOptionsForAction(cue)"
+                                [multiple]="false"
+                                [placeholder]="'action.target.cue.placeholder' | translate"
+                                [ngModel]="cue.action_target"
+                                (selectionChange)="onActionTargetChange($event, cue)">
+                              </app-multiselect>
+                            </div>
+                          </div>                          
   
                           <div class="flex justify-end gap-2 mt-4">
                             <button class="px-3 py-1 text-sm rounded" (click)="collapseRow(i)">{{ 'close' | translate }}</button>
