@@ -93,17 +93,17 @@
                     </app-icon>
                     </td>
                     <!-- Drag Handle -->
-                    <td class="px-4 py-3">
-                      <div class="cursor-move text-gray-400 hover:text-gray-600 flex items-center justify-center" cdkDragHandle>
+                    <td class="px-4 py-1">
+                      <div class="cursor-move text-gray-400 hover:text-gray-600 flex items-center justify-center relative translate-y-[-3px]" cdkDragHandle>
                         <app-icon icon="points" class="w-[16px] h-[16px]"></app-icon>
                       </div>
                     </td>
                     
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-1">
                       <app-icon [icon]="cue.type" class="w-[16px] h-[16px]"></app-icon>
                     </td>
                     
-                <td class="px-4 py-3 text-sm" 
+                <td class="px-4 py-1 text-sm" 
                     [class.name-column-responsive]="!drawerService.isActivityDrawerOpen()"
                     [style.width]="drawerService.isActivityDrawerOpen() ? '80px' : null"
                     [style.min-width]="drawerService.isActivityDrawerOpen() ? '80px' : null"
@@ -113,7 +113,7 @@
                   </div>
                 </td>
                     
-                    <td class="px-4 py-3 text-sm">
+                    <td class="px-4 py-1 text-sm">
                       <div *ngIf="editingPrewait !== i; else prewaitInput" 
                            class="cursor-pointer hover:bg-dark-300 px-2 py-1 rounded transition-colors inline-block"
                            (click)="startEditPrewait(i, $event)">
@@ -132,11 +132,11 @@
                       </ng-template>
                     </td>
                     
-                    <td class="px-4 py-3 text-sm">
+                    <td class="px-4 py-1 text-sm">
                       {{ getCueData(cue.originalData)?.Media?.duration || '-' }}
                     </td>
   
-                    <td class="px-4 py-3 text-sm">
+                    <td class="px-4 py-1 text-sm">
                       <div *ngIf="editingPostwait !== i; else postwaitInput" 
                            class="cursor-pointer hover:bg-dark-300 px-2 py-1 rounded transition-colors inline-block"
                            (click)="startEditPostwait(i, $event)">
@@ -155,7 +155,7 @@
                       </ng-template>
                     </td>
                     
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-1">
                       <div class="relative" (click)="onDropdownClick($event)">
                         <button
                           class="flex items-center justify-center rounded transition-colors"
@@ -187,7 +187,7 @@
                     </td>
                     
                     <!-- Controls -->
-                    <td class="px-4 py-3">
+                    <td class="px-4 py-1">
                       <div class="flex items-center gap-2">
                         <button 
                           class="text-xs py-1 px-2 border rounded" 
@@ -223,7 +223,7 @@
                         <!-- Tabs -->
                         <div class="flex mb-3 border-b-2 mb-12">
                           <button 
-                            class="px-8 py-2 text-sm border-b-2 border-primary translate-y-[2px]"
+                            class="px-8 py-2 text-sm border-b-2 border-primary"
                             [class.border-current]="cue.activeTab === 'edit'"
                             [class.border-transparent]="cue.activeTab !== 'edit'"
                             (click)="setActiveTab(i, 'edit')">
