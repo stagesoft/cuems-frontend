@@ -10,6 +10,7 @@ import { IconComponent } from '../../ui/icon/icon.component';
 import { DrawerService } from '../../../services/ui/drawer.service';
 import { v4 as uuidv4 } from 'uuid';
 import { FormsModule } from '@angular/forms';
+import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
 
 @Component({
   selector: 'app-project-edit',
@@ -23,6 +24,8 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private editStateService = inject(ProjectEditStateService);
   private drawerService = inject(DrawerService);
 
+  private workspace = inject(ProjectWorkspaceService);
+  
   public project: any;
   public projectUuid: string | null = null;
   public hasUnsavedChanges: boolean = false;
@@ -46,6 +49,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
         }
 
         this.projectsService.loadProject(this.projectUuid);
+        this.workspace.openInEdit(this.projectUuid, this.projectUuid); // register immediately, name updated later
       }
     });
 
@@ -78,16 +82,20 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
         //Actualizar los campos de edición
         this.editName = this.project.name;
         this.editDescription = this.project.description;
+        if (this.projectUuid && this.project.name) {
+          this.workspace.updateName(this.projectUuid, this.project.name);
+        }
       }
     });
 
-    this.changesSubscription = this.editStateService.changes$.subscribe(
-      hasChanges => {
-        if (this.projectUuid) {
-          this.hasUnsavedChanges = this.editStateService.hasProjectChanges(this.projectUuid);
-        }
+    this.changesSubscription = this.editStateService.changes$.subscribe(() => {
+      if (this.projectUuid) {
+        this.hasUnsavedChanges = this.editStateService.hasProjectChanges(this.projectUuid);
+        this.hasUnsavedChanges
+          ? this.workspace.markDirty(this.projectUuid)
+          : this.workspace.markSaved(this.projectUuid);
       }
-    );
+    });
 
     this.projectSavedSubscription = this.projectsService.projectSaved.subscribe(
       savedProjectUuid => {
@@ -235,4 +243,10 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
     this.isEditing = false;
   }
-}
+
+  closeWorkspaceProject(): void {
+    if (this.projectUuid) {
+      this.workspace.requestClose(this.projectUuid);
+    }
+  }  
+} 

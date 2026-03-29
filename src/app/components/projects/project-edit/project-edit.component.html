@@ -1,10 +1,22 @@
 <div class="wrapper">
-  <app-page-header icon="project" [title]="'Editar Proyecto'">
-    <div actions>
-      <a class="flex items-center gap-2" routerLink="/projects">
-        <app-icon icon="closeCircle" class="w-4 h-4"></app-icon>
+  <app-page-header icon="pencil" [title]="project?.name">
+    <div class="flex items-center gap-4" actions>
+      <button 
+        *ngIf="hasUnsavedChanges"
+        class="btn btn-small btn-tertiary gap-2"
+        (click)="saveAllChanges()">
+        <app-icon icon="upload" class="w-[12px] h-[12px]"></app-icon>
+        {{ 'project.edit.save.changes' | translate }}
+      </button>
+
+      <a [routerLink]="['/projects', project?.uuid]" class="btn btn-small btn-secondary">{{ 'project.show' | translate }}</a>
+      <button
+        type="button"
+        class="flex items-center gap-2 cursor-pointer"
+        (click)="closeWorkspaceProject()">
         <span class="text-sm">{{ 'close' | translate }} {{ 'project' | translate }}</span>
-      </a>
+        <app-icon icon="closeCircle" class="w-4 h-4"></app-icon>
+      </button>
     </div>
   </app-page-header>
 </div>
