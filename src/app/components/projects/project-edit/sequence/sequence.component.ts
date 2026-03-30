@@ -18,7 +18,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { filter } from 'rxjs/operators';
 import { ProjectWorkspaceService } from '../../../../services/project-workspace.service';
 
-  interface CueData {
+interface CueData {
   id: string | number;
   order: number;
   name: string;
@@ -33,12 +33,12 @@ import { ProjectWorkspaceService } from '../../../../services/project-workspace.
   notes: string;
   expanded: boolean;
   activeTab: 'notes' | 'edit' | 'media';
-  selectedMediaFile?: {uuid: string, file: any};
+  selectedMediaFile?: { uuid: string, file: any };
   selectedAudioOutput?: string;
   selectedDmxOutput?: string;
   selectedVideoOutput?: string;
   selectedOutputs?: string[];
-  dmx_channels?: Array<{channel: number, value: number}>;
+  dmx_channels?: Array<{ channel: number, value: number }>;
   universe_num?: number;
   fade_in_time?: number;
   master_vol?: number;
@@ -301,7 +301,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       }
 
       // Extract media file information if it exists
-      let selectedMediaFile: {uuid: string, file: any} | undefined = undefined;
+      let selectedMediaFile: { uuid: string, file: any } | undefined = undefined;
       if (cueData.Media && typeof cueData.Media === 'object' && 'file_name' in cueData.Media && cueData.Media.file_name) {
         const fileList = this.mediaService.fileList();
         for (const fileObj of fileList) {
@@ -438,7 +438,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         }
       }
 
-      let dmx_channels: Array<{channel: number, value: number}> = [];
+      let dmx_channels: Array<{ channel: number, value: number }> = [];
       if (cueType === 'dmx' && cueData.DmxScene?.DmxUniverse?.dmx_channels) {
         dmx_channels = cueData.DmxScene.DmxUniverse.dmx_channels.map((channelWrapper: any) => {
           const channelData = channelWrapper.DmxChannel || channelWrapper;
@@ -619,8 +619,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         if (cue.type === 'action' && cue.action_target === deletedCueId) {
           cue.action_target = null;
         }
-      });      
-      
+      });
+
       // Reorder the numbers of order
       this.cues.forEach((cue, i) => {
         cue.order = i + 1;
@@ -894,7 +894,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     newCue.name = cue.name;
     newCue.description = cue.notes;
-    newCue.id = cue.id && typeof cue.id === 'string' && cue.id.includes('-')  ? cue.id  : this.generateUUID();
+    newCue.id = cue.id && typeof cue.id === 'string' && cue.id.includes('-') ? cue.id : this.generateUUID();
     newCue.post_go = cue.post_go;
     newCue.offset = { CTimecode: this.ensureMilliseconds(cue.time) };
     newCue.prewait = { CTimecode: this.ensureMilliseconds(cue.prewait) };
@@ -915,7 +915,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     if (cue.type === 'action') {
       newCue.action_target = cue.action_target || null;
       newCue.action_type = cue.action_type || 'play';
-    }    
+    }
 
     if (cue.type === 'audio' || cue.type === 'video') {
       if (newCue.Media) {
@@ -1002,6 +1002,16 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         }
       }
       newCue.fadein_time = Math.round((cue.fade_in_time ?? 0) * 1000);
+
+      let selectedOutputs: string[] = [];
+
+      if (cue.selectedOutputs && cue.selectedOutputs.length > 0) {
+        selectedOutputs = cue.selectedOutputs;
+      } else if (cue.selectedDmxOutput) {
+        selectedOutputs = [cue.selectedDmxOutput];
+      }
+
+      this.assignMultipleDmxOutputs(newCue, selectedOutputs);
     }
 
     const result = { [cueTypeKey]: newCue };
@@ -1079,7 +1089,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     this.checkForChanges();
   }
 
-  public getMediaFilesByType(type: 'audio' | 'video'): Array<{uuid: string, file: any}> {
+  public getMediaFilesByType(type: 'audio' | 'video'): Array<{ uuid: string, file: any }> {
     return this.mediaService.getFilesByType(type);
   }
 
@@ -1196,7 +1206,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   mappingOptions: { value: string, label: string }[] = [];
   audioMappingOptions: { value: string, label: string }[] = [];
   videoMappingOptions: { value: string, label: string }[] = [];
-  dmxMappingOptions: { value: string, label: string}[]= [];
+  dmxMappingOptions: { value: string, label: string }[] = [];
 
   getMappingOptionsForCue(cue: CueData): { value: string, label: string }[] {
     let options: { value: string, label: string }[] = [];
@@ -1275,10 +1285,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         value: String(c.id),
         label: `${c.order}. ${c.name}`
       }));
-    
+
     return options;
   }
-  
+
   onActionTargetChange(selectedValue: string | string[], cue: CueData): void {
     if (Array.isArray(selectedValue)) {
       cue.action_target = selectedValue.length > 0 ? selectedValue[0] : null;
@@ -1287,7 +1297,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
 
     this.checkForChanges();
-  } 
+  }
 
   private loadInitialMappings(): void {
     const mappings = this.projectsService.mappingOptions();
@@ -1309,7 +1319,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
       this.dmxMappingOptions = mappings.filter(mapping =>
         mapping.type === 'dmx'
-      ) .map(mapping => ({
+      ).map(mapping => ({
         value: mapping.uuid,
         label: mapping.name
       }));
@@ -1400,6 +1410,51 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     });
   }
 
+  private assignMultipleDmxOutputs(dmxCue: any, selectedOutputs: string[]): void {
+    if (!selectedOutputs || !Array.isArray(selectedOutputs) || selectedOutputs.length === 0) {
+      return;
+    }
+
+    const templateDmxOutput = this.getTemplateOutputStructure('dmx');
+    if (!templateDmxOutput) {
+      console.warn('No se pudo obtener la estructura template para DmxCueOutput');
+      return;
+    }
+
+    dmxCue.outputs = [];
+
+    selectedOutputs.forEach((selectedOutput) => {
+      let outputToAssign = selectedOutput;
+
+      const parsedOutput = this.projectsService.parseOutputString(selectedOutput);
+      let foundOutputInMappings = null;
+
+      if (parsedOutput) {
+        foundOutputInMappings = this.projectsService.findOutputInMappings(
+          parsedOutput.uuid,
+          parsedOutput.name
+        );
+      }
+
+      if (!foundOutputInMappings) {
+        if (this.dmxMappingOptions.length > 0) {
+          outputToAssign = this.dmxMappingOptions[0].value;
+        } else {
+          return;
+        }
+      }
+
+      const clonedOutput = JSON.parse(JSON.stringify(templateDmxOutput));
+      clonedOutput.output_name = outputToAssign;
+
+      const outputData = {
+        DmxCueOutput: clonedOutput
+      };
+
+      dmxCue.outputs.push(outputData);
+    });
+  }
+
   /**
    * Add a new DMX channel to a cue
    */
@@ -1409,7 +1464,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     if (!cue.dmx_channels) {
       cue.dmx_channels = [];
     }
-    
+
     // Find the next available channel number (DMX channels start at 1)
     let nextChannel = 1;
     const existingChannels = cue.dmx_channels.map(ch => ch.channel);
@@ -1450,7 +1505,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     let newChannel = parseInt(input.value, 10);
     if (isNaN(newChannel) || newChannel < 1) newChannel = 1;
     if (newChannel > 512) newChannel = 512;
-    
+
     if (cue.type !== 'dmx' || !cue.dmx_channels || !cue.dmx_channels[index]) return;
 
     if (this.isDmxChannelNumValid(cue, newChannel, index)) {
@@ -1491,7 +1546,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     const newValue = parseInt(value.toString());
     console.log('Parsed newValue:', newValue, 'IsNaN:', isNaN(newValue));
 
-    
+
     if (cue.type !== 'dmx') return;
 
     // Validate range: 0-999
@@ -1506,7 +1561,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
 
     console.log('Final cue.universe_num:', cue.universe_num);
-    
+
     this.checkForChanges();
   }
 
@@ -1522,7 +1577,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     this.checkForChanges();
   }
 
-  private getTemplateOutputStructure(cueType: 'audio' | 'video'): any | null {
+  private getTemplateOutputStructure(cueType: 'audio' | 'video' | 'dmx'): any | null {
     const template = this.projectsService.projectTemplate();
 
     if (!template?.['CuemsScript']?.['CueList']?.['contents']) {
@@ -1559,10 +1614,24 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             return JSON.parse(JSON.stringify(firstOutput.VideoCueOutput));
           }
         }
-          // Fallback: search VideoCueOutput directly
+        // Fallback: search VideoCueOutput directly
         if (videoCue.VideoCueOutput) {
           return JSON.parse(JSON.stringify(videoCue.VideoCueOutput));
         }
+        break;
+      } else if (cueType === 'dmx' && itemKeys.includes('DmxCue')) {
+        const dmxCue = item['DmxCue'];
+        if (dmxCue.outputs && Array.isArray(dmxCue.outputs) && dmxCue.outputs.length > 0) {
+          const firstOutput = dmxCue.outputs.find((output: any) => output.DmxCueOutput);
+          if (firstOutput) {
+            return JSON.parse(JSON.stringify(firstOutput.DmxCueOutput));
+          }
+        }
+
+        if (dmxCue.DmxCueOutput) {
+          return JSON.parse(JSON.stringify(dmxCue.DmxCueOutput));
+        }
+
         break;
       }
     }
