@@ -1424,10 +1424,14 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   
   onDmxChannelValueChange(cue: CueData, index: number, event: Event): void {
     const input = event.target as HTMLInputElement;
-    const newValue = parseInt(input.value);
-    
+    let newValue = parseInt(input.value, 10);
+  
+    if (isNaN(newValue)) return;
+  
+    newValue = Math.min(255, Math.max(0, newValue));
+    input.value = String(newValue);
+  
     if (cue.type !== 'dmx' || !cue.dmx_channels || !cue.dmx_channels[index]) return;
-    
     cue.dmx_channels[index].value = newValue;
     this.checkForChanges();
   }

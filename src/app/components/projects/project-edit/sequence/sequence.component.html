@@ -443,7 +443,10 @@
                                         min="0"
                                         max="255"
                                         step="1">
-                                      <span class="text-sm w-8 text-center">{{ channel.value }}</span>
+                                      <input type="number" min="0" max="255" step="1"
+                                        class="w-12 text-sm text-center bg-transparent outline-none [appearance:textfield]"
+                                        [value]="channel.value"
+                                        (input)="onDmxChannelValueChange(cue, channelIndex, $event)">
                                     </div>
                                   </div>
                                   
