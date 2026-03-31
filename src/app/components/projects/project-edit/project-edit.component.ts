@@ -34,7 +34,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private projectSavedSubscription?: Subscription;
 
   //edición de descripción y nombre de proyectos=
-  public isEditing: boolean = false;
+  public isEditing: boolean = false;  
   public editName: string = '';
   public editDescription: string = '';
 
@@ -101,8 +101,6 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
       savedProjectUuid => {
         if (this.projectUuid && savedProjectUuid === this.projectUuid) {
           this.editStateService.markProjectAsSaved(this.projectUuid);
-
-          this.projectsService.loadProject(this.projectUuid);
         }
       }
     );
