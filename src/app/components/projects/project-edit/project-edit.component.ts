@@ -25,7 +25,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private drawerService = inject(DrawerService);
 
   private workspace = inject(ProjectWorkspaceService);
-  
+
   public project: any;
   public projectUuid: string | null = null;
   public hasUnsavedChanges: boolean = false;
@@ -34,7 +34,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private projectSavedSubscription?: Subscription;
 
   //edición de descripción y nombre de proyectos=
-  public isEditing: boolean = false;  
+  public isEditing: boolean = false;
   public editName: string = '';
   public editDescription: string = '';
 
@@ -143,12 +143,21 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
       //guardar cambios de nombre y descripción
       if (modifiedData.metadata) {
+
+        if (!updatedProject.CuemsScript) {
+          updatedProject.CuemsScript = {};
+        }
+
         if (modifiedData.metadata.name !== undefined && modifiedData.metadata.name.trim() !== '') {
           updatedProject.name = modifiedData.metadata.name;
+
+          updatedProject.CuemsScript.name = modifiedData.metadata.name;
         }
 
         if (modifiedData.metadata.description !== undefined) {
           updatedProject.description = modifiedData.metadata.description;
+
+          updatedProject.CuemsScript.description = modifiedData.metadata.description;
         }
       }
 
@@ -246,5 +255,5 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     if (this.projectUuid) {
       this.workspace.requestClose(this.projectUuid);
     }
-  }  
+  }
 } 
