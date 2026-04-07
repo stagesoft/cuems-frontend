@@ -610,7 +610,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     };
 
     const newCue: CueData = {
-      id: this.cues.length + 1,
+      id: this.generateUUID(),
       order: this.cues.length + 1, // Added at the end
       name: defaultNames[type],
       type: type,
