@@ -123,6 +123,7 @@
     "project.list.delete.projects.description": "Estas apunto de eliminar estos proyectos. ¿Estas seguro?",
     "project.list.edit": "Editar",
     "project.list.view": "Show",
+    "project.list.duplicate": "Duplicar",
     "project.list.refresh": "Actualizar",
     "project.list.no.projects.in.trash": "No hay proyectos en la papelera",
     "project.list.no.projects.in.trash.description": "La papelera está vacía",

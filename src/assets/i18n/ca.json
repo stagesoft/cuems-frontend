@@ -124,6 +124,7 @@
     "project.list.delete.projects.description": "Esteu a punt de suprimir aquests projectes. N'esteu segur?",
     "project.list.edit": "Editar",
     "project.list.view": "Show",
+    "project.list.duplicate": "Duplicar",
     "project.list.refresh": "Actualitzar",
     "project.list.no.projects.in.trash": "No hi ha projectes en la paperera",
     "project.list.no.projects.in.trash.description": "La paperera està buida",

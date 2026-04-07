@@ -289,6 +289,19 @@ export class ProjectsService {
       this.getProjectList();
     }
 
+    if (response && response.type === 'project_duplicate' && response.value) {
+      const projectUuid = response.value.new_uuid;
+
+      this.notificationService.showSuccess('Proyecto duplicado exitosamente');
+
+      this.getProjectList();
+      
+      this.router.navigate(['/projects', projectUuid, 'edit']).then(() => {
+      }).catch(err => {
+
+      });
+    }
+
     if (response && response.type === 'project_save' && response.value) {
       const projectUuid = response.value;
       
@@ -419,6 +432,13 @@ export class ProjectsService {
   deleteProject(uuid: string) {
     this.wsService.ws.next({
       action: 'project_delete',
+      value: uuid
+    });
+  }
+
+  duplicateProject(uuid: string) {
+    this.wsService.ws.next({
+      action: 'project_duplicate',
       value: uuid
     });
   }

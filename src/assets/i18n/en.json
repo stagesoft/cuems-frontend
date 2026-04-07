@@ -123,6 +123,7 @@
     "project.list.delete.projects.description": "This will delete this projects. Are you sure?",
     "project.list.edit": "Edit",
     "project.list.view": "Show",
+    "project.list.duplicate": "Duplicate",
     "project.list.refresh": "Refresh",
     "project.list.no.projects.in.trash": "No projects in trash",
     "project.list.no.projects.in.trash.description": "The trash is empty",
