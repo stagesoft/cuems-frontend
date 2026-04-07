@@ -17,6 +17,7 @@ import { Subscription } from 'rxjs';
 import { v4 as uuidv4 } from 'uuid';
 import { filter } from 'rxjs/operators';
 import { ProjectWorkspaceService } from '../../../../services/project-workspace.service';
+import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 
 interface CueData {
   id: string | number;
@@ -57,7 +58,10 @@ interface CueData {
     TranslateModule,
     TimecodeMaskDirective,
     MultiselectComponent,
-    ActivityDrawerComponent
+    ActivityDrawerComponent,
+    CdkMenu,
+    CdkMenuItem,
+    CdkMenuTrigger
   ],
   templateUrl: './sequence.component.html',
   styleUrl: './sequence.component.css'
@@ -733,6 +737,29 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     setTimeout(() => {
       this.scrollToNewCue(newCueIndex);
+    }, 100);
+  }
+
+  duplicateCue(index: number): void {
+    const original = this.cues[index];
+    
+    const duplicate: CueData = {
+      ...JSON.parse(JSON.stringify(original)),
+      id: this.generateUUID(),
+      name: `${original.name} - Copy`,
+      expanded: false,
+    };
+  
+    this.cues.splice(index + 1, 0, duplicate); // insert just below
+  
+    this.cues.forEach((cue, i) => {
+      cue.order = i + 1;
+    });
+  
+    this.checkForChanges();
+  
+    setTimeout(() => {
+      this.scrollToNewCue(index + 1);
     }, 100);
   }
 
