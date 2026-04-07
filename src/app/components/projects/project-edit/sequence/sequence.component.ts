@@ -746,7 +746,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     const duplicate: CueData = {
       ...JSON.parse(JSON.stringify(original)),
       id: this.generateUUID(),
-      name: `${original.name} - Copy`,
+      name: this.getCopyName(original.name),
       expanded: false,
     };
   
@@ -761,6 +761,19 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.scrollToNewCue(index + 1);
     }, 100);
+  }
+
+  private getCopyName(originalName: string): string {
+    const base = originalName.replace(/\s-\sCopy(\s\(\d+\))?$/, '');
+    const copies = this.cues.map(c => c.name).filter(n =>
+      n === `${base} - Copy` || n.match(new RegExp(`^${base} - Copy \\((\\d+)\\)$`))
+    );
+    if (copies.length === 0) return `${base} - Copy`;
+    const max = copies.reduce((acc, n) => {
+      const match = n.match(/\((\d+)\)$/);
+      return Math.max(acc, match ? parseInt(match[1]) : 1);
+    }, 1);
+    return `${base} - Copy (${max + 1})`;
   }
 
   /**
