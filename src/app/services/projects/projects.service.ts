@@ -1,4 +1,4 @@
-import { Injectable, DestroyRef, EventEmitter, inject, signal } from '@angular/core';
+import { Injectable, DestroyRef, EventEmitter, inject, signal, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WebsocketService, WebSocketError } from '../websocket.service';
 import { NotificationService } from '../ui/notification.service';
@@ -162,7 +162,9 @@ export class ProjectsService {
 
   public projectLoaded = new EventEmitter<any>();
 
-  constructor() {
+  public runningProjectUuid = signal<string | null>(null);
+
+  constructor() {    
     const savedTemplate = localStorage.getItem('initial_template');
     if (savedTemplate) {
       try {
@@ -191,8 +193,14 @@ export class ProjectsService {
         this.extractMappingOptions(mappingsToSet.value);
       } catch (e) {
         console.error('ProjectsService constructor - error parsing mappings:', e);
-      }
+      }     
     }
+
+    effect(() => {
+      if (this.wsService.isConnected()) {
+        this.wsService.wsEmit({ action: 'project_status' });
+      }
+    });     
 
     this.wsService.messages
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -264,7 +272,7 @@ export class ProjectsService {
       } catch (e) {
         console.error('Error processing initial mappings:', e);
       }
-    }
+    }   
 
     if (response && response.type === 'project_list' && Array.isArray(response.value)) {
       handleProjectListResponse(response.value, projects => this.projects.set(projects));
@@ -288,6 +296,19 @@ export class ProjectsService {
       });
 
       this.getProjectList();
+    }
+
+    if (response && response.type === 'project_duplicate' && response.value) {
+      const projectUuid = response.value.new_uuid;
+
+      this.notificationService.showSuccess('Proyecto duplicado exitosamente');
+
+      this.getProjectList();
+      
+      this.router.navigate(['/projects', projectUuid, 'edit']).then(() => {
+      }).catch(err => {
+
+      });
     }
 
     if (response && response.type === 'project_save' && response.value) {
@@ -333,6 +354,17 @@ export class ProjectsService {
     if (response && response.type === 'project' && response.value) {
       this.projectLoaded.emit(response.value);
     }
+
+    if (response && response.type === 'project_status') {
+      const status = response.value?.status;
+      const projectUuid = response.value?.project_uuid;
+      if (status === 'running' && projectUuid) {
+        this.runningProjectUuid.set(projectUuid);
+        if (this.projects().length === 0) {
+          this.getProjectList();
+        }
+      }
+    }     
 
     if (response && response.type === 'error') {
       const error: WebSocketError = {
@@ -409,6 +441,13 @@ export class ProjectsService {
   deleteProject(uuid: string) {
     this.wsService.ws.next({
       action: 'project_delete',
+      value: uuid
+    });
+  }
+
+  duplicateProject(uuid: string) {
+    this.wsService.ws.next({
+      action: 'project_duplicate',
       value: uuid
     });
   }
