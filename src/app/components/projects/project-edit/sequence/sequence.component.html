@@ -310,7 +310,7 @@
                               </select>
                             </div>
   
-                            <div class="field" *ngIf="cue.type !== 'dmx'">
+                            <div class="field" *ngIf="cue.type !== 'dmx' && cue.type !== 'action'">
                               <label class="label">{{ 'loop.type' | translate }}</label>
                               <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-6 mt-3">
@@ -339,7 +339,7 @@
                               </div>
                             </div> 
                             
-                            <div *ngIf="cue.loop === 'loop' && cue.type !== 'dmx'" class="field">
+                            <div *ngIf="cue.loop === 'loop' && cue.type !== 'dmx' && cue.type !== 'action'" class="field">
                               <span class="label">{{ 'loop.number_times' | translate }}</span>
                               <input 
                                 type="number" 
