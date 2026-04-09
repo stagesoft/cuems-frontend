@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, effect, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
 import { ProjectsService } from '../../../../services/projects/projects.service';
@@ -25,6 +25,46 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   public project: any;
   public projectUuid: string | null = null;
   private projectLoadedSubscription?: Subscription;
+
+  private el = inject(ElementRef);
+  private userScrolling = false;
+  private userScrollTimeout: any;
+  private scrollDebounce: any;
+
+  constructor() {
+    effect(() => {
+      const nextCueId = this.oscService.nextCue();
+      if (!nextCueId || this.userScrolling) return;
+  
+      clearTimeout(this.scrollDebounce);
+      this.scrollDebounce = setTimeout(() => {
+        const row = this.el.nativeElement.querySelector(`[data-cue-id="${nextCueId}"]`) as HTMLElement;
+        if (!row) return;
+      
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.scrollHeight;
+        
+        if (documentHeight <= windowHeight) return;
+      
+        const rowTop = row.getBoundingClientRect().top + window.scrollY;
+        const targetScroll = rowTop - (windowHeight / 3); // Top third of the row
+      
+        window.scrollTo({
+          top: Math.max(0, targetScroll),
+          behavior: 'smooth'
+        });
+      }, 300);
+    });
+  }
+
+  @HostListener('window:wheel')
+  onUserScroll(): void {
+    this.userScrolling = true;
+    clearTimeout(this.userScrollTimeout);
+    this.userScrollTimeout = setTimeout(() => {
+      this.userScrolling = false;
+    }, 3000);
+  }  
 
   ngOnInit(): void {
     this.route.parent?.params.subscribe(params => {
@@ -65,10 +105,12 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    clearTimeout(this.scrollDebounce);
+    clearTimeout(this.userScrollTimeout);    
     if (this.projectLoadedSubscription) {
       this.projectLoadedSubscription.unsubscribe();
     }
-  }
+  } 
 
   getCueId(cueItem: any): string {
     if (cueItem.AudioCue) return cueItem.AudioCue.id;

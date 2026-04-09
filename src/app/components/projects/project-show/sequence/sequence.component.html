@@ -23,6 +23,7 @@
           </thead>
           <tbody class="divide-y divide-gray-200">
             <tr *ngFor="let cueItem of project.CuemsScript.CueList.contents; let i = index"
+                [attr.data-cue-id]="getCueId(cueItem)"
                 [class]="getCuePlaybackClasses(cueItem)"
                 class="hover:bg-dark-200 transition-colors cursor-pointer"
                 (click)="onClickSetNextCue(cueItem)">
