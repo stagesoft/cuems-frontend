@@ -34,6 +34,7 @@ interface CueData {
   loop_times: number; // -1 for infinite, positive number for specific times
   notes: string;
   expanded: boolean;
+  enabled: boolean;
   activeTab: 'notes' | 'edit' | 'media';
   selectedMediaFile?: {uuid: string, file: any};
   selectedAudioOutput?: string;
@@ -455,6 +456,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         loop: this.determineLoopType(cueData.loop),
         loop_times: this.determineLoopTimes(cueData.loop),
         notes: cueData.description || '',
+        enabled: cueData.enabled === true || cueData.enabled === 'True',
         expanded: false,
         activeTab: 'notes' as 'notes' | 'edit' | 'media',
         selectedMediaFile,
@@ -618,6 +620,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       loop: 'loop',
       loop_times: 1,
       notes: '',
+      enabled: true,
       expanded: true,
       activeTab: 'edit' as 'notes' | 'edit' | 'media',
       selectedMediaFile: undefined,
@@ -895,6 +898,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     newCue.offset = { CTimecode: this.ensureMilliseconds(cue.time) };
     newCue.prewait = { CTimecode: this.ensureMilliseconds(cue.prewait) };
     newCue.postwait = { CTimecode: this.ensureMilliseconds(cue.postwait) };
+
+    newCue.enabled = cue.enabled ? 'True' : 'False';
 
     // Assign loop: -1 for infinite, positive number for specific times
     newCue.loop = cue.loop === 'inf' ? -1 : cue.loop_times;
