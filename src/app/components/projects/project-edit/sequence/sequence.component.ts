@@ -548,12 +548,15 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
   public checkForChanges(): void {
-    this.hasUnsavedChanges = JSON.stringify(this.cues) !== JSON.stringify(this.originalCues);
+    const cuesForComparison = this.cues.map(({ expanded, activeTab, ...rest }) => rest);
+    const originalsForComparison = this.originalCues.map(({ expanded, activeTab, ...rest }) => rest);
+
+    this.hasUnsavedChanges = JSON.stringify(cuesForComparison) !== JSON.stringify(originalsForComparison);
 
     if (this.projectUuid) {
       this.editStateService.saveTemporaryCues(this.projectUuid, this.cues, this.hasUnsavedChanges);
     }
-
+  
     if (this.projectUuid) {
       if (this.hasUnsavedChanges) {
         const cueListData = this.prepareCueListForSaving();
