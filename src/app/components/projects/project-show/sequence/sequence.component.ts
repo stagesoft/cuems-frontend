@@ -7,12 +7,13 @@ import { ActivityDrawerComponent } from '../../../ui/activity-drawer/activity-dr
 import { DrawerService } from '../../../../services/ui/drawer.service';
 import { Subscription } from 'rxjs';
 import { OscService } from '../../../../services/osc.service';
+import { TranslateModule } from '@ngx-translate/core';
 
 @Component({
   selector: 'app-project-show-sequence',
   templateUrl: './sequence.component.html',
   standalone: true,
-  imports: [CommonModule, IconComponent, ActivityDrawerComponent]
+  imports: [CommonModule, IconComponent, ActivityDrawerComponent, TranslateModule]
 })
 export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
@@ -213,5 +214,19 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   onClickSetNextCue(cueItem: any): void {
     const uuid = this.getCueId(cueItem);
     this.oscService.setNextCue(uuid);
-  }  
+  }
+  
+  isCueEnabled(cueItem: any): boolean {
+    const cueData = cueItem.AudioCue || cueItem.VideoCue || cueItem.ActionCue || cueItem.DmxCue;
+    return cueData?.enabled === true || cueData?.enabled === 'True';
+  }
+  
+  onToggleEnabled(cueItem: any, event: Event): void {
+    event.stopPropagation();
+    const cueData = cueItem.AudioCue || cueItem.VideoCue || cueItem.ActionCue || cueItem.DmxCue;
+    if (!cueData) return;
+    const newEnabled = !(cueData.enabled === true || cueData.enabled === 'True');
+    console.log('Toggle enabled:', this.getCueId(cueItem), newEnabled);
+    // TODO: send to OSC realtime
+  }
 }
