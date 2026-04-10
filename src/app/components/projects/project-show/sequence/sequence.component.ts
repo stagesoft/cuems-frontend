@@ -217,16 +217,14 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   }
   
   isCueEnabled(cueItem: any): boolean {
-    const cueData = cueItem.AudioCue || cueItem.VideoCue || cueItem.ActionCue || cueItem.DmxCue;
-    return cueData?.enabled === true || cueData?.enabled === 'True';
+    const uuid = this.getCueId(cueItem);
+    return this.oscService.isCueEnabled(uuid);
   }
   
   onToggleEnabled(cueItem: any, event: Event): void {
     event.stopPropagation();
-    const cueData = cueItem.AudioCue || cueItem.VideoCue || cueItem.ActionCue || cueItem.DmxCue;
-    if (!cueData) return;
-    const newEnabled = !(cueData.enabled === true || cueData.enabled === 'True');
-    console.log('Toggle enabled:', this.getCueId(cueItem), newEnabled);
-    // TODO: send to OSC realtime
+    const uuid = this.getCueId(cueItem);
+    const newEnabled = !this.oscService.isCueEnabled(uuid);
+    this.oscService.setCueEnabled(uuid, newEnabled);
   }
 }
