@@ -193,6 +193,11 @@
   @apply text-red-500;
 }
 
+.cdk-overlay-container {
+  position: fixed !important;
+  z-index: 10000 !important;
+}
+
 .cue-disabled {
   background: repeating-linear-gradient(
     45deg,
