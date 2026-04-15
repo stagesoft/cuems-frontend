@@ -425,10 +425,11 @@
                                       class="input w-full"
                                       [value]="channel.channel"
                                       (input)="onDmxChannelNumChange(cue, channelIndex, $event)"
+                                      (blur)="onDmxChannelNumBlur(cue, channelIndex, $event)"
                                       [class.border-red-500]="!isDmxChannelNumValid(cue, channel.channel, channelIndex)"
                                       min="1"
                                       max="512"
-                                      placeholder="1">
+                                      placeholder="">
                                     <div *ngIf="!isDmxChannelNumValid(cue, channel.channel, channelIndex)" 
                                          class="text-xs text-red-400 mt-1">
                                       {{ 'dmx.channel.duplicate.error' | translate }}

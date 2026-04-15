@@ -1381,24 +1381,52 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
   
   /**
-   * Handle the change of DMX channel number
+   * Handle live input of DMX channel number (update model only if valid)
    */
   onDmxChannelNumChange(cue: CueData, index: number, event: Event): void {
     const input = event.target as HTMLInputElement;
-    let newChannel = parseInt(input.value, 10);
-    if (isNaN(newChannel) || newChannel < 1) newChannel = 1;
+    const raw = input.value.trim();
+
+    if (raw === '') return;
+
+    let newChannel = parseInt(raw, 10);
+    if (isNaN(newChannel)) return;
+
+    if (newChannel < 1) newChannel = 1;
     if (newChannel > 512) newChannel = 512;
-    
+
     if (cue.type !== 'dmx' || !cue.dmx_channels || !cue.dmx_channels[index]) return;
-    
+
+    if (this.isDmxChannelNumValid(cue, newChannel, index)) {
+      cue.dmx_channels[index].channel = newChannel;
+      this.checkForChanges();
+    }
+  }
+
+  /**
+   * Clamp and restore DMX channel number on blur
+   */
+  onDmxChannelNumBlur(cue: CueData, index: number, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const raw = input.value.trim();
+
+    if (cue.type !== 'dmx' || !cue.dmx_channels || !cue.dmx_channels[index]) return;
+
+    if (raw === '' || isNaN(parseInt(raw, 10))) {
+      input.value = cue.dmx_channels[index].channel.toString();
+      return;
+    }
+
+    let newChannel = parseInt(raw, 10);
+    if (newChannel < 1) newChannel = 1;
+    if (newChannel > 512) newChannel = 512;
+
     if (this.isDmxChannelNumValid(cue, newChannel, index)) {
       cue.dmx_channels[index].channel = newChannel;
       input.value = String(newChannel);
       this.checkForChanges();
     } else {
-      setTimeout(() => {
-        input.value = cue.dmx_channels![index].channel.toString();
-      });
+      input.value = cue.dmx_channels[index].channel.toString();
     }
   }
   
