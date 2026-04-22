@@ -41,7 +41,13 @@
             (click)="addCue('action')">
             <app-icon icon="action" class="w-8 h-8"></app-icon>
             <span class="text-xs lg:text-sm">{{ 'project.cue.action' | translate }}</span>
-          </button>       
+          </button>
+          
+          <button class="flex flex-col items-center gap-2 p-3 rounded-lg min-w-[60] lg:min-w-0 lg:w-full lg:justify-center hover:bg-primary hover:text-white transition-colors"
+            (click)="addCue('fade')">
+            <app-icon icon="fade" class="w-8 h-8"></app-icon>
+            <span class="text-xs lg:text-sm">{{ 'project.cue.fade' | translate }}</span>
+          </button>          
           
           <div class="border-t border-gray-300 my-2"></div>
           
@@ -285,7 +291,7 @@
                               </select>
                             </div>
   
-                            <div class="field" *ngIf="cue.type !== 'dmx' && cue.type !== 'action'">
+                            <div class="field" *ngIf="cue.type !== 'dmx' && cue.type !== 'action' && cue.type !== 'fade'">
                               <label class="label">{{ 'loop.type' | translate }}</label>
                               <div class="flex items-center justify-between">
                                 <div class="flex items-center space-x-6 mt-3">
@@ -314,7 +320,7 @@
                               </div>
                             </div> 
                             
-                            <div *ngIf="cue.loop === 'loop' && cue.type !== 'dmx' && cue.type !== 'action'" class="field">
+                            <div *ngIf="cue.loop === 'loop' && cue.type !== 'dmx' && cue.type !== 'action' && cue.type !== 'fade'" class="field">
                               <span class="label">{{ 'loop.number_times' | translate }}</span>
                               <input 
                                 type="number" 
@@ -493,6 +499,54 @@
                                 <option value="stop">{{ 'action.type.stop' | translate }}</option>
                                 <option value="fade">{{ 'action.type.fade' | translate }}</option>
                               </select>
+                            </div>
+
+                            <div class="field">
+                              <label class="label">{{ 'action.target.cue' | translate }}</label>
+                              <app-multiselect
+                                [options]="getCueOptionsForAction(cue)"
+                                [multiple]="false"
+                                [placeholder]="'action.target.cue.placeholder' | translate"
+                                [ngModel]="cue.action_target"
+                                (selectionChange)="onActionTargetChange($event, cue)">
+                              </app-multiselect>
+                            </div>
+                          </div>
+                          
+                          <!-- Fade Cues -->
+                          <div *ngIf="cue.type === 'fade'" class="space-y-4">
+                            <div class="field">
+                              <label class="label">{{ 'fade.curve.type' | translate }}</label>
+                              <select 
+                                class="input"
+                                [(ngModel)]="cue.fade_curve_type"
+                                (ngModelChange)="checkForChanges()">
+                                <option value="linear">{{ 'fade.curve.linear' | translate }}</option>
+                                <option value="exponential">{{ 'fade.curve.exponential' | translate }}</option>
+                                <option value="logarithmic">{{ 'fade.curve.logarithmic' | translate }}</option>
+                                <option value="sigmoid">{{ 'fade.curve.sigmoid' | translate }}</option>
+                              </select>
+                            </div>
+
+                            <div class="field">
+                              <label class="label">{{ 'fade.duration' | translate }}</label>
+                              <app-timecode-input
+                                variant="default"
+                                [(value)]="cue.fade_duration!"
+                                (valueChange)="cue.fade_duration = $event; checkForChanges()">
+                              </app-timecode-input>
+                            </div>
+
+                            <div class="field">
+                              <label class="label">{{ 'fade.target.value' | translate }}</label>
+                              <input 
+                                type="number"
+                                class="input"
+                                [(ngModel)]="cue.fade_target_value"
+                                (ngModelChange)="checkForChanges()"
+                                min="0"
+                                max="100"
+                                step="1">
                             </div>
 
                             <div class="field">

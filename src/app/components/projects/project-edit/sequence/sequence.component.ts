@@ -24,7 +24,7 @@ interface CueData {
   id: string | number;
   order: number;
   name: string;
-  type: 'action' | 'audio' | 'video' | 'dmx';
+  type: 'action' | 'audio' | 'video' | 'dmx' | 'fade';
   time: string;
   prewait: string;
   postwait: string;
@@ -47,6 +47,9 @@ interface CueData {
   originalData?: any;
   action_target?: string | null;
   action_type?: string;
+  fade_curve_type?: 'linear' | 'exponential' | 'logarithmic' | 'sigmoid';
+  fade_duration?: string;
+  fade_target_value?: number;
 }
 
 @Component({
@@ -282,7 +285,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   private transformCuesFromProject(projectCues: any[]): CueData[] {
     return projectCues.map((cueItem, index) => {
       let cueData: any = null;
-      let cueType: 'action' | 'audio' | 'video' | 'dmx' = 'audio';
+      let cueType: 'action' | 'audio' | 'video' | 'dmx' | 'fade' = 'audio';
 
       if (cueItem.AudioCue) {
         cueData = cueItem.AudioCue;
@@ -296,6 +299,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       } else if (cueItem.DmxCue) {
         cueData = cueItem.DmxCue;
         cueType = 'dmx';
+      } else if (cueItem.FadeCue) {
+        cueData = cueItem.FadeCue;
+        cueType = 'fade';
       }
 
       if (!cueData) {
@@ -467,8 +473,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         universe_num,
         fade_in_time: cueType === 'dmx' ? (() => { const ms = cueData.fadein_time ?? cueData.fade_in_time; return ms != null ? Number(ms) / 1000 : 0; })() : undefined,
         master_vol: cueData.master_vol || 20,
-        action_target: cueType === 'action' ? (cueData.action_target || null) : undefined,
-        action_type: cueType === 'action' ? (cueData.action_type || 'play') : undefined,
+        action_target: (cueType === 'action' || cueType === 'fade') ? (cueData.action_target || null) : undefined,
+        action_type: cueType === 'action' ? (cueData.action_type || 'play') : cueType === 'fade' ? 'fade_action' : undefined,
+        fade_curve_type: cueType === 'fade' ? (cueData.curve_type || 'linear') : undefined,
+        fade_duration: cueType === 'fade' ? this.formatTimecode(cueData.duration?.CTimecode || '00:00:01.000') : undefined,
+        fade_target_value: cueType === 'fade' ? (cueData.target_value ?? 0) : undefined,
         originalData: cueItem // Keep original data
       };
     }).filter(cue => cue !== null) as CueData[];
@@ -602,12 +611,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     this.cues[index].expanded = false;
   }
 
-  addCue(type: 'action' | 'audio' | 'video' | 'dmx') {
+  addCue(type: 'action' | 'audio' | 'video' | 'dmx' | 'fade') {
     const defaultNames = {
       action: this.translateService.instant('new.action'),
       audio: this.translateService.instant('new.audio'),
       video: this.translateService.instant('new.video'),
-      dmx: this.translateService.instant('new.dmx')
+      dmx: this.translateService.instant('new.dmx'),
+      fade: this.translateService.instant('new.fade')
     };
 
     const newCue: CueData = {
@@ -701,6 +711,14 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       newCue.action_target = null;
       newCue.action_type = 'play';
     }
+
+    if (type === 'fade') {
+      newCue.action_target = null;
+      newCue.action_type = 'fade_action';
+      newCue.fade_curve_type = 'linear';
+      newCue.fade_duration = '00:00:01.000';
+      newCue.fade_target_value = 0;
+    }    
     
     if (type !== 'audio' && type !== 'video' && type !== 'dmx') {
       newCue.selectedOutputs = [];
@@ -885,6 +903,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         templateCue = item['DmxCue'];
         cueTypeKey = 'DmxCue';
         break;
+      } else if (cue.type === 'fade' && itemKeys.includes('FadeCue')) {
+        templateCue = item['FadeCue'];
+        cueTypeKey = 'FadeCue';
+        break;
       }
     }
 
@@ -919,6 +941,15 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     if (cue.type === 'action') {
       newCue.action_target = cue.action_target || null;
       newCue.action_type = cue.action_type || 'play';
+    }
+    
+    if (cue.type === 'fade') {
+      newCue.curve_type = cue.fade_curve_type || 'linear';
+      newCue.duration = { CTimecode: this.ensureMilliseconds(cue.fade_duration || '00:00:01.000') };
+      newCue.target_value = cue.fade_target_value ?? 0;
+      newCue.action_target = cue.action_target || null;
+      newCue.action_type = 'fade_action';
+      if (newCue.Media) delete newCue.Media;
     }    
 
     if (cue.type === 'audio' || cue.type === 'video') {
@@ -1035,7 +1066,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
   public shouldShowWarningIcon(cue: CueData): boolean {
     // Only for audio/video, no action, no dmx
-    if ((cue.type === 'action') || (cue.type === 'dmx')) return false;
+    if ((cue.type === 'action') || (cue.type === 'dmx') || (cue.type === 'fade')) return false;
 
     // If there is a media file selected, no show warning
     if (cue.selectedMediaFile) return false;
@@ -1056,7 +1087,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     
     const keys = Object.keys(originalData);
     const cueTypeKeys = keys.filter(key => 
-      key === 'AudioCue' || key === 'VideoCue' || key === 'ActionCue' || key === 'DmxCue'
+      key === 'AudioCue' || key === 'VideoCue' || key === 'ActionCue' || key === 'DmxCue' || key === 'FadeCue'
     );
     
     return cueTypeKeys[0] || null;
@@ -1569,5 +1600,5 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     });
 
     this.checkForChanges();
-  }  
+  } 
 }

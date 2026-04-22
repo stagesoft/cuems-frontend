@@ -118,6 +118,7 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     else if (cueItem.VideoCue) return cueItem.VideoCue.id;
     else if (cueItem.ActionCue) return cueItem.ActionCue.id;
     else if (cueItem.DmxCue) return cueItem.DmxCue.id;
+    else if (cueItem.FadeCue) return cueItem.FadeCue.id;
     return 'unknown';
   }
 
@@ -130,6 +131,8 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
       return cueItem.ActionCue.name || 'Unnamed Action Cue';
     } else if (cueItem.DmxCue) {
       return cueItem.DmxCue.name || 'Unnamed Dmx Cue';
+    } else if (cueItem.FadeCue) {
+      return cueItem.FadeCue.name || 'Unnamed Fade Cue';
     }
     return 'Unknown Cue';
   }
@@ -139,6 +142,7 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     if (cueItem.VideoCue) return 'video';
     if (cueItem.ActionCue) return 'action';
     if (cueItem.DmxCue) return 'dmx';
+    if (cueItem.FadeCue) return 'fade';
     return 'action';
   }
 
@@ -148,6 +152,7 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
     else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
     else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
+    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
     return cueData?.prewait?.CTimecode || '00:00:00.000';
   }
 
@@ -157,6 +162,7 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
     else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
     else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
+    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
     return cueData?.postwait?.CTimecode || '00:00:00.000';
   }
 
@@ -166,6 +172,7 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
     else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
     else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
+    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
     const postGo = cueData?.post_go || 'pause';
     return 'post_go_' + postGo;
   }
@@ -183,6 +190,7 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
     else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
     else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
+    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
     return cueData?.Media?.duration || '-';
   }
 
