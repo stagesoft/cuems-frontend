@@ -539,7 +539,7 @@ export class ProjectsService {
   }
 
   private getOutputDisplayName(outputData: any, nodeNumber: number): string {
-    return outputData.output?.name || `node${nodeNumber}:unknown`;
+    return `node${nodeNumber}:${outputData.output?.name || 'unknown'}`;
   }
 
   /**
