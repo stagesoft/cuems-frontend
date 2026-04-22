@@ -111,12 +111,12 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
           
           node.video.forEach((videoSection: any) => {
             if (videoSection.outputs) {
-              videoSection.outputs.forEach((outputWrapper: any, outputIndex: number) => {
+              videoSection.outputs.forEach((outputWrapper: any) => {
                 outputs.push({
                   parentId: node.uuid,
-                  id: `${node.uuid}_${outputWrapper.output.id ?? outputWrapper.output.name}`,
+                  id: `${node.uuid}_${outputWrapper.output.id}`,
                   name: outputWrapper.output.name,
-                  index: outputIndex
+                  index: outputWrapper.output.id
                 });
               });
             }

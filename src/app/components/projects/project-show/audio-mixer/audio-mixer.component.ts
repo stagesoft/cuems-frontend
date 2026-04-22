@@ -97,13 +97,14 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
           const outputs: any[] = [];
           node.audio.forEach((audioSection: any) => {
             if (audioSection.outputs) {
-              audioSection.outputs.forEach((outputWrapper: any, outputIndex: number) => {
+              audioSection.outputs.forEach((outputWrapper: any) => {
+                const outputId = outputWrapper.output.id;
                 outputs.push({
                   parentId: node.uuid,
-                  id: `${node.uuid}_${outputWrapper.output.id ?? outputWrapper.output.name}`,
+                  id: `${node.uuid}_${outputId}`,
                   name: outputWrapper.output.name,
-                  volume: this.audioMixerStateService.getOutputVolume(`${node.uuid}_${outputWrapper.output.id ?? outputWrapper.output.name}`),
-                  index: outputIndex
+                  volume: this.audioMixerStateService.getOutputVolume(`${node.uuid}_${outputId}`),
+                  index: outputId
                 });
               });
             }
