@@ -19,6 +19,7 @@ import { filter } from 'rxjs/operators';
 import { ProjectWorkspaceService } from '../../../../services/project-workspace.service';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/confirmation-dialog.component';
+import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
 
 interface CueData {
   id: string | number;
@@ -50,6 +51,8 @@ interface CueData {
   fade_curve_type?: 'linear' | 'exponential' | 'logarithmic' | 'sigmoid';
   fade_duration?: string;
   fade_target_value?: number;
+  is_custom_output?: boolean;
+  canvas_region?: { x: number; y: number; width: number; height: number };
 }
 
 @Component({
@@ -67,7 +70,8 @@ interface CueData {
     CdkMenuItem,
     CdkMenuTrigger,
     ConfirmationDialogComponent,
-    TimecodeInputComponent
+    TimecodeInputComponent,
+    CanvasRegionVisualizerComponent
   ],
   templateUrl: './sequence.component.html',
   styleUrl: './sequence.component.css'
@@ -328,7 +332,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
       let selectedAudioOutput: string | undefined = undefined;
       let selectedVideoOutput: string | undefined = undefined;
-      let selectedOutputs: string[] = [];
+      let selectedOutputs: string[] = [];                        
+      let hasCanvasRegion = false;
+      let canvasRegion = { x: 0, y: 0, width: 1, height: 1 };
 
       
       if (cueType === 'audio') {         
@@ -418,6 +424,14 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           if (validOutputs.length > 0) {
             selectedOutputs = validOutputs;
             selectedVideoOutput = validOutputs[0];
+
+            
+            const firstVideoCueOutput = cueData.outputs?.[0]?.VideoCueOutput 
+                        ?? cueData.VideoCueOutput;
+            if (firstVideoCueOutput?.canvas_region != null) {
+              hasCanvasRegion = true;
+              canvasRegion = firstVideoCueOutput.canvas_region;
+            }            
           } else {
             const mappingsResponse = this.projectsService.initialMappings();
             const defaultOutput = mappingsResponse?.value?.default_video_output;
@@ -478,6 +492,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         fade_curve_type: cueType === 'fade' ? (cueData.curve_type || 'linear') : undefined,
         fade_duration: cueType === 'fade' ? this.formatTimecode(cueData.duration?.CTimecode || '00:00:01.000') : undefined,
         fade_target_value: cueType === 'fade' ? (cueData.target_value ?? 0) : undefined,
+        is_custom_output: hasCanvasRegion,
+        canvas_region: canvasRegion,
         originalData: cueItem // Keep original data
       };
     }).filter(cue => cue !== null) as CueData[];
@@ -669,6 +685,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
     
     if (type === 'video') {
+      newCue.is_custom_output = false;
+      newCue.canvas_region = { x: 0, y: 0, width: 1, height: 1 };
+
       if (this.videoMappingOptions.length > 0) {
         newCue.selectedVideoOutput = this.videoMappingOptions[0].value;
         newCue.selectedOutputs = [this.videoMappingOptions[0].value];
@@ -986,15 +1005,25 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
         this.assignMultipleAudioOutputs(newCue, selectedOutputs);
       } else if (cue.type === 'video') {
-        let selectedOutputs: string[] = [];
-        
-        if (cue.selectedOutputs && Array.isArray(cue.selectedOutputs) && cue.selectedOutputs.length > 0) {
-          selectedOutputs = cue.selectedOutputs;
-        } else if (cue.selectedVideoOutput) {
-          selectedOutputs = [cue.selectedVideoOutput];
+        if (cue.is_custom_output && cue.canvas_region) {
+          const templateVideoOutput = this.getTemplateOutputStructure('video');
+          if (templateVideoOutput) {
+            const parsed = this.projectsService.parseOutputString(cue.selectedOutputs?.[0] || '');
+            const nodeUuid = parsed?.uuid || '';
+            const cloned = JSON.parse(JSON.stringify(templateVideoOutput));
+            cloned.output_name = `${nodeUuid}_custom_0`;
+            cloned.canvas_region = { ...cue.canvas_region };
+            newCue.outputs = [{ VideoCueOutput: cloned }];
+          }
+        } else {
+          let selectedOutputs: string[] = [];
+          if (cue.selectedOutputs && Array.isArray(cue.selectedOutputs) && cue.selectedOutputs.length > 0) {
+            selectedOutputs = cue.selectedOutputs;
+          } else if (cue.selectedVideoOutput) {
+            selectedOutputs = [cue.selectedVideoOutput];
+          }
+          this.assignMultipleVideoOutputs(newCue, selectedOutputs);
         }
-        
-        this.assignMultipleVideoOutputs(newCue, selectedOutputs);
       }
     }
 
@@ -1600,5 +1629,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     });
 
     this.checkForChanges();
-  } 
+  }
+  
+  public isCanvasRegionValid(cue: CueData): boolean {
+    if (!cue.is_custom_output || !cue.canvas_region) return true;
+    const { x, y, width, height } = cue.canvas_region;
+    return x >= 0 && y >= 0 && width > 0 && height > 0
+        && parseFloat((x + width).toFixed(10)) <= 1
+        && parseFloat((y + height).toFixed(10)) <= 1;
+  }  
 }

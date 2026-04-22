@@ -1,0 +1,36 @@
+<div class="mt-4">
+  <span class="text-xs text-gray-400 uppercase tracking-wider">canvas preview</span>
+
+  <div class="mt-2 rounded border border-dark-300 overflow-hidden bg-dark-400" style="aspect-ratio: 16/9; position: relative;">
+    <svg [attr.viewBox]="'0 0 ' + VW + ' ' + VH" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" style="display:block;">
+
+      <!-- Canvas border -->
+      <rect x="0" y="0" [attr.width]="VW" [attr.height]="VH" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.5"/>
+
+      <!-- Grid lines -->
+      <line [attr.x1]="VW/2" y1="0" [attr.x2]="VW/2" [attr.y2]="VH" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2 2"/>
+      <line x1="0" [attr.y1]="VH/2" [attr.x2]="VW" [attr.y2]="VH/2" stroke="rgba(255,255,255,0.04)" stroke-width="0.5" stroke-dasharray="2 2"/>
+
+      <!-- Axis labels -->
+      <text x="3" y="7" font-size="5" fill="rgba(255,255,255,0.3)" font-family="monospace">(0,0)</text>
+      <text [attr.x]="VW - 3" [attr.y]="VH - 2" font-size="5" fill="rgba(255,255,255,0.3)" font-family="monospace" text-anchor="end">(1,1)</text>
+      <text [attr.x]="VW/2" y="6" font-size="5" fill="rgba(255,255,255,0.25)" text-anchor="middle" font-family="monospace">x →</text>
+      <text x="5" [attr.y]="VH/2" font-size="5" fill="rgba(255,255,255,0.25)" text-anchor="middle" font-family="monospace" [attr.transform]="'rotate(-90, 5, ' + VH/2 + ')'">y ↓</text>
+
+      @if (svgRect().valid && svgRect().width > 0) {
+        <rect [attr.x]="svgRect().x" [attr.y]="svgRect().y" [attr.width]="svgRect().width" [attr.height]="svgRect().height" fill="rgba(99,102,241,0.15)" stroke="none" rx="1"/>
+        <rect [attr.x]="svgRect().x" [attr.y]="svgRect().y" [attr.width]="svgRect().width" [attr.height]="svgRect().height" fill="rgba(99,102,241,0.2)" stroke="rgba(99,102,241,0.8)" stroke-width="0.75" rx="1"/>
+        <circle [attr.cx]="svgRect().x" [attr.cy]="svgRect().y" r="1.2" fill="rgb(99,102,241)"/>
+        <circle [attr.cx]="svgRect().x + svgRect().width" [attr.cy]="svgRect().y" r="1.2" fill="rgb(99,102,241)"/>
+        <circle [attr.cx]="svgRect().x" [attr.cy]="svgRect().y + svgRect().height" r="1.2" fill="rgb(99,102,241)"/>
+        <circle [attr.cx]="svgRect().x + svgRect().width" [attr.cy]="svgRect().y + svgRect().height" r="1.2" fill="rgb(99,102,241)"/>
+        <text [attr.x]="svgRect().cx" [attr.y]="svgRect().cy + 2" font-size="6" fill="rgba(99,102,241,0.9)" text-anchor="middle" font-family="monospace">region</text>
+      }
+
+      @if (!svgRect().valid) {
+        <text [attr.x]="VW/2" [attr.y]="VH/2 + 2" font-size="7" fill="rgba(239,68,68,0.7)" text-anchor="middle" font-family="monospace">invalid</text>
+      }
+
+    </svg>
+  </div>
+</div>

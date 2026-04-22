@@ -391,6 +391,67 @@
                             </app-multiselect>                            
                             </div>
                           </div>
+
+                          <!-- Custom output checkbox -->
+                          <div *ngIf="cue.type === 'video'" class="field mt-3">
+                            <div class="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                [id]="'custom_output_' + i"
+                                class="checkbox"
+                                [(ngModel)]="cue.is_custom_output"
+                                (ngModelChange)="checkForChanges()">
+                              <label class="label-inline mt-2" [for]="'custom_output_' + i">
+                                {{ 'video.custom.output' | translate }}
+                              </label>
+                            </div>
+                          </div>
+
+                          <div *ngIf="cue.type === 'video' && cue.is_custom_output && cue.canvas_region" class="lg:grid lg:grid-cols-2 lg:gap-8 mt-4">
+  
+                            <!-- Col 1: inputs -->
+                            <div>
+                              <label class="label">{{ 'video.canvas.region' | translate }}</label>
+                              <div class="grid grid-cols-2 gap-3 mt-2">
+                                <div>
+                                  <label class="text-xs text-gray-400">X</label>
+                                  <input type="number" class="input" step="0.01" min="0" max="1"
+                                    [(ngModel)]="cue.canvas_region.x"
+                                    (ngModelChange)="checkForChanges()">
+                                </div>
+                                <div>
+                                  <label class="text-xs text-gray-400">Y</label>
+                                  <input type="number" class="input" step="0.01" min="0" max="1"
+                                    [(ngModel)]="cue.canvas_region.y"
+                                    (ngModelChange)="checkForChanges()">
+                                </div>
+                                <div>
+                                  <label class="text-xs text-gray-400">{{ 'video.canvas.width' | translate }}</label>
+                                  <input type="number" class="input" step="0.01" min="0.01" max="1"
+                                    [(ngModel)]="cue.canvas_region.width"
+                                    (ngModelChange)="checkForChanges()">
+                                </div>
+                                <div>
+                                  <label class="text-xs text-gray-400">{{ 'video.canvas.height' | translate }}</label>
+                                  <input type="number" class="input" step="0.01" min="0.01" max="1"
+                                    [(ngModel)]="cue.canvas_region.height"
+                                    (ngModelChange)="checkForChanges()">
+                                </div>
+                              </div>
+                              <p *ngIf="!isCanvasRegionValid(cue)" class="text-xs text-red-400 mt-2">
+                                {{ 'video.canvas.region.invalid' | translate }}
+                              </p>
+                            </div>
+                          
+                            <!-- Col 2: visualizer -->
+                            <app-canvas-region-visualizer
+                              [x]="cue.canvas_region.x"
+                              [y]="cue.canvas_region.y"
+                              [width]="cue.canvas_region.width"
+                              [height]="cue.canvas_region.height">
+                            </app-canvas-region-visualizer>
+                          
+                          </div>                         
   
                           <!-- DMX Cues - Configuración de canales -->
                           <div *ngIf="cue.type === 'dmx'" class="space-y-4">
