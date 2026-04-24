@@ -104,7 +104,7 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
       }
       
       return mappings.nodes
-        .filter((nodeWrapper: any) => nodeWrapper?.node?.video !== null)
+        .filter((nodeWrapper: any) => Array.isArray(nodeWrapper?.node?.video))
         .map((nodeWrapper: any, nodeIndex: number) => {
           const node = nodeWrapper.node;
           const outputs: VideoOutputRaw[] = [];
