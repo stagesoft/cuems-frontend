@@ -410,37 +410,50 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         
         if (videoOutputs.length > 0) {
           const validOutputs: string[] = [];
-          
-          for (const videoOutput of videoOutputs) {
-            const parsedOutput = this.projectsService.parseOutputString(videoOutput);
-            if (parsedOutput) {
-              const foundInCurrentMappings = this.projectsService.findOutputInMappings(parsedOutput.uuid, parsedOutput.name);
-              if (foundInCurrentMappings) {
-                validOutputs.push(videoOutput);
+        
+          // Separate custom from alias
+          const aliasOutputs = videoOutputs.filter(o => !o.includes('_custom_'));
+          const customOutputs = videoOutputs.filter(o => o.includes('_custom_'));
+        
+          if (customOutputs.length > 0) {
+            // Detect canvas_region of the first custom
+            const customCueOutput = cueData.outputs?.find((o: any) =>
+              o.VideoCueOutput?.output_name?.includes('_custom_'))?.VideoCueOutput;
+            if (customCueOutput?.canvas_region != null) {
+              hasCanvasRegion = true;
+              canvasRegion = customCueOutput.canvas_region;
+            }
+            // Use saved alias if there are any
+            if (aliasOutputs.length > 0) {
+              selectedOutputs = [...aliasOutputs];
+              selectedVideoOutput = aliasOutputs[0];
+            } else if (this.videoMappingOptions.length > 0) {
+              selectedOutputs = [this.videoMappingOptions[0].value];
+              selectedVideoOutput = this.videoMappingOptions[0].value;
+            }
+          } else {
+            // Only alias — validate against mappings as before
+            for (const videoOutput of aliasOutputs) {
+              const parsedOutput = this.projectsService.parseOutputString(videoOutput);
+              if (parsedOutput) {
+                const found = this.projectsService.findOutputInMappings(parsedOutput.uuid, parsedOutput.name);
+                if (found) validOutputs.push(videoOutput);
               }
             }
-          }
-          
-          if (validOutputs.length > 0) {
-            selectedOutputs = validOutputs;
-            selectedVideoOutput = validOutputs[0];
-
-            
-            const firstVideoCueOutput = cueData.outputs?.[0]?.VideoCueOutput 
-                        ?? cueData.VideoCueOutput;
-            if (firstVideoCueOutput?.canvas_region != null) {
-              hasCanvasRegion = true;
-              canvasRegion = firstVideoCueOutput.canvas_region;
-            }            
-          } else {
-            const mappingsResponse = this.projectsService.initialMappings();
-            const defaultOutput = mappingsResponse?.value?.default_video_output;
-            if (defaultOutput && this.videoMappingOptions.length > 0) {
-              selectedVideoOutput = this.videoMappingOptions[0].value;
-              selectedOutputs = [this.videoMappingOptions[0].value];
+        
+            if (validOutputs.length > 0) {
+              selectedOutputs = validOutputs;
+              selectedVideoOutput = validOutputs[0];
             } else {
-              selectedOutputs = videoOutputs;
-              selectedVideoOutput = videoOutputs[0];
+              const mappingsResponse = this.projectsService.initialMappings();
+              const defaultOutput = mappingsResponse?.value?.default_video_output;
+              if (defaultOutput && this.videoMappingOptions.length > 0) {
+                selectedVideoOutput = this.videoMappingOptions[0].value;
+                selectedOutputs = [this.videoMappingOptions[0].value];
+              } else {
+                selectedOutputs = videoOutputs;
+                selectedVideoOutput = videoOutputs[0];
+              }
             }
           }
         }
@@ -1005,16 +1018,24 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
         this.assignMultipleAudioOutputs(newCue, selectedOutputs);
       } else if (cue.type === 'video') {
-        if (cue.is_custom_output && cue.canvas_region) {
-          const templateVideoOutput = this.getTemplateOutputStructure('video');
-          if (templateVideoOutput) {
-            const parsed = this.projectsService.parseOutputString(cue.selectedOutputs?.[0] || '');
-            const nodeUuid = parsed?.uuid || '';
-            const cloned = JSON.parse(JSON.stringify(templateVideoOutput));
-            cloned.output_name = `${nodeUuid}_custom_0`;
-            cloned.canvas_region = { ...cue.canvas_region };
-            newCue.outputs = [{ VideoCueOutput: cloned }];
-          }
+          if (cue.is_custom_output && cue.canvas_region) {
+            const templateVideoOutput = this.getTemplateOutputStructure('video');
+            if (templateVideoOutput) {
+              const parsed = this.projectsService.parseOutputString(cue.selectedOutputs?.[0] || '');
+              const nodeUuid = parsed?.uuid || '';
+              newCue.outputs = [];
+              if (cue.selectedOutputs && cue.selectedOutputs.length > 0) {
+                cue.selectedOutputs.forEach(selectedOutput => {
+                  const clonedAlias = JSON.parse(JSON.stringify(templateVideoOutput));
+                  clonedAlias.output_name = selectedOutput;
+                  newCue.outputs.push({ VideoCueOutput: clonedAlias });
+                });
+              }
+              const clonedCustom = JSON.parse(JSON.stringify(templateVideoOutput));
+              clonedCustom.output_name = `${nodeUuid}_custom_0`;
+              clonedCustom.canvas_region = { ...cue.canvas_region };
+              newCue.outputs.push({ VideoCueOutput: clonedCustom });
+            }
         } else {
           let selectedOutputs: string[] = [];
           if (cue.selectedOutputs && Array.isArray(cue.selectedOutputs) && cue.selectedOutputs.length > 0) {
