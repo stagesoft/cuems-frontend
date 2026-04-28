@@ -91,7 +91,7 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
       }
       
       return mappings.nodes
-        .filter((nodeWrapper: any) => nodeWrapper?.node?.audio !== null)
+        .filter((nodeWrapper: any) => Array.isArray(nodeWrapper?.node?.audio))
         .map((nodeWrapper: any, nodeIndex: number) => {
           const node = nodeWrapper.node;
           const outputs: any[] = [];
