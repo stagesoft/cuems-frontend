@@ -1,3 +1,4 @@
 {
-  "websocketBaseUrl": "ws://10.16.10.2"
+  "_comment": "Leave websocketBaseUrl empty to derive the host from the page URL (the controller serving this UI). Set it explicitly (e.g. ws://10.16.10.2) only to point a dev UI at a remote controller.",
+  "websocketBaseUrl": ""
 }
