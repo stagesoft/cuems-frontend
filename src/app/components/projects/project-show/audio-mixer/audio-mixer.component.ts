@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, effect, signal, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
@@ -19,12 +19,47 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
   private projectsService = inject(ProjectsService);
   private oscService = inject(OscService);
   private audioMixerStateService = inject(AudioMixerStateService);
+  private cdr = inject(ChangeDetectorRef);
   public project: any;
   public projectUuid: string | null = null;
   public audioCues: any[] = [];
   private projectLoadedSubscription?: Subscription;
   public audioMappingOptions: { value: string, label: string }[] = [];
   public audioNodes: any[] = [];
+  private audioNodesReady = signal(false);
+
+  constructor() {
+    // Hydrate faders from the engine's mixer-status broadcast.
+    // MUST live in the constructor, not ngOnInit: registering an effect()
+    // outside an injection context throws NG0203.
+    // NOTE: output.index is the forEach offset in the audio outputs array,
+    // not a stable channel ID. If initial_mappings reorders outputs across
+    // reloads, hydrated values land on the wrong fader. Pre-existing
+    // limitation (same as the write path); not fixed here.
+    effect(() => {
+      const status = this.oscService.mixerStatus();
+      if (!this.audioNodesReady()) return;
+      if (Object.keys(status).length === 0) return;
+
+      //console.log('[hydrate] running, status keys:', Object.keys(status));
+
+      for (const node of this.audioNodes) {
+        const masterVol = this.oscService.getMasterVolume(node.uuid);
+        if (masterVol !== undefined) {
+          node.volume = Math.round(masterVol * 100);
+          this.audioMixerStateService.setNodeVolume(node.uuid, node.volume);
+        }
+        for (const output of node.outputs) {
+          const chanVol = this.oscService.getChannelVolume(node.uuid, output.index);
+          if (chanVol !== undefined) {
+            output.volume = Math.round(chanVol * 100);
+            this.audioMixerStateService.setOutputVolume(output.id, output.volume);
+          }
+        }
+      }
+      this.cdr.markForCheck();
+    });
+  }
 
   ngOnInit(): void {
     this.route.parent?.params.subscribe(params => {
@@ -133,6 +168,7 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
     
     if (this.audioNodes.length > 0) {
       console.log('Mappings loaded successfully:', this.audioNodes);
+      this.audioNodesReady.set(true);
     } else if (attempt < maxAttempts) {
       console.log(`Attempt ${attempt} failed, retrying in ${attempt * 500}ms...`);
       setTimeout(() => this.tryLoad(attempt + 1, maxAttempts), attempt * 500);
@@ -160,6 +196,11 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
     return Math.round(floatValue * 100);
   }
 
+  // Echo-loop safety: the slider MUST stay one-way bound ([value] + (input)).
+  // The engine broadcasts a status for every fader write, including ours;
+  // mixerStatus updates from that echo, but the (input) binding does not
+  // re-fire from a [value] change, so no loop. Switching to [(ngModel)]
+  // activates the loop — do not.
   public onMasterVolumeChange(node: any, sliderValue: number): void {
     node.volume = sliderValue;
     this.audioMixerStateService.setNodeVolume(node.uuid, sliderValue);

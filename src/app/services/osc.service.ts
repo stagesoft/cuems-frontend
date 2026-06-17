@@ -49,6 +49,10 @@ export class OscService {
   /** Map of cue UUID -> enabled state */
   public cueEnabledStatuses = signal<Record<string, boolean>>({});
 
+  /** Map of "{nodeUuid}/{outputIndex}/{channel}" → volume 0.0-1.0.
+   *  channel is "master" or a stringified channel index. */
+  public mixerStatus = signal<Record<string, number>>({});  
+
   constructor() {
     console.log('OscService initialized');
 
@@ -61,7 +65,7 @@ export class OscService {
         next: () => this.isConnected.set(true)
       },
       closeObserver: {
-        next: () => this.isConnected.set(false)
+        next: () => this.onDisconnect()
       }
     });
 
@@ -72,6 +76,7 @@ export class OscService {
         error: (error) => {
           if (error instanceof CloseEvent && error.code === 1000) return;
           console.error('Error:', error);
+          this.onDisconnect();
           this.reconnect();
         }
       });
@@ -86,6 +91,14 @@ export class OscService {
     }
   }
 
+  /** Reset connection-scoped state. Called on WS close and on WS error
+     *  before reconnect, so stale faders don't survive an engine restart
+     *  (the dump-on-reconnect will be empty). */
+  private onDisconnect(): void {
+    this.isConnected.set(false);
+    this.mixerStatus.set({});
+  }  
+
   reconnect(): void {
     this.disconnect();
     setTimeout(() => {
@@ -98,7 +111,7 @@ export class OscService {
           next: () => this.isConnected.set(true)
         },
         closeObserver: {
-          next: () => this.isConnected.set(false)
+          next: () => this.onDisconnect()
         }
       });
 
@@ -107,6 +120,7 @@ export class OscService {
         error: (error) => {
           if (error instanceof CloseEvent && error.code === 1000) return;
           console.error('Error:', error);
+          this.onDisconnect();
           this.reconnect();
         }
       });
@@ -134,6 +148,19 @@ export class OscService {
   }
 
   private processOscMessage(msg: any): void {
+    if (msg.address.startsWith('/engine/status/audio/mixer/')) {
+
+      const rest = msg.address.slice('/engine/status/audio/mixer/'.length);
+      const parts = rest.split('/');
+      if (parts.length >= 4 && parts[parts.length - 1] === 'volume') {
+        const key = parts.slice(0, -1).join('/');
+        const vol = Number(msg.args[0]);
+        this.mixerStatus.update(s => ({ ...s, [key]: vol }));
+      }
+
+      return;
+    }
+
     if (msg.address.startsWith('/engine/status/cue_enabled/')) {
       const uuid = msg.address.split('/engine/status/cue_enabled/')[1];
       const enabled = Number(msg.args[0]) === 1;
@@ -212,6 +239,14 @@ export class OscService {
   public isCueEnabled(uuid: string): boolean {
     return this.cueEnabledStatuses()[uuid] ?? true;
   }
+
+  public getMasterVolume(nodeUuid: string, outputIndex = 0): number | undefined {
+    return this.mixerStatus()[`${nodeUuid}/${outputIndex}/master`];
+  }
+
+  public getChannelVolume(nodeUuid: string, channelIndex: number, outputIndex = 0): number | undefined {
+    return this.mixerStatus()[`${nodeUuid}/${outputIndex}/${channelIndex}`];
+  }  
 
   /**
    * Convert timecode in milliseconds to HH:MM:SS string.
