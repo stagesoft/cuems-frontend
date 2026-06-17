@@ -60,8 +60,10 @@ export class SettingsComponent implements OnInit {
     }
   }  
 
-  getNodeName(index: number): string {
-    return `Node ${String(index + 1).padStart(2, '0')}`;
+  getNodeName(nodeWrapper: any, index: number): string {
+    const node = nodeWrapper?.node;
+    return node?.alias || node?.role_id ||
+           `Node ${String(index + 1).padStart(2, '0')}`;
   }
 
   getVideoOutputs(node: any): any[] {
