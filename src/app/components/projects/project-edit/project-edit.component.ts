@@ -9,12 +9,13 @@ import { ProjectEditStateService } from '../../../services/projects/project-edit
 import { IconComponent } from '../../ui/icon/icon.component';
 import { DrawerService } from '../../../services/ui/drawer.service';
 import { v4 as uuidv4 } from 'uuid';
+import { FormsModule } from '@angular/forms';
 import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
 
 @Component({
   selector: 'app-project-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent],
+  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent, FormsModule],
   templateUrl: './project-edit.component.html'
 })
 export class ProjectEditComponent implements OnInit, OnDestroy {
@@ -22,8 +23,9 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private projectsService = inject(ProjectsService);
   private editStateService = inject(ProjectEditStateService);
   private drawerService = inject(DrawerService);
+
   private workspace = inject(ProjectWorkspaceService);
-  
+
   public project: any;
   public projectUuid: string | null = null;
   public hasUnsavedChanges: boolean = false;
@@ -31,15 +33,21 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private projectLoadedSubscription?: Subscription;
   private projectSavedSubscription?: Subscription;
 
+  //edición de descripción y nombre de proyectos=
+  public isEditing: boolean = false;
+  public editName: string = '';
+  public editDescription: string = '';
+
+
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.projectUuid = params['uuid'];
-      
+
       if (this.projectUuid) {
         if (this.projectsService.projects().length === 0) {
           this.projectsService.getProjectList();
         }
-        
+
         this.projectsService.loadProject(this.projectUuid);
         this.workspace.openInEdit(this.projectUuid, this.projectUuid); // register immediately, name updated later
       }
@@ -48,9 +56,18 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     this.projectLoadedSubscription = this.projectsService.projectLoaded.subscribe(projectData => {
       if (projectData) {
         const basicProjectData = this.projectsService.projects().find(p => p.uuid === this.projectUuid);
+
+        //Mapear descripción desde CuemsScript si no existe
+        if (!projectData.description && projectData.CuemsScript?.description) {
+          projectData.description = projectData.CuemsScript.description;
+        }
+
         if (basicProjectData) {
           if (!projectData.uuid) projectData.uuid = basicProjectData.uuid;
           if (!projectData.name) projectData.name = basicProjectData.name;
+
+          if (!projectData.description && basicProjectData.description) projectData.description = basicProjectData.description; //revisar ProjectList
+
           if (!projectData.unix_name) projectData.unix_name = basicProjectData.unix_name;
           if (!projectData.created) projectData.created = basicProjectData.created;
           if (!projectData.modified) projectData.modified = basicProjectData.modified;
@@ -59,7 +76,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             projectData.uuid = this.projectUuid;
           }
         }
-        
+
         this.project = projectData;
 
         // Workaround: server returns stale CuemsScript.id and CuemsScript.name on duplicated projects.
@@ -90,8 +107,6 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
       savedProjectUuid => {
         if (this.projectUuid && savedProjectUuid === this.projectUuid) {
           this.editStateService.markProjectAsSaved(this.projectUuid);
-          
-          this.projectsService.loadProject(this.projectUuid);
         }
       }
     );
@@ -101,7 +116,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     this.changesSubscription?.unsubscribe();
     this.projectLoadedSubscription?.unsubscribe();
     this.projectSavedSubscription?.unsubscribe();
-    
+
     if (this.projectUuid) {
       this.editStateService.clearTemporaryCues(this.projectUuid);
     }
@@ -125,13 +140,33 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
     try {
       const updatedProject = JSON.parse(JSON.stringify(this.project));
-      
+
       const modifiedData = this.editStateService.getProjectModifiedData(this.projectUuid);
-      
+
       if (!modifiedData || Object.keys(modifiedData).length === 0) {
         return;
       }
-      
+
+      //guardar cambios de nombre y descripción
+      if (modifiedData.metadata) {
+
+        if (!updatedProject.CuemsScript) {
+          updatedProject.CuemsScript = {};
+        }
+
+        if (modifiedData.metadata.name !== undefined && modifiedData.metadata.name.trim() !== '') {
+          updatedProject.name = modifiedData.metadata.name;
+
+          updatedProject.CuemsScript.name = modifiedData.metadata.name;
+        }
+
+        if (modifiedData.metadata.description !== undefined) {
+          updatedProject.description = modifiedData.metadata.description;
+
+          updatedProject.CuemsScript.description = modifiedData.metadata.description;
+        }
+      }
+
       if (modifiedData.sequence) {
         if (!updatedProject.CuemsScript) {
           updatedProject.CuemsScript = {};
@@ -146,7 +181,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             updatedProject.CuemsScript.CueList.id = this.generateUUID();
             updatedProject.CuemsScript.CueList.contents = [];
           } else {
-            // Fallback 
+            // Fallback
             updatedProject.CuemsScript.CueList = {
               autoload: false,
               description: null,
@@ -165,7 +200,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             };
           }
         }
-        
+
         if (modifiedData.sequence.contents === null) {
           updatedProject.CuemsScript.CueList.contents = null;
         } else if (Array.isArray(modifiedData.sequence.contents) && modifiedData.sequence.contents.length === 0) {
@@ -174,15 +209,16 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
           updatedProject.CuemsScript.CueList.contents = modifiedData.sequence.contents;
         }
       }
-      
+
       if (!updatedProject.uuid && this.projectUuid) {
         updatedProject.uuid = this.projectUuid;
       }
-      
+
       this.projectsService.updateProject(updatedProject);
     } catch (error) {
       console.error('Error saving complete project:', error);
     }
+
   }
 
   toggleActivityDrawer(): void {
@@ -193,9 +229,37 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     return uuidv4();
   }
 
+  //métodos de edición de nombre y descripción
+  startEdit(): void {
+    this.isEditing = true;
+    this.editName = this.project?.name || '';
+    this.editDescription = this.project?.description || '';
+  }
+
+  cancelEdit(): void {
+    this.isEditing = false;
+  }
+
+  saveEdit(): void {
+    if (!this.project || !this.projectUuid) return;
+    if (!this.editName.trim()) return;
+
+    // Actualiza UI inmediatamente
+    this.project.name = this.editName;
+    this.project.description = this.editDescription;
+
+    // Registra el cambio en el estado global
+    this.editStateService.setProjectMetadata(this.projectUuid, {
+      name: this.editName,
+      description: this.editDescription
+    });
+
+    this.isEditing = false;
+  }
+
   closeWorkspaceProject(): void {
     if (this.projectUuid) {
       this.workspace.requestClose(this.projectUuid);
     }
-  }  
+  }
 } 
