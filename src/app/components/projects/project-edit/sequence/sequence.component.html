@@ -103,8 +103,8 @@
                     </td>
                     <!-- Drag Handle -->
                     <td class="px-4 py-1">
-                      <div class="cursor-move text-gray-400 hover:text-gray-600 flex items-center justify-center relative translate-y-[-3px]" cdkDragHandle>
-                        <app-icon icon="points" class="w-[16px] h-[16px]"></app-icon>
+                      <div class="cursor-move text-gray-400 hover:text-gray-600 flex items-center justify-center relative" cdkDragHandle>
+                        ⠿
                       </div>
                     </td>
                     
@@ -199,7 +199,7 @@
                         [cdkMenuPosition]="[{ originX: 'end', overlayX: 'end', originY: 'bottom', overlayY: 'top', offsetY: 4 }]"
                         (click)="$event.stopPropagation()"
                         class="cursor-pointer">
-                            <app-icon icon="down" class="w-[12px] h-[12px] transform translate-y-[2px]" />
+                            <app-icon icon="points" class="w-[16px] h-[16px] transform translate-y-[2px]"></app-icon>
                         </button>
                         
                         <ng-template #actionsMenu>
