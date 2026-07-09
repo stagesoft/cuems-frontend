@@ -354,8 +354,14 @@ export class ProjectsService {
         if (this.projects().length === 0) {
           this.getProjectList();
         }
+      } else {
+        this.runningProjectUuid.set(null);
       }
-    }     
+    }
+
+    if (response && response.type === 'project_unload' && response.value === 'OK') {
+      this.runningProjectUuid.set(null);
+    }
 
     if (response && response.type === 'error') {
       const error: WebSocketError = {
