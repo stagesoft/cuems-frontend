@@ -70,7 +70,7 @@
                         </th>
                         <th class="w-40 px-3 py-3.5 text-left text-sm font-semibold w-32">{{ 'media.table.type' | translate }}</th>
                         <th class="w-40 px-3 py-3.5 text-left text-sm font-semibold">{{ 'media.table.filename' | translate }}</th>
-                        <th class="w-148 px-3 py-3.5 text-left text-sm font-semibold">{{ 'media.table.projects' | translate }}</th>
+                        <th class="w-148 px-3 py-3.5 text-left text-sm font-semibold hidden lg:block">{{ 'media.table.projects' | translate }}</th>
                         <th scope="col" class="relative py-3.5 pr-4 pl-3 sm:pr-0">
                           <span class="sr-only">{{ 'media.table.actions' | translate }}</span>
                         </th>
@@ -79,27 +79,28 @@
                     <tbody class="divide-y">
                       <tr *ngFor="let fileObj of mediaService.fileList()"
                           [class.opacity-50]="isFileBeingDeleted(getFileUuid(fileObj))"
-                          class="cursor-pointer">
+                          class="cursor-pointer group">
                           <td class="w-10 whitespace-nowrap py-4 pl-4 pr-3 text-sm sm:pl-0" (click)="$event.stopPropagation()">
                             <input class="checkbox" type="checkbox" (click)="selectFile(getFileUuid(fileObj))" [checked]="selectedFiles.includes(getFileUuid(fileObj))" [disabled]="isFileBeingDeleted(getFileUuid(fileObj)) || isBulkDeleting">
                           </td>
                         <td class="px-4 py-3">
-                          <div class="flex items-center">
+                          <div class="flex items-center relative ">
                             <app-file-icon-preview 
                               [fileType]="getFileData(fileObj)?.type || ''"
                               [fileName]="getFileData(fileObj)?.unix_name || ''"
                               [uuid]="getFileUuid(fileObj)"
                               [showExtension]="true">
                             </app-file-icon-preview>
+                            <small class="absolute bottom-[7px] left-1.5 pt-[1px] bg-black text-secondary px-0.5 rounded-sm font-mono text-[10px] opacity-0 text-gray-500 group-hover:opacity-100 opacity-0 transition-opacity duration-200">{{ getFileData(fileObj)?.duration || '' }}</small>
                           </div>
                         </td>
                         <td class="px-4 py-3">
                             <div class="text-sm font-medium">
-                              {{ getFileData(fileObj)?.unix_name || 'Unknown' }}
+                              {{ getFileData(fileObj)?.unix_name || 'Unknown' }}                              
                             </div>
                         </td>
                         <td class="px-4 py-3">
-                          <div class="text-sm">
+                          <div class="hidden lg:block text-sm">
                             <span *ngIf="getFileData(fileObj)?.in_projects_list && getFileData(fileObj)?.in_projects_list.length > 0">{{ getProjectNames(getFileData(fileObj)?.in_projects_list).join(', ') }}</span>
                             <span *ngIf="!getFileData(fileObj)?.in_projects_list || getFileData(fileObj)?.in_projects_list.length === 0" class="italic">{{ 'media.table.projects.no' | translate }}</span>
                           </div>
