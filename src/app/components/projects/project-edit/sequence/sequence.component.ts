@@ -990,7 +990,12 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           newCue.Media = {
             file_name: cue.selectedMediaFile.file.unix_name,
             id: cue.selectedMediaFile.uuid,
-            duration: '00:00:00.000',
+            // Send the real media duration from the file_list metadata. The `||`
+            // fallback covers legacy media rows with a NULL duration and older
+            // editors whose file_list payload doesn't yet carry the field; in
+            // those cases the backend safety net (_fix_media_durations) still
+            // corrects it from the DB on save.
+            duration: cue.selectedMediaFile.file.duration || '00:00:00.000',
             regions: [
               {
                 Region: {
