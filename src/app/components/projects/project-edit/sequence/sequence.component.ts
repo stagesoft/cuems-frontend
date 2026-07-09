@@ -1197,6 +1197,18 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     return '';
   }
 
+  public getCueMediaDuration(cue: CueData): string {
+    if (cue.type === 'fade') {
+      return cue.fade_duration || '-';
+    }
+    if (cue.type !== 'audio' && cue.type !== 'video') {
+      return '-';
+    }
+    return cue.selectedMediaFile?.file?.duration
+      || this.getCueData(cue.originalData)?.Media?.duration
+      || '-';
+  }
+
   public hasMediaFileSelected(cue: CueData): boolean {
     return !!(cue.selectedMediaFile && cue.selectedMediaFile.file.unix_name);
   }
