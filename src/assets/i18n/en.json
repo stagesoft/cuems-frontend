@@ -143,6 +143,7 @@
     "project.show.engine.status.ready": "Playback engine ready",
     "project.show.engine.status.idle": "Playback engine inactive",
     "project.edit.in.show": "You cannot edit a project that is in show mode",
+    "project.button.close-and-edit": "Close and edit project",
     "action.type": "Action type",
     "action.type.play": "Play",
     "action.type.stop": "Stop",

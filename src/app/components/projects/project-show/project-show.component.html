@@ -1,6 +1,15 @@
 <div class="wrapper">
   <app-page-header icon="radio" [title]="project?.name">
-    <div actions>
+    <div class="flex flex-col md:flex-row items-center gap-4" actions>
+      <button 
+          class="btn btn-small btn-primary flex items-center gap-2 cursor-pointer"
+          [class.opacity-40]="isEngineRunning || isUnloading"
+          [class.cursor-not-allowed]="isEngineRunning || isUnloading"
+          (click)="closeAndEditProject()" 
+          [disabled]="isEngineRunning || isUnloading">
+          <app-icon icon="pencil" class="w-[16px] h-[16px]"></app-icon>
+          <span class="text-sm">{{ 'project.button.close-and-edit' | translate }}</span>
+      </button>      
       <button 
         class="flex items-center gap-2 cursor-pointer"
         [class.opacity-40]="isEngineRunning || isUnloading"

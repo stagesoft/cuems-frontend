@@ -144,6 +144,7 @@
     "project.show.engine.status.ready": "Motor de reproducció llest",
     "project.show.engine.status.idle": "Motor de reproducció inactiu",
     "project.edit.in.show": "No es pot editar un projecte que estigui en mode show",
+    "project.button.close-and-edit": "Tancar i editar projecte",
     "action.type": "Tipus d'acció",
     "action.type.play": "Reproduir",
     "action.type.stop": "Aturar",

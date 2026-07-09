@@ -38,6 +38,7 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
   private websocketSubscription?: Subscription;
   private websocketErrorSubscription?: Subscription;
   private isWaitingForProjectReady: boolean = false;
+  private pendingUnloadAction: 'projects' | 'edit' | null = null;
   private router = inject(Router);
   public isUnloading = false;
 
@@ -142,9 +143,17 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
       this.isWaitingForProjectReady = false;
     }
 
-    if (response.type === 'project_unload' && response.value === 'OK') {
+    if (response.type === 'project_unload' && response.value === 'OK' && this.pendingUnloadAction) {
+      const action = this.pendingUnloadAction;
+      this.pendingUnloadAction = null;
+      this.isUnloading = false;
       this.workspace.closeShow();
-      this.router.navigate(['/projects']);
+
+      if (action === 'edit' && this.projectUuid) {
+        this.router.navigate([`/projects/${this.projectUuid}/edit/sequence`]);
+      } else {
+        this.router.navigate(['/projects']);
+      }
     }    
   }
 
@@ -156,6 +165,11 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
       this.isWaitingForProjectReady = false;
       
       error._handledByProjectShow = true;
+    }
+
+    if (error.action === 'project_unload' && this.pendingUnloadAction) {
+      this.isUnloading = false;
+      this.pendingUnloadAction = null;
     }
   }
 
@@ -210,13 +224,22 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
   }
 
   public closeProject(): void {
-    if (this.isUnloading) return;
+    this.requestProjectUnload('projects');
+  }  
+
+  public closeAndEditProject(): void {
+    this.requestProjectUnload('edit');
+  }
+
+  private requestProjectUnload(afterUnload: 'projects' | 'edit'): void {
+    if (this.isUnloading || !this.projectUuid) return;
     this.isUnloading = true;
     this.isWaitingForProjectReady = false;
+    this.pendingUnloadAction = afterUnload;
 
     this.websocketService.wsEmit({
       action: 'project_unload',
       value: this.projectUuid
     });
-  }  
+  }
 } 
