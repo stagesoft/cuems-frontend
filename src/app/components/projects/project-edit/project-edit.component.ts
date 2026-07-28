@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
@@ -31,6 +31,10 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private projectLoadedSubscription?: Subscription;
   private projectSavedSubscription?: Subscription;
 
+  isEditingTitle = signal(false);
+  tempName = signal('');
+  tempDescription = signal('');
+
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.projectUuid = params['uuid'];
@@ -59,6 +63,10 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             projectData.uuid = this.projectUuid;
           }
         }
+
+        if (!projectData.description && projectData.CuemsScript?.description) {
+          projectData.description = projectData.CuemsScript.description;
+        }        
         
         this.project = projectData;
 
@@ -125,28 +133,22 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
     try {
       const updatedProject = JSON.parse(JSON.stringify(this.project));
-      
       const modifiedData = this.editStateService.getProjectModifiedData(this.projectUuid);
-      
       if (!modifiedData || Object.keys(modifiedData).length === 0) {
         return;
       }
-      
+    
       if (modifiedData.sequence) {
         if (!updatedProject.CuemsScript) {
           updatedProject.CuemsScript = {};
         }
         if (!updatedProject.CuemsScript.CueList) {
-          // Get the initial template
           const template = this.projectsService.projectTemplate();
           if (template?.['CuemsScript']?.['CueList']) {
-            // Clone the CueList template from the initial template
             updatedProject.CuemsScript.CueList = JSON.parse(JSON.stringify(template['CuemsScript']['CueList']));
-            // Merge the ID and set contents as an empty array
             updatedProject.CuemsScript.CueList.id = this.generateUUID();
             updatedProject.CuemsScript.CueList.contents = [];
           } else {
-            // Fallback 
             updatedProject.CuemsScript.CueList = {
               autoload: false,
               description: null,
@@ -165,7 +167,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
             };
           }
         }
-        
+    
         if (modifiedData.sequence.contents === null) {
           updatedProject.CuemsScript.CueList.contents = null;
         } else if (Array.isArray(modifiedData.sequence.contents) && modifiedData.sequence.contents.length === 0) {
@@ -174,11 +176,26 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
           updatedProject.CuemsScript.CueList.contents = modifiedData.sequence.contents;
         }
       }
-      
+    
+      if (modifiedData.metadata) {
+        if (modifiedData.metadata.name !== undefined) {
+          updatedProject.name = modifiedData.metadata.name;
+          if (updatedProject.CuemsScript) {
+            updatedProject.CuemsScript.name = modifiedData.metadata.name;
+          }
+        }
+        if (modifiedData.metadata.description !== undefined) {
+          updatedProject.description = modifiedData.metadata.description;
+          if (updatedProject.CuemsScript) {
+            updatedProject.CuemsScript.description = modifiedData.metadata.description;
+          }
+        }
+      }
+    
       if (!updatedProject.uuid && this.projectUuid) {
         updatedProject.uuid = this.projectUuid;
       }
-      
+    
       this.projectsService.updateProject(updatedProject);
     } catch (error) {
       console.error('Error saving complete project:', error);
@@ -197,5 +214,42 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
     if (this.projectUuid) {
       this.workspace.requestClose(this.projectUuid);
     }
+  }
+  
+  startEditTitle(): void {
+    this.tempName.set(this.project?.name ?? '');
+    this.tempDescription.set(
+      this.project?.description ?? this.project?.CuemsScript?.description ?? ''
+    );
+    this.isEditingTitle.set(true);
+  }
+
+  cancelEditTitle(): void {
+    this.isEditingTitle.set(false);
+  }
+
+  applyEditTitle(): void {
+    if (!this.projectUuid || !this.project) return;
+
+    const newName = this.tempName().trim();
+    const newDescription = this.tempDescription();
+
+    const nameChanged = newName !== (this.project.name ?? '');
+    const descriptionChanged = newDescription !== (this.project.description ?? '');
+
+    if (nameChanged || descriptionChanged) {
+      this.editStateService.markComponentAsChanged('metadata', this.projectUuid, {
+        name: newName,
+        description: newDescription
+      });
+
+      this.project = { ...this.project, name: newName, description: newDescription };
+
+      if (nameChanged) {
+        this.workspace.updateName(this.projectUuid, newName);
+      }
+    }
+
+    this.isEditingTitle.set(false);
   }  
 } 
