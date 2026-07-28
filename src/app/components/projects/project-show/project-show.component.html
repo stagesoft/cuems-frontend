@@ -16,8 +16,8 @@
         [class.cursor-not-allowed]="isEngineRunning || isUnloading"
         (click)="closeProject()" 
         [disabled]="isEngineRunning || isUnloading">
-        <app-icon icon="closeCircle" class="w-4 h-4"></app-icon>
         <span class="text-sm">{{ 'close' | translate }} {{ 'project' | translate }}</span>
+        <app-icon icon="closeCircle" class="w-4 h-4"></app-icon>
     </button>      
     </div>
   </app-page-header>
