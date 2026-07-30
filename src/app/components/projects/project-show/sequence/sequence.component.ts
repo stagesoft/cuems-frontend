@@ -191,6 +191,9 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
     else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
     else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
+    // A FadeCue has no Media — its duration is the fade's own cue-level
+    // duration (the same source the edit view shows as fade_duration).
+    if (cueItem.FadeCue) return cueData?.duration?.CTimecode || '-';
     return cueData?.Media?.duration || '-';
   }
 
