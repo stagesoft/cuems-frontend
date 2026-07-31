@@ -20,6 +20,8 @@ import { ProjectWorkspaceService } from '../../../../services/project-workspace.
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/confirmation-dialog.component';
 import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
+import { NotificationService } from '../../../../services/ui/notification.service';
+import { findInvalidFadeCuesInContents, isValidFadeDurationTc, normalizeFadeDurationTc } from '../../../../core/utils';
 
 interface CueData {
   id: string | number;
@@ -83,6 +85,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   private editStateService = inject(ProjectEditStateService);
   private mediaService = inject(MediaService);
   private translateService = inject(TranslateService);
+  private notificationService = inject(NotificationService);
   public drawerService = inject(DrawerService);
   private subscription = new Subscription();
   workspace = inject(ProjectWorkspaceService);
@@ -503,7 +506,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         action_target: (cueType === 'action' || cueType === 'fade') ? (cueData.action_target || null) : undefined,
         action_type: cueType === 'action' ? (cueData.action_type || 'play') : cueType === 'fade' ? 'fade_action' : undefined,
         fade_curve_type: cueType === 'fade' ? (cueData.curve_type || 'linear') : undefined,
-        fade_duration: cueType === 'fade' ? this.formatTimecode(cueData.duration?.CTimecode || '00:00:01.000') : undefined,
+        // Normalize on load: legacy-but-valid shapes ('0:0:3:0' frames, short
+        // ms) become canonical so they are never flagged invalid; unparseable
+        // values are kept as-is (flagged red, never silently replaced).
+        fade_duration: cueType === 'fade' ? (() => {
+          const tc = this.formatTimecode(cueData.duration?.CTimecode || '00:00:01.000');
+          return normalizeFadeDurationTc(tc) ?? tc;
+        })() : undefined,
         fade_target_value: cueType === 'fade' ? (cueData.target_value ?? 0) : undefined,
         is_custom_output: hasCanvasRegion,
         canvas_region: canvasRegion,
@@ -836,6 +845,16 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
 
   saveProject(): void {
+    // Gate: zero/invalid FadeCue durations must never reach the editor — a
+    // saved zero becomes a silent no-op fade at reveal (engine/gradient drop
+    // it). The inline red error marks the offending cue; block with a toast.
+    const invalidFades = this.cues.filter(cue => !this.isFadeDurationValid(cue));
+    if (invalidFades.length > 0) {
+      this.notificationService.showError(
+        this.translateService.instant('fade.duration.invalid.save')
+      );
+      return;
+    }
     if (this.projectUuid && this.hasProjectChanges) {
       const modifiedData = this.editStateService.getProjectModifiedData(this.projectUuid);
       
@@ -899,7 +918,20 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         if (!updatedProject.uuid && this.projectUuid) {
           updatedProject.uuid = this.projectUuid;
         }
-      
+
+        // Belt and braces: also walk the final server-format payload (covers
+        // nested CueLists not represented in the flat UI cue array).
+        const offenders = findInvalidFadeCuesInContents(
+          updatedProject.CuemsScript?.CueList?.contents
+        );
+        if (offenders.length > 0) {
+          this.notificationService.showError(
+            this.translateService.instant('fade.duration.invalid.save') +
+            ': ' + offenders.map(o => o.name).join(', ')
+          );
+          return;
+        }
+
         this.projectsService.updateProject(updatedProject);
       }
     }
@@ -977,7 +1009,14 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     
     if (cue.type === 'fade') {
       newCue.curve_type = cue.fade_curve_type || 'linear';
-      newCue.duration = { CTimecode: this.ensureMilliseconds(cue.fade_duration || '00:00:01.000') };
+      // Serialize the canonical form; never an invalid/empty duration
+      // (ensureMilliseconds('') would yield 00:00:00.000). The save gate
+      // blocks invalid ones anyway — the 1s fallback is belt and braces.
+      newCue.duration = {
+        CTimecode: isValidFadeDurationTc(cue.fade_duration)
+          ? normalizeFadeDurationTc(cue.fade_duration)!
+          : '00:00:01.000'
+      };
       newCue.target_value = cue.fade_target_value ?? 0;
       newCue.action_target = cue.action_target || null;
       newCue.action_type = 'fade_action';
@@ -1470,6 +1509,17 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
   
   /**
+   * A fade cue's duration must normalize to a timecode strictly > 0.
+   * Advisory predicate: paints the inline error and feeds the save gate,
+   * never mutates the value (the timecode input emits per keystroke, so
+   * transient zeros while typing must only show red).
+   */
+  isFadeDurationValid(cue: CueData): boolean {
+    if (cue.type !== 'fade') return true;
+    return isValidFadeDurationTc(cue.fade_duration);
+  }
+
+  /**
    * Validate that the channel number is not duplicated
    */
   isDmxChannelNumValid(cue: CueData, channel: number, currentIndex: number): boolean {
@@ -1654,12 +1704,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     this.cues.splice(index, 1);
 
-    // Nullify action_target if it pointed to the deleted cue
+    // Nullify action_target if it pointed to the deleted cue (fade cues
+    // carry action_target too — same dangling-ref rule as action cues)
     this.cues.forEach(cue => {
-      if (cue.type === 'action' && cue.action_target === deletedCueId) {
+      if ((cue.type === 'action' || cue.type === 'fade') && cue.action_target === deletedCueId) {
         cue.action_target = null;
       }
-    });      
+    });
       
     // Reorder the numbers of order
     this.cues.forEach((cue, i) => {

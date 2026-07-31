@@ -595,9 +595,13 @@
                               <label class="label">{{ 'fade.duration' | translate }}</label>
                               <app-timecode-input
                                 variant="default"
+                                [invalid]="!isFadeDurationValid(cue)"
                                 [(value)]="cue.fade_duration!"
                                 (valueChange)="cue.fade_duration = $event; checkForChanges()">
                               </app-timecode-input>
+                              <div *ngIf="!isFadeDurationValid(cue)" class="text-xs text-red-400 mt-1">
+                                {{ 'fade.duration.invalid' | translate }}
+                              </div>
                             </div>
 
                             <div class="field">
