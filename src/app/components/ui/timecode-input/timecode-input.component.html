@@ -2,9 +2,10 @@
   #container
   tabindex="0"
   class="outline-none"
-  [class]="variant() === 'inline' 
+  [class]="variant() === 'inline'
     ? 'inline-flex items-center cursor-pointer hover:bg-dark-300 rounded transition-colors text-sm select-none'
-    : 'inline-flex items-center input select-none cursor-pointer'">
+    : 'inline-flex items-center input select-none cursor-pointer'"
+  [class.border-red-500]="invalid()">
 
   <span
     (click)="selectSegment('hh', $event)"

@@ -189,6 +189,8 @@
     "fade.curve.logarithmic": "Logarítmica",
     "fade.curve.sigmoid": "Sigmoidal",
     "fade.duration": "Durada",
+    "fade.duration.invalid": "La durada de la fosa ha de ser més gran que zero",
+    "fade.duration.invalid.save": "No es pot desar: un cue de fosa té una durada no vàlida",
     "fade.target.value": "Valor de destí",
     "dmx.universe": "Universe num",
     "dmx.channels": "Canals DMX",
