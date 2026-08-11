@@ -21,7 +21,7 @@ import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/confirmation-dialog.component';
 import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
 import { NotificationService } from '../../../../services/ui/notification.service';
-import { findInvalidFadeCuesInContents, isValidFadeDurationTc, normalizeFadeDurationTc } from '../../../../core/utils';
+import { findInvalidFadeCuesInContents, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType } from '../../../../core/utils';
 
 interface CueData {
   id: string | number;
@@ -50,7 +50,10 @@ interface CueData {
   originalData?: any;
   action_target?: string | null;
   action_type?: string;
-  fade_curve_type?: 'linear' | 'exponential' | 'logarithmic' | 'sigmoid';
+  // Engine-native curve names only (see FADE_CURVE_TYPES). 'exponential' and
+  // 'logarithmic' used to be offered here, but gradient-motiond implements
+  // neither, so choosing one made the fade silently do nothing.
+  fade_curve_type?: FadeCurveType;
   fade_duration?: string;
   fade_target_value?: number;
   is_custom_output?: boolean;
@@ -505,7 +508,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         master_vol: cueData.master_vol || 20,
         action_target: (cueType === 'action' || cueType === 'fade') ? (cueData.action_target || null) : undefined,
         action_type: cueType === 'action' ? (cueData.action_type || 'play') : cueType === 'fade' ? 'fade_action' : undefined,
-        fade_curve_type: cueType === 'fade' ? (cueData.curve_type || 'linear') : undefined,
+        // Normalize on load: projects authored before this fix may carry
+        // 'exponential'/'logarithmic', which the engine rejects outright. They
+        // map to the engine curve of the same shape and are healed on next save.
+        fade_curve_type: cueType === 'fade' ? normalizeFadeCurveType(cueData.curve_type) : undefined,
         // Normalize on load: legacy-but-valid shapes ('0:0:3:0' frames, short
         // ms) become canonical so they are never flagged invalid; unparseable
         // values are kept as-is (flagged red, never silently replaced).
@@ -1008,7 +1014,10 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
     
     if (cue.type === 'fade') {
-      newCue.curve_type = cue.fade_curve_type || 'linear';
+      // Belt and braces: the dropdown only offers engine-native names now, but
+      // normalize again so nothing unimplemented can reach the engine — an
+      // unknown curve is discarded wholesale and the cue snaps, silently.
+      newCue.curve_type = normalizeFadeCurveType(cue.fade_curve_type);
       // Serialize the canonical form; never an invalid/empty duration
       // (ensureMilliseconds('') would yield 00:00:00.000). The save gate
       // blocks invalid ones anyway — the 1s fallback is belt and braces.

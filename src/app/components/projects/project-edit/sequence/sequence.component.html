@@ -584,9 +584,17 @@
                                 class="input"
                                 [(ngModel)]="cue.fade_curve_type"
                                 (ngModelChange)="checkForChanges()">
+                                <!-- Values are the ENGINE curve names (CurveFactory in
+                                     gradient-motion-engine); the labels stay the words
+                                     operators already use. 'exponential'/'logarithmic'
+                                     are not implemented there, so they map onto
+                                     ease_in/ease_out, which give the same accelerating /
+                                     decelerating shapes. Never put a name here that
+                                     CurveFactory does not accept: it discards the whole
+                                     motion and the cue snaps, with no error anywhere. -->
                                 <option value="linear">{{ 'fade.curve.linear' | translate }}</option>
-                                <option value="exponential">{{ 'fade.curve.exponential' | translate }}</option>
-                                <option value="logarithmic">{{ 'fade.curve.logarithmic' | translate }}</option>
+                                <option value="ease_in">{{ 'fade.curve.exponential' | translate }}</option>
+                                <option value="ease_out">{{ 'fade.curve.logarithmic' | translate }}</option>
                                 <option value="sigmoid">{{ 'fade.curve.sigmoid' | translate }}</option>
                               </select>
                             </div>

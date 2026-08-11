@@ -1,6 +1,8 @@
 import {
+  FADE_CURVE_TYPES,
   findInvalidFadeCuesInContents,
   isValidFadeDurationTc,
+  normalizeFadeCurveType,
   normalizeFadeDurationTc,
   timecodeToMs,
 } from './utils';
@@ -108,5 +110,37 @@ describe('findInvalidFadeCuesInContents', () => {
     expect(findInvalidFadeCuesInContents([])).toEqual([]);
     expect(findInvalidFadeCuesInContents(null)).toEqual([]);
     expect(findInvalidFadeCuesInContents(undefined)).toEqual([]);
+  });
+});
+
+describe('normalizeFadeCurveType', () => {
+  it('keeps every engine-implemented curve as-is', () => {
+    for (const c of FADE_CURVE_TYPES) {
+      expect(normalizeFadeCurveType(c)).toBe(c);
+    }
+  });
+
+  it('maps the legacy editor names onto the engine curve of the same shape', () => {
+    // These two were offered by the editor for years and gradient-motiond has
+    // never implemented either, so the fade silently did nothing.
+    expect(normalizeFadeCurveType('exponential')).toBe('ease_in');
+    expect(normalizeFadeCurveType('logarithmic')).toBe('ease_out');
+  });
+
+  it('falls back to linear for anything unknown, rather than passing it through', () => {
+    // Passing an unimplemented curve through is the actual bug: CurveFactory
+    // returns nullopt and MotionFactory discards the whole motion.
+    expect(normalizeFadeCurveType('bogus')).toBe('linear');
+    expect(normalizeFadeCurveType('')).toBe('linear');
+    expect(normalizeFadeCurveType(null)).toBe('linear');
+    expect(normalizeFadeCurveType(undefined)).toBe('linear');
+  });
+
+  it('never emits a curve the engine would reject', () => {
+    const inputs = ['linear', 'exponential', 'logarithmic', 'sigmoid', 'ease_in',
+                    'ease_out', 'bogus', '', null, undefined];
+    for (const i of inputs) {
+      expect(FADE_CURVE_TYPES).toContain(normalizeFadeCurveType(i));
+    }
   });
 });

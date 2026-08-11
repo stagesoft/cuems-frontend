@@ -124,3 +124,55 @@ export function findInvalidFadeCuesInContents(
   walk(contents);
   return offenders;
 }
+
+/**
+ * FadeCue curve types the fade engine actually implements.
+ *
+ * These are the exact strings `CurveFactory::createCurve()` accepts in
+ * gradient-motion-engine (`src/gradient/CurveFactory.cpp`). Anything else makes
+ * it return `nullopt`, and `MotionFactory` then discards the WHOLE motion — the
+ * cue snaps to its target instead of fading, with no error in the UI and none
+ * in the engine either, because the engine→gradient OSC send is fire-and-forget.
+ *
+ * The editor used to offer 'exponential' and 'logarithmic', which the engine has
+ * never implemented, so half the operator's choices were silently dead.
+ */
+export const FADE_CURVE_TYPES = [
+  'linear',
+  'ease_in',
+  'ease_out',
+  'sigmoid',
+] as const;
+
+export type FadeCurveType = (typeof FADE_CURVE_TYPES)[number];
+
+/**
+ * Legacy editor curve names → the engine curve that produces that shape.
+ *
+ * `ease_in`/`ease_out` take an `exponent` param (default 2.0), so `ease_in` IS
+ * the accelerating "exponential" ramp an operator means, and `ease_out` is the
+ * decelerating "logarithmic" one. Mapping rather than dropping keeps both
+ * options working with no C++ change and no gradient-motiond release.
+ */
+const LEGACY_FADE_CURVES: Record<string, FadeCurveType> = {
+  exponential: 'ease_in',
+  logarithmic: 'ease_out',
+};
+
+/**
+ * Coerce any stored curve_type to one the engine implements.
+ *
+ * Applied when LOADING a project so cues authored before this fix keep working
+ * and are healed on the next save. Unknown values fall back to 'linear' rather
+ * than being passed through, because passing an unimplemented curve through is
+ * exactly what made the fade silently do nothing.
+ */
+export function normalizeFadeCurveType(
+  value: string | null | undefined
+): FadeCurveType {
+  if (!value) return 'linear';
+  if ((FADE_CURVE_TYPES as readonly string[]).includes(value)) {
+    return value as FadeCurveType;
+  }
+  return LEGACY_FADE_CURVES[value] ?? 'linear';
+}
