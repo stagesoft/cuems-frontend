@@ -81,7 +81,8 @@ export class SettingsComponent implements OnInit, OnDestroy {
     if (!missing.length && !unreachable.length) return null;
     return {
       missing: missing.map(uuid => this.projectsService.nodeLabel(uuid)),
-      unreachable: unreachable.map(uuid => this.projectsService.nodeLabel(uuid))
+      unreachable: unreachable.map(uuid => this.projectsService.nodeLabel(uuid)),
+      total: missing.length + unreachable.length
     };
   });
 

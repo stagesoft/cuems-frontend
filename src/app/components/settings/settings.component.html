@@ -34,18 +34,25 @@
       <div *ngIf="unusableNodes() as unusable"
            class="p-4 mb-6 rounded-lg bg-dark-300 border-l-4 border-red-500">
         <p class="text-sm font-semibold">
-          El proyecto cargado usa nodos que no se pueden utilizar. Sus cues no
-          se reproducirán (el GO no está bloqueado).
+          {{ unusable.total === 1
+             ? 'El proyecto cargado usa un nodo que no se puede utilizar. Sus cues no se reproducirán (el GO no está bloqueado).'
+             : 'El proyecto cargado usa nodos que no se pueden utilizar. Sus cues no se reproducirán (el GO no está bloqueado).' }}
         </p>
         <p *ngIf="unusable.missing.length" class="text-sm mt-2">
-          <span class="font-semibold">No están en el clúster:</span>
+          <span class="font-semibold">{{ unusable.missing.length === 1
+            ? 'No está en el clúster:' : 'No están en el clúster:' }}</span>
           {{ unusable.missing.join(', ') }}
-          <span class="opacity-70">— adóptalos, o corrige el proyecto.</span>
+          <span class="opacity-70">{{ unusable.missing.length === 1
+            ? '— adóptalo, o corrige el proyecto.'
+            : '— adóptalos, o corrige el proyecto.' }}</span>
         </p>
         <p *ngIf="unusable.unreachable.length" class="text-sm mt-2">
-          <span class="font-semibold">Adoptados pero no responden:</span>
+          <span class="font-semibold">{{ unusable.unreachable.length === 1
+            ? 'Adoptado pero no responde:' : 'Adoptados pero no responden:' }}</span>
           {{ unusable.unreachable.join(', ') }}
-          <span class="opacity-70">— la máquina está apagada o sin red.</span>
+          <span class="opacity-70">{{ unusable.unreachable.length === 1
+            ? '— la máquina está apagada o sin red.'
+            : '— las máquinas están apagadas o sin red.' }}</span>
         </p>
       </div>
 

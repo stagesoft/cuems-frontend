@@ -92,19 +92,26 @@ export class AppComponent implements OnInit, OnDestroy {
     const label = (uuid: string) => this.projectsService.nodeLabel(uuid);
     const parts: string[] = [];
     if (warning.missing.length) {
-      parts.push(
-        `${warning.missing.map(label).join(', ')} no está en el clúster`);
+      const names = warning.missing.map(label).join(', ');
+      parts.push(warning.missing.length === 1
+        ? `${names} no está en el clúster`
+        : `${names} no están en el clúster`);
     }
     if (warning.unreachable.length) {
-      parts.push(
-        `${warning.unreachable.map(label).join(', ')} no responde`);
+      const names = warning.unreachable.map(label).join(', ');
+      parts.push(warning.unreachable.length === 1
+        ? `${names} no responde`
+        : `${names} no responden`);
     }
     if (!parts.length) return;   // clean load: nothing to say, id still noted
 
+    const total = warning.missing.length + warning.unreachable.length;
     this.notificationService.showWarning(
-      `El proyecto usa nodos que no se pueden utilizar: ${parts.join('; ')}. ` +
-      `Sus cues no se reproducirán.`,
-      'Nodos no disponibles'
+      (total === 1
+        ? `El proyecto usa un nodo que no se puede utilizar: `
+        : `El proyecto usa nodos que no se pueden utilizar: `) +
+      `${parts.join('; ')}. Sus cues no se reproducirán.`,
+      total === 1 ? 'Nodo no disponible' : 'Nodos no disponibles'
     );
   }
 
