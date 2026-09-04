@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppPageHeaderComponent } from '../layout/app-page-header/app-page-header.component';
 import { ConfirmationDialogComponent  } from '../ui/confirmation-dialog/confirmation-dialog.component';
@@ -15,19 +15,31 @@ import { NotificationService } from '../../services/ui/notification.service';
   imports: [CommonModule, AppPageHeaderComponent, IconComponent, TranslateModule, ConfirmationDialogComponent],
   templateUrl: './settings.component.html'
 })
-export class SettingsComponent implements OnInit {
+export class SettingsComponent {
   private projectsService = inject(ProjectsService);
   private wsService = inject(WebsocketService);
   private destroyRef = inject(DestroyRef);
   private notificationService = inject(NotificationService);
-  public mappings: InitialMappingsResponse | null = null;
   public isConfirmRemoveNodeOpen = false;
   private selectedNodeUuidToRemove: string | null = null;
   public isConfirmAddNodeOpen = false;
   private selectedNodeUuidToAdd: string | null = null;
 
-  public activeNodes: any[] = [];
-  newNodes: any[] = [];
+  /**
+   * Read straight off the signal, never copied.
+   *
+   * The editor pushes a fresh `initial_mappings` after every adopt/un-adopt and
+   * whenever cuems-nodeconf rewrites network_map.xml (a node powered on, a node
+   * gone). Copying the arrays once in ngOnInit meant none of that reached the
+   * screen: the node stayed in the wrong column until the component was
+   * remounted, so a working adoption still looked broken.
+   */
+  public mappings = computed(() => this.projectsService.initialMappings());
+  public activeNodes = computed(() => this.mappings()?.value?.nodes ?? []);
+  public newNodes = computed(() => this.mappings()?.value?.new_nodes ?? []);
+  /** False when cuems-nodeconf is not running: adoption cannot work at all. */
+  public nodeconfAvailable = computed(
+    () => this.mappings()?.value?.nodeconf_available !== false);
 
   constructor() {
     this.wsService.messages
@@ -42,22 +54,6 @@ export class SettingsComponent implements OnInit {
           }
         }
       });
-  }  
-
-  ngOnInit(): void {
-    this.mappings = this.projectsService.initialMappings();
-  
-    if (this.mappings) {
-      this.loadNodes();
-    }
-  }
-
-  private loadNodes(): void {
-    const mappings = this.projectsService.initialMappings();
-    if (mappings?.value) {
-      this.activeNodes = mappings.value.nodes || [];
-      this.newNodes = mappings.value.new_nodes || [];
-    }
   }  
 
   getNodeName(nodeWrapper: any, index: number): string {

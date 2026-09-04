@@ -9,17 +9,17 @@
   <div class="mt-6">
     <h2 class="text-xl font-semibold mb-6">{{ 'nodes.settings.title' | translate }}</h2>
     
-    <div *ngIf="!mappings" class="p-4 bg-dark-300 rounded-lg">
+    <div *ngIf="!mappings()" class="p-4 bg-dark-300 rounded-lg">
       <p>{{ 'nodes.settings.loading.message' | translate }}</p>
     </div>
 
-    <div *ngIf="mappings && mappings.value && mappings.value.nodes" class="space-y-6">
-      <div *ngIf="activeNodes.length > 0">
+    <div *ngIf="mappings() && mappings()!.value && mappings()!.value.nodes" class="space-y-6">
+      <div *ngIf="activeNodes().length > 0">
           <p class="text-lg font-semibold mb-4">
-            Nodos Activos ({{ activeNodes.length }})
+            Nodos Activos ({{ activeNodes().length }})
           </p>
 
-          <div *ngFor="let nodeWrapper of activeNodes; let i = index" 
+          <div *ngFor="let nodeWrapper of activeNodes(); let i = index" 
               class="bg-dark-300 rounded-lg p-6 mb-8">
          
             <div class="flex items-start justify-between gap-4">
@@ -29,7 +29,7 @@
               </h3>
 
               <div>
-                <button (click)="openAddNodeConfirmation(nodeWrapper.node.uuid)">
+                <button (click)="openRemoveNodeConfirmation(nodeWrapper.node.uuid)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-minus-icon lucide-circle-minus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>  
                 </button>
               </div>
@@ -79,12 +79,12 @@
       </div>
 
 
-      <div *ngIf="newNodes.length > 0">
+      <div *ngIf="newNodes().length > 0">
         <p class="text-lg font-semibold mb-4">
-          Nodos Nuevos ({{ newNodes.length }})
+          Nodos Nuevos ({{ newNodes().length }})
         </p>
 
-        <div *ngFor="let nodeWrapper of newNodes; let i = index" 
+        <div *ngFor="let nodeWrapper of newNodes(); let i = index" 
             class="bg-dark-300 rounded-lg p-6 mb-8">
           
           <div class="flex items-start justify-between gap-4">
@@ -94,7 +94,7 @@
             </h3>
 
             <div>
-              <button (click)="openRemoveNodeConfirmation(nodeWrapper.node.uuid)">
+              <button (click)="openAddNodeConfirmation(nodeWrapper.node.uuid)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-plus-icon lucide-circle-plus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
               </button>
             </div>
@@ -144,7 +144,7 @@
       </div>
     </div>
 
-    <div *ngIf="mappings && (!mappings.value || !mappings.value.nodes || mappings.value.nodes.length === 0)" 
+    <div *ngIf="mappings() && (!mappings()!.value || !mappings()!.value.nodes || mappings()!.value.nodes.length === 0)" 
          class="p-8 text-center bg-dark-300 rounded-lg">
       <p class="text-gray-400">{{ 'nodes.settings.no.nodes.configured' | translate }}</p>
     </div>
