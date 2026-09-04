@@ -14,7 +14,7 @@ import { CustomRouteReuseStrategy } from './core/route-reuse.strategy';
 import { ConfirmationDialogComponent } from './components/ui/confirmation-dialog/confirmation-dialog.component';
 import { ProjectsService } from './services/projects/projects.service';
 import { PlayControlsFloatingComponent } from './components/ui/play-controls/play-controls-floating/play-controls-floating.component';
-import { OscService } from './services/osc.service';
+import { ClusterWarning, OscService } from './services/osc.service';
 
 @Component({
   selector: 'app-root',
@@ -55,7 +55,57 @@ export class AppComponent implements OnInit, OnDestroy {
           this.workspace.openInShow(uuid, project.name);
         }
       }
-    });    
+    });
+
+    // The missing-node alert lives here, not in the page header or the
+    // transport bar: the header injects no services, and the transport bar is
+    // rendered behind showPlayControls, which needs oscService.running() — and
+    // running only turns yes on GO, so it is false at the instant of every
+    // load. This component mounts unconditionally, which is the requirement.
+    effect(() => {
+      const warning = this.oscService.clusterWarning();
+      if (!warning) return;
+      this.announceClusterWarning(warning);
+    });
+  }
+
+  /** Load id already announced. 0 = nothing yet (engine load ids start at 1). */
+  private lastWarnedLoadId = 0;
+
+  /**
+   * Toast the load diagnosis once per load.
+   *
+   * Deduped on the load id and never on the payload's contents: un-adopt a
+   * node, load, get warned, unload to fix it, fail to fix it, load again —
+   * the diagnosis is byte-identical, and a content-keyed dedupe would stay
+   * silent while the operator read that silence as "solved". A reconnect
+   * replays the same id; a retry brings a new one.
+   *
+   * Compared with `!==` rather than `>` on purpose: a restarted engine begins
+   * counting again from 1, and a warning must not be swallowed because the
+   * previous engine had got further.
+   */
+  private announceClusterWarning(warning: ClusterWarning): void {
+    if (warning.loadId === this.lastWarnedLoadId) return;
+    this.lastWarnedLoadId = warning.loadId;
+
+    const label = (uuid: string) => this.projectsService.nodeLabel(uuid);
+    const parts: string[] = [];
+    if (warning.missing.length) {
+      parts.push(
+        `${warning.missing.map(label).join(', ')} no está en el clúster`);
+    }
+    if (warning.unreachable.length) {
+      parts.push(
+        `${warning.unreachable.map(label).join(', ')} no responde`);
+    }
+    if (!parts.length) return;   // clean load: nothing to say, id still noted
+
+    this.notificationService.showWarning(
+      `El proyecto usa nodos que no se pueden utilizar: ${parts.join('; ')}. ` +
+      `Sus cues no se reproducirán.`,
+      'Nodos no disponibles'
+    );
   }
 
   ngOnInit() {

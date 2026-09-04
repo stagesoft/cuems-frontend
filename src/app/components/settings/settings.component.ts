@@ -54,7 +54,37 @@ export class SettingsComponent implements OnInit, OnDestroy {
    * UNKNOWN, never dead: the engine serializes editor commands, so this can
    * time out behind a slow project load while every node is healthy.
    */
-  private liveness = signal<{ alive: string[]; age_s: number } | null>(null);
+  private liveness = signal<{
+    alive: string[];
+    age_s: number;
+    /** Project nodes not in the cluster at all, from the last load. */
+    missing?: string[];
+    /** Project nodes that are adopted but did not answer. */
+    unreachable?: string[];
+  } | null>(null);
+
+  /**
+   * The last load's unusable nodes, as a persistent banner.
+   *
+   * The toast in AppComponent is an event and is gone in seconds; this is a
+   * condition, and it stays until the cause does. The two cases need different
+   * actions from the operator, so they are never merged: `missing` means adopt
+   * it (or fix the project), `unreachable` means go and switch it on.
+   *
+   * Fed by the same `node_status` poll as the badges, so it is re-asserted
+   * every 5 s rather than depending on a push having arrived.
+   */
+  public unusableNodes = computed(() => {
+    const status = this.liveness();
+    const missing = status?.missing ?? [];
+    const unreachable = status?.unreachable ?? [];
+    if (!missing.length && !unreachable.length) return null;
+    return {
+      missing: missing.map(uuid => this.projectsService.nodeLabel(uuid)),
+      unreachable: unreachable.map(uuid => this.projectsService.nodeLabel(uuid))
+    };
+  });
+
   /** Last refusal from the backend, shown next to the buttons. */
   public lastNodeError = signal<string | null>(null);
   private pollHandle: ReturnType<typeof setInterval> | null = null;

@@ -187,7 +187,25 @@ export class ProjectsService {
 
   public runningProjectUuid = signal<string | null>(null);
 
-  constructor() {    
+  /**
+   * A node UUID as the operator knows it.
+   *
+   * Names are resolved here, in the browser, and deliberately never sent by
+   * the engine: `alias`/`role_id`/`hostname` are mutable projections of the
+   * UUID (the node-identity contract), and a second source of truth for them
+   * is what that contract forbids. Same fallback chain as the settings panel,
+   * ending in a short UUID so even an unknown node prints as something a
+   * person can match against the map.
+   */
+  public nodeLabel(uuid: string): string {
+    const value = this.initialMappings()?.value;
+    const all = [...(value?.nodes ?? []), ...(value?.new_nodes ?? [])];
+    const node = all.find(entry => entry?.node?.uuid === uuid)?.node;
+    return node?.alias || node?.role_id || node?.hostname ||
+           `${uuid.slice(0, 8)}…`;
+  }
+
+  constructor() {
     const savedTemplate = localStorage.getItem('initial_template');
     if (savedTemplate) {
       try {

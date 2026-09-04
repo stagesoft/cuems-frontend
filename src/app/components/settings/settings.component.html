@@ -28,6 +28,27 @@
         <p class="text-sm">{{ lastNodeError() }}</p>
       </div>
 
+      <!-- Nodes the loaded project needs and cannot use. A condition, not an
+           event: it stays until the cause goes away, unlike the toast. The two
+           cases are kept apart because they need different actions. -->
+      <div *ngIf="unusableNodes() as unusable"
+           class="p-4 mb-6 rounded-lg bg-dark-300 border-l-4 border-red-500">
+        <p class="text-sm font-semibold">
+          El proyecto cargado usa nodos que no se pueden utilizar. Sus cues no
+          se reproducirán (el GO no está bloqueado).
+        </p>
+        <p *ngIf="unusable.missing.length" class="text-sm mt-2">
+          <span class="font-semibold">No están en el clúster:</span>
+          {{ unusable.missing.join(', ') }}
+          <span class="opacity-70">— adóptalos, o corrige el proyecto.</span>
+        </p>
+        <p *ngIf="unusable.unreachable.length" class="text-sm mt-2">
+          <span class="font-semibold">Adoptados pero no responden:</span>
+          {{ unusable.unreachable.join(', ') }}
+          <span class="opacity-70">— la máquina está apagada o sin red.</span>
+        </p>
+      </div>
+
       <div *ngIf="activeNodes().length > 0">
           <p class="text-lg font-semibold mb-4">
             Nodos Activos ({{ activeNodes().length }})
