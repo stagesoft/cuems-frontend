@@ -343,6 +343,31 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       let canvasRegion = { x: 0, y: 0, width: 1, height: 1 };
 
       
+      if (cueType === 'dmx') {
+        // DmxCueOutput carries only output_name — the bare node uuid — so
+        // parseOutputString() (which demands a `uuid_name` shape) would
+        // return null here. Match against the dmx options directly instead,
+        // and keep an unknown value rather than silently dropping it: that
+        // is what makes a project mapped to a node this cluster does not
+        // have visible to the operator instead of disappearing.
+        const dmxOutputs: string[] = [];
+        if (cueData.outputs && Array.isArray(cueData.outputs)) {
+          for (const output of cueData.outputs) {
+            if (output.DmxCueOutput?.output_name) {
+              dmxOutputs.push(output.DmxCueOutput.output_name);
+            }
+          }
+        } else if (cueData.DmxCueOutput?.output_name) {
+          dmxOutputs.push(cueData.DmxCueOutput.output_name);
+        }
+
+        if (dmxOutputs.length > 0) {
+          selectedOutputs = dmxOutputs;
+        } else if (this.dmxMappingOptions.length > 0) {
+          selectedOutputs = [this.dmxMappingOptions[0].value];
+        }
+      }
+
       if (cueType === 'audio') {         
         let audioOutputs: string[] = [];
         
@@ -752,6 +777,19 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       
       newCue.dmx_channels = initialChannels;
       newCue.fade_in_time = 0;
+
+      // Same courtesy audio and video already get: start on a real target
+      // instead of on nothing. Without this a new DmxCue saves with no
+      // output_name and never arms on any node.
+      const mappingsResponse = this.projectsService.initialMappings();
+      const defaultDmxOutput = mappingsResponse?.value?.default_dmx_output;
+      if (defaultDmxOutput && this.dmxMappingOptions.some(o => o.value === defaultDmxOutput)) {
+        newCue.selectedOutputs = [defaultDmxOutput];
+      } else if (this.dmxMappingOptions.length > 0) {
+        newCue.selectedOutputs = [this.dmxMappingOptions[0].value];
+      } else {
+        newCue.selectedOutputs = [];
+      }
     }
 
     if (type === 'action') {
@@ -1136,6 +1174,18 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         }
       }
       newCue.fadein_time = Math.round((cue.fade_in_time ?? 0) * 1000);
+
+      // DmxCueOutputsType is a single repeatable output_name and nothing
+      // else, so the structure is built here rather than cloned from the
+      // project template the way audio and video outputs are.
+      const dmxSelected = (cue.selectedOutputs && Array.isArray(cue.selectedOutputs))
+        ? cue.selectedOutputs.filter(value => !!value)
+        : [];
+      if (dmxSelected.length > 0) {
+        newCue.outputs = dmxSelected.map(outputName => ({
+          DmxCueOutput: { output_name: outputName }
+        }));
+      }
     }
 
     const result = { [cueTypeKey]: newCue };
@@ -1297,6 +1347,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
   mappingOptions: { value: string, label: string }[] = [];
+  /** DMX targets. One entry per node that declares a <dmx> output; the value
+   *  is the bare node uuid (see InitialMapping in projects.service). */
+  dmxMappingOptions: { value: string, label: string }[] = [];
   audioMappingOptions: { value: string, label: string }[] = [];
   videoMappingOptions: { value: string, label: string }[] = [];
 
@@ -1310,7 +1363,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     if (cue.type === 'video') {
       options = this.videoMappingOptions;
     }
-    
+
+    if (cue.type === 'dmx') {
+      options = this.dmxMappingOptions;
+    }
+
     return options;
   }
 
@@ -1399,6 +1456,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         label: mapping.name
       }));
       
+      this.dmxMappingOptions = mappings.filter(mapping =>
+        mapping.type === 'dmx'
+      ).map(mapping => ({
+        value: mapping.uuid,
+        label: mapping.name
+      }));
+
       this.mappingOptions = [...this.audioMappingOptions, ...this.videoMappingOptions];
     }
   }

@@ -26,9 +26,18 @@ export interface ProjectList {
 export type ProjectTemplate = Record<string, any>;
 
 export interface InitialMapping {
+  /**
+   * What gets written into a cue's `output_name`.
+   *
+   * Audio and video use `<node uuid>_<output id>`. DMX uses the **bare node
+   * uuid, with no suffix** — that is the engine's documented contract
+   * (`ControllerEngine._collect_project_nodes`), and a DMX cue has no output
+   * index to carry anyway: the universe travels inside the cue, in
+   * `DmxScene.DmxUniverse.universe_num`.
+   */
   uuid: string;
   name: string;
-  type: 'audio' | 'video';
+  type: 'audio' | 'video' | 'dmx';
 }
 
 export interface InitialMappingsResponse {
@@ -615,6 +624,30 @@ export class ProjectsService {
                   type: 'video'
                 };
                 mappingOptions.push(mapping);
+              });
+            }
+          });
+        }
+
+        // DMX. Note the uuid has no `_id` suffix, unlike audio and video —
+        // see InitialMapping. A node with no DMX hardware declares an empty
+        // <dmx> section and simply contributes nothing here.
+        if (nodeData.node.dmx && Array.isArray(nodeData.node.dmx)) {
+          nodeData.node.dmx.forEach((dmxGroup: any) => {
+            if (dmxGroup.outputs && Array.isArray(dmxGroup.outputs)) {
+              dmxGroup.outputs.forEach((outputData: any) => {
+                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const mapping: InitialMapping = {
+                  uuid: nodeUuid,
+                  name: displayName,
+                  type: 'dmx'
+                };
+                // One entry per node: every DMX output of a node resolves to
+                // the same bare uuid, so more than one would be a duplicate
+                // the operator cannot tell apart.
+                if (!mappingOptions.some(m => m.type === 'dmx' && m.uuid === nodeUuid)) {
+                  mappingOptions.push(mapping);
+                }
               });
             }
           });
