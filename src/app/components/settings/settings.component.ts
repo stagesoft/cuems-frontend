@@ -1,4 +1,4 @@
-import { Component, DestroyRef, computed, inject } from '@angular/core';
+import { Component, DestroyRef, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AppPageHeaderComponent } from '../layout/app-page-header/app-page-header.component';
 import { ConfirmationDialogComponent  } from '../ui/confirmation-dialog/confirmation-dialog.component';
@@ -15,7 +15,7 @@ import { NotificationService } from '../../services/ui/notification.service';
   imports: [CommonModule, AppPageHeaderComponent, IconComponent, TranslateModule, ConfirmationDialogComponent],
   templateUrl: './settings.component.html'
 })
-export class SettingsComponent {
+export class SettingsComponent implements OnInit, OnDestroy {
   private projectsService = inject(ProjectsService);
   private wsService = inject(WebsocketService);
   private destroyRef = inject(DestroyRef);
@@ -41,6 +41,27 @@ export class SettingsComponent {
   public nodeconfAvailable = computed(
     () => this.mappings()?.value?.nodeconf_available !== false);
 
+  /**
+   * The engine's runtime view: which nodes answered its last ping.
+   *
+   * Deliberately NOT merged with each node's `online` field. `online` is
+   * cuems-nodeconf's discovery view, refreshed within ~30 s; `alive` here is
+   * the engine's sub-second ping/pong and the only signal the GO gate trusts.
+   * Merging them would tell the operator a node is dead when it was merely
+   * missed by the last discovery pass, or alive when it vanished 20 s ago.
+   *
+   * null = we have not been told yet, or the last request failed. That is
+   * UNKNOWN, never dead: the engine serializes editor commands, so this can
+   * time out behind a slow project load while every node is healthy.
+   */
+  private liveness = signal<{ alive: string[]; age_s: number } | null>(null);
+  /** Last refusal from the backend, shown next to the buttons. */
+  public lastNodeError = signal<string | null>(null);
+  private pollHandle: ReturnType<typeof setInterval> | null = null;
+
+  /** How often to ask while the panel is open. The engine clamps at 2 s. */
+  private static readonly POLL_MS = 5000;
+
   constructor() {
     this.wsService.messages
       .pipe(
@@ -50,11 +71,90 @@ export class SettingsComponent {
       .subscribe({
         next: (response) => {
           if (response.value === 'OK') {
+            this.lastNodeError.set(null);
             this.notificationService.showSuccess('Lista de nodos modificada exitosamente');
           }
         }
       });
-  }  
+
+    this.wsService.messages
+      .pipe(
+        filter(response => response && response.type === 'node_status'),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (response) => this.liveness.set(response.value ?? null)
+      });
+
+    // Refusals travel on `errors`, not `messages` — without this subscription
+    // the operator would click, see nothing happen, and never learn that the
+    // engine said "unload the project first" or "nodeconf is not running".
+    this.wsService.errors
+      .pipe(
+        filter(error => error && (error.action === 'nodelist_modify'
+                               || error.action === 'node_status')),
+        takeUntilDestroyed(this.destroyRef)
+      )
+      .subscribe({
+        next: (error) => {
+          if (error.action === 'node_status') {
+            this.liveness.set(null);   // unknown, not dead
+            return;
+          }
+          this.lastNodeError.set(error.message);
+          this.isConfirmAddNodeOpen = false;
+          this.isConfirmRemoveNodeOpen = false;
+          this.notificationService.showError(error.message);
+        }
+      });
+  }
+
+  ngOnInit(): void {
+    this.requestNodeStatus();
+    this.pollHandle = setInterval(
+      () => this.requestNodeStatus(), SettingsComponent.POLL_MS);
+  }
+
+  ngOnDestroy(): void {
+    // Stop polling the moment the panel is gone: each probe pings every
+    // adopted node.
+    if (this.pollHandle !== null) {
+      clearInterval(this.pollHandle);
+      this.pollHandle = null;
+    }
+  }
+
+  private requestNodeStatus(): void {
+    this.wsService.wsEmit({ action: 'node_status' });
+  }
+
+  /** 'alive' | 'unknown' — never 'dead' from a failed poll. */
+  isAlive(nodeWrapper: any): 'alive' | 'absent' | 'unknown' {
+    const status = this.liveness();
+    if (!status || !Array.isArray(status.alive)) return 'unknown';
+    return status.alive.includes(nodeWrapper?.node?.uuid) ? 'alive' : 'absent';
+  }
+
+  /** Seconds since the engine actually probed, for the tooltip. */
+  livenessAge(): number | null {
+    return this.liveness()?.age_s ?? null;
+  }
+
+  /** nodeconf's discovery view. A different question from isAlive(). */
+  isSeenByDiscovery(nodeWrapper: any): boolean {
+    return nodeWrapper?.node?.online === true;
+  }
+
+  /** The controller cannot be un-adopted — nodeconf refuses it. */
+  canUnadopt(nodeWrapper: any): boolean {
+    return this.nodeconfAvailable()
+      && nodeWrapper?.node?.node_type !== 'NodeType.master';
+  }
+
+  /** nodeconf refuses to adopt a node it has not just seen. */
+  canAdopt(nodeWrapper: any): boolean {
+    return this.nodeconfAvailable() && this.isSeenByDiscovery(nodeWrapper);
+  }
 
   getNodeName(nodeWrapper: any, index: number): string {
     const node = nodeWrapper?.node;

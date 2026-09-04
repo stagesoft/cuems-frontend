@@ -14,6 +14,20 @@
     </div>
 
     <div *ngIf="mappings() && mappings()!.value && mappings()!.value.nodes" class="space-y-6">
+      <div *ngIf="!nodeconfAvailable()"
+           class="p-4 mb-6 rounded-lg bg-dark-300 border-l-4 border-amber-500">
+        <p class="text-sm">
+          El servicio de configuración de nodos (cuems-nodeconf) no está en
+          marcha en esta controladora: no se pueden adoptar ni retirar nodos.
+        </p>
+        <p class="text-xs opacity-70 mt-1">systemctl enable --now cuems-nodeconf</p>
+      </div>
+
+      <div *ngIf="lastNodeError()"
+           class="p-4 mb-6 rounded-lg bg-dark-300 border-l-4 border-red-500">
+        <p class="text-sm">{{ lastNodeError() }}</p>
+      </div>
+
       <div *ngIf="activeNodes().length > 0">
           <p class="text-lg font-semibold mb-4">
             Nodos Activos ({{ activeNodes().length }})
@@ -23,13 +37,37 @@
               class="bg-dark-300 rounded-lg p-6 mb-8">
          
             <div class="flex items-start justify-between gap-4">
-              <h3 class="text-base font-semibold mb-4 flex items-center gap-2">
+              <h3 class="text-base font-semibold mb-4 flex flex-wrap items-center gap-2">
                 <app-icon icon="node" class="text-primary"></app-icon>
                 {{ getNodeName(nodeWrapper, i) }}
+
+                <!-- Two distinct signals, never merged: discovery (nodeconf,
+                     ~30 s) and liveness (engine ping/pong, sub-second). -->
+                <span class="text-xs px-2 py-0.5 rounded-full bg-dark-200 opacity-80"
+                      title="Visto por el descubrimiento de nodeconf (se refresca cada ~30 s)">
+                  {{ isSeenByDiscovery(nodeWrapper) ? 'visto' : 'no visto' }}
+                </span>
+                <span class="text-xs px-2 py-0.5 rounded-full"
+                      [class.bg-green-700]="isAlive(nodeWrapper) === 'alive'"
+                      [class.bg-red-700]="isAlive(nodeWrapper) === 'absent'"
+                      [class.bg-dark-200]="isAlive(nodeWrapper) === 'unknown'"
+                      [title]="livenessAge() === null
+                        ? 'Sin respuesta del motor: estado desconocido, no significa caído'
+                        : 'Sondeo del motor hace ' + livenessAge() + ' s'">
+                  {{ isAlive(nodeWrapper) === 'alive' ? 'responde'
+                     : isAlive(nodeWrapper) === 'absent' ? 'no responde' : 'desconocido' }}
+                </span>
+                <span *ngIf="nodeWrapper.node.role_id" class="text-xs opacity-60">
+                  {{ nodeWrapper.node.role_id }}
+                </span>
               </h3>
 
               <div>
-                <button (click)="openRemoveNodeConfirmation(nodeWrapper.node.uuid)">
+                <button [disabled]="!canUnadopt(nodeWrapper)"
+                        [class.opacity-30]="!canUnadopt(nodeWrapper)"
+                        [title]="canUnadopt(nodeWrapper) ? 'Retirar el nodo del clúster'
+                                 : 'La controladora no se puede retirar'"
+                        (click)="openRemoveNodeConfirmation(nodeWrapper.node.uuid)">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-minus-icon lucide-circle-minus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/></svg>  
                 </button>
               </div>
@@ -88,13 +126,21 @@
             class="bg-dark-300 rounded-lg p-6 mb-8">
           
           <div class="flex items-start justify-between gap-4">
-            <h3 class="text-base font-semibold mb-4 flex items-center gap-2">
+            <h3 class="text-base font-semibold mb-4 flex flex-wrap items-center gap-2">
               <app-icon icon="node" class="text-primary"></app-icon>
               {{ getNodeName(nodeWrapper, i) }}
+              <span class="text-xs px-2 py-0.5 rounded-full bg-dark-200 opacity-80"
+                    title="Visto por el descubrimiento de nodeconf (se refresca cada ~30 s)">
+                {{ isSeenByDiscovery(nodeWrapper) ? 'visto' : 'no visto' }}
+              </span>
             </h3>
 
             <div>
-              <button (click)="openAddNodeConfirmation(nodeWrapper.node.uuid)">
+              <button [disabled]="!canAdopt(nodeWrapper)"
+                      [class.opacity-30]="!canAdopt(nodeWrapper)"
+                      [title]="canAdopt(nodeWrapper) ? 'Adoptar el nodo'
+                               : 'nodeconf solo adopta un nodo que acaba de ver'"
+                      (click)="openAddNodeConfirmation(nodeWrapper.node.uuid)">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-circle-plus-icon lucide-circle-plus"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
               </button>
             </div>
