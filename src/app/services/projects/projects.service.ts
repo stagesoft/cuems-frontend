@@ -188,6 +188,24 @@ export class ProjectsService {
   public runningProjectUuid = signal<string | null>(null);
 
   /**
+   * UUID of the project the engine currently holds, playing or not.
+   *
+   * `runningProjectUuid` only covers the playing case; a stopped project used
+   * to be indistinguishable from no project at all, because the engine
+   * collapsed both into `status: 'none'`. It now answers `'loaded'` too.
+   *
+   * ⚠️ Fresh on connect, and it can go stale: `project_status` is queried once
+   * per WebSocket connection, so a load performed elsewhere (another tab, the
+   * power-bridge's boot auto-load) is not reflected here until this client
+   * reconnects. Anything that must be live reads `oscService.loadedProject()`
+   * instead, which the engine broadcasts on every change — that is why this
+   * signal is an addition and not a replacement for the existing unix_name
+   * matching. It stays `null` against an engine that predates the `'loaded'`
+   * state.
+   */
+  public loadedProjectUuid = signal<string | null>(null);
+
+  /**
    * A node UUID as the operator knows it.
    *
    * Names are resolved here, in the browser, and deliberately never sent by
@@ -401,16 +419,29 @@ export class ProjectsService {
       const projectUuid = response.value?.project_uuid;
       if (status === 'running' && projectUuid) {
         this.runningProjectUuid.set(projectUuid);
+        this.loadedProjectUuid.set(projectUuid);
+        if (this.projects().length === 0) {
+          this.getProjectList();
+        }
+      } else if (status === 'loaded' && projectUuid) {
+        // Loaded but stopped. An engine without this state never sends it,
+        // so loadedProjectUuid simply stays null there.
+        this.runningProjectUuid.set(null);
+        this.loadedProjectUuid.set(projectUuid);
         if (this.projects().length === 0) {
           this.getProjectList();
         }
       } else {
         this.runningProjectUuid.set(null);
+        this.loadedProjectUuid.set(null);
       }
     }
 
     if (response && response.type === 'project_unload' && response.value === 'OK') {
+      // Both, or the uuid outlives the project it names: project_status is
+      // only queried on connect, so nothing else would clear it in this tab.
       this.runningProjectUuid.set(null);
+      this.loadedProjectUuid.set(null);
     }
 
     if (response && response.type === 'error') {
