@@ -22,20 +22,32 @@ propagates here, never the reverse.
 | **D26** | `initial_template`-as-a-concrete-instance is retired. The script domain is a **migration** of this repository's template call sites. The config domain is **also a migration, not a greenfield build** — a `network_map` editing UI exists and is **in daily use** (`settings.component.ts`, `nodelist_modify` adopt/unadopt), and `project_mappings` has read consumers (audio-mixer, video-mixer). Port the existing machinery onto dynamic-form entities **with its logic preserved**. Adopt/unadopt must keep working through the port |
 | **D35** | This port is **preceded by characterization tests** of the three files it rewrites — mirroring exactly what feature 008 did for `cuems-nodeconf`'s network-map logic. Pin today's behaviour **before** moving it, so equivalence is measured rather than asserted |
 | **D17 / D18b** | `Media.duration` is now `{"CTimecode": "HH:MM:SS.mmm"}` on the JSON wire, not a bare string. Fade durations already arrive wrapped and this repository already unwraps them — that is the pattern to copy |
-| **D21** | A corrupt-but-current document is **repaired to a default and reported**. The report reaches this repository as a WS message from `cuems-editor`, and **rendering it is this repository's job**. A silent repair is the exact outcome the three-outcome design exists to prevent |
+| **D21** | A corrupt-but-current document is **repaired to a default and reported**. The report reaches this repository as a WS message from `cuems-editor`, and **rendering it is this repository's job**. A silent repair is the exact outcome the three-outcome design exists to prevent. Since `cuems-editor` 001 (2026-10-02) the editor also **refuses to save** a repaired or converted project until the session acknowledges the report (`repair_acknowledge`), so the UI's part is rendering **and** acknowledging (`04-wire-contract.md` §7) |
 | **D27** | Nothing in the ecosystem releases until every consumer flow lands |
 
-## The wire changes in exactly two ways
+## The wire, as of 2026-10-02
 
 Stated in full in [`04-wire-contract.md`](04-wire-contract.md), and summarised here because it is the
-item most likely to be got wrong:
+item most likely to be got wrong. Until 2026-10-01 this section said "exactly two ways"; `cuems-utils`
+013 (device-class reshape) completed that day and is part of this feature's wire.
 
-**(a)** `schemaLocation` is **absent** from the `project_load` payload.
+**The `project` frame differs from the pre-001 frame by four deltas:**
+
+**(a)** `schemaLocation` is **absent**.
 **(b)** `Media.duration` is `{"CTimecode": "HH:MM:SS.mmm"}` instead of a bare string.
+**(c)** a hardware cue is `{"Cue": {..., "class": "audio"|"video"|"dmx"|...}}` and a hardware cue output
+is `{"CueOutput": {..., "class": ...}}`; `ActionCue`, `FadeCue` and `CueList` keep their keys (013).
+**(d)** a video cue with no `<opacity>` in its document carries `"opacity": 100`, the `VideoCue` default.
 
-Everything else — **every other key, the ordering, and the string boolean form** — is unchanged. The
-`=== true || === 'True'` dual read still holds, and **its simplification remains optional**: a
-follow-up, not a blocker for this feature. `doc_version` never reaches this repository.
+Everything else in that frame — **every other key, the ordering, and the string boolean form** — is
+unchanged. The `=== true || === 'True'` dual read still holds, and **its simplification remains
+optional**: a follow-up, not a blocker for this feature. `doc_version` never reaches this repository.
+
+**The connection changed too**, behind payload version 1: `payload_version` is the first frame;
+`initial_template` is retired in favour of `schema_descriptor`; `initial_mappings` is the mapping
+document alone (in 013's `devices` / `defaults` shape) and the node arrays plus `nodeconf_available` moved
+to a new `node_list` frame; `document_load_report`, `document_load_failed`, `repair_acknowledge`,
+`repair_save_refused` and `network_map_error` are new.
 
 The pre-2026-09-03 planning wording said something stronger and wrong (finding C3). Do not restate it.
 
@@ -66,9 +78,12 @@ That rule applies here verbatim.
 - **Do not let the new per-domain views inherit `settings.component.ts`'s naming mistake.** That file is
   named for the `settings` domain and edits `network_map` nodes. Name the new views for the domain they
   actually edit.
-- **Do not land the domain untangling before `cuems-editor`'s half**, and do not land either half alone.
-  It is one simultaneous change across two repositories and three components here.
+- **Do not land the domain untangling apart from `cuems-editor`'s half.** The editor's half is
+  implemented on its `feat/xml-refactor` (001, 2026-10-02) and has not shipped; this repository's half
+  ships with it under the coordinated tag, never after a deploy of it. Three components here move
+  together.
 - **Do not simplify the `=== true || === 'True'` dual read in this feature.** It is the compatibility
-  mechanism for the string boolean form the wire still carries, and removing it would be a third delta
-  the contract does not sanction. Optional follow-up; explicitly out of scope here.
-- **Do not ship from this branch alone** (D27). See `00-runnable-flow.md` §7.
+  mechanism for the string boolean form the wire still carries — now on node fields too
+  (`adopted`, `online` on `node_list`) — and removing it would be a delta the contract does not
+  sanction. Optional follow-up; explicitly out of scope here.
+- **Do not ship from this branch alone** (D27). See `00-runnable-flow.md` §8.

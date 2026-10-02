@@ -5,247 +5,264 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # `cuems-frontend` — the migration inventory
 
-**Re-verified 2026-09-25** against `main` @ `c69dc1c`, in sync with `origin/main`, clean. Every line
-number the upstream flow recorded on 2026-09-03 still resolves to the same line. Sites marked **NEW**
-are ones this pass added.
+**Re-verified 2026-10-02** against this branch's base, `feat/node-adoption-ui` @ `13d93b7` (2026-09-04),
+which is `origin/main` @ `8d67d08` plus the four adoption/liveness commits (§4a). The 2026-09-25 pass
+measured `c69dc1c`, 23 commits behind the real `origin/main`; every coordinate below supersedes it
+(record: `05-amendment-2026-10-02.md`). Sites marked **NEW** were added by a re-verification pass.
 
-File sizes for scale: `project-edit/sequence/sequence.component.ts` **1662** lines,
-`projects.service.ts` **640**, `settings.component.ts` **140**, `project-show/sequence/sequence.component.ts`
-**238**. Five `.spec.ts` files in the repository, none covering any of them.
+File sizes for scale: `project-edit/sequence/sequence.component.ts` **1739** lines,
+`projects.service.ts` **696**, `settings.component.ts` **269**, `project-show/sequence/sequence.component.ts`
+**241**. Six `.spec.ts` files in the repository, none covering any of them.
 
 ---
 
 ## 1. Template consumers — four files
 
-The count was low in earlier passes; it is four, not two.
+**`initial_template` is no longer sent** by `cuems-editor` at payload version 1. Every site below is
+fed from `localStorage` (stale) or not at all, and moves onto `schema_descriptor` (§2c,
+`04-wire-contract.md` §4).
 
 | File | Sites |
 |---|---|
-| `src/app/services/projects/projects.service.ts` | `:150` `projectTemplate = signal<ProjectTemplate\|null>(null)`; `:159`, `:162`, `:242-243` the `localStorage 'initial_template'` round trip; `:219` the response-type list; `:240-243` the intake; `:395`, `:420` reads |
-| `src/app/services/projects/handlers/project-create.handler.ts` | `:10` `safeCloneTemplate`, `:14` the deep clone, `:17-23` `prepareTemplateForNewProject` — **discards** the cloned cue examples for whole-project creation, keeping only the `CuemsScript` scaffold. **No concrete value reads** |
-| `src/app/components/projects/project-edit/project-edit.component.ts` | `:141`. No value reads |
-| `src/app/components/projects/project-edit/sequence/sequence.component.ts` | `:687`, `:716`, `:850`, `:909`, `:1571` — **five** |
+| `src/app/services/projects/projects.service.ts` | `:182` `projectTemplate = signal<ProjectTemplate\|null>(null)`; `:209`, `:293` the `localStorage 'initial_template'` round trip; `:269` the response-type list; `:290-293` the intake; `:451`, `:476` reads |
+| `src/app/services/projects/handlers/project-create.handler.ts` | `:10` `safeCloneTemplate`, `:17` `prepareTemplateForNewProject` (called `:53`, `:55`) — **discards** the cloned cue examples for whole-project creation, keeping only the `CuemsScript` scaffold. **No concrete value reads** |
+| `src/app/components/projects/project-edit/project-edit.component.ts` | `:151`. No value reads |
+| `src/app/components/projects/project-edit/sequence/sequence.component.ts` | `:702`, `:731`, `:875`, `:947`, `:1647` — **five** |
 
 ## 2. Three of them read concrete values — and the edit surface is larger than three sites
-
-This is the distinction that matters: **three *kinds* of value read**, but more than three lines.
 
 ### 2a. `master_vol` — a default, and a drift
 
 ```
-:688   newCue.master_vol = template?.['CuemsScript']?.['CueList']?.['contents']
+:703   newCue.master_vol = template?.['CuemsScript']?.['CueList']?.['contents']
                            ?.find((item: any) => item.AudioCue)?.AudioCue?.master_vol || 20;
 ```
 
-**Measured**: the schema declares `master_vol` as a required `cms:PercentType` with no XSD `default`,
-and the **model-layer** default is `100` — `cuems-utils/src/cuemsutils/cues/AudioCue.py:9`,
-`'master_vol': 100,  # Default to full volume`. So the `|| 20` fallback already diverges from the
-library's own answer by a factor of five, silently, today. The descriptor substitution replaces the
-template walk **and fixes that drift** — which is a *behaviour change for operators*, not a
-refactor, and the spec must say so rather than let it arrive as a side effect.
+**Measured 2026-10-02 through the descriptor** (`ConfigManager.get_schema_descriptor(SchemaName.SCRIPT)`,
+type `script:AudioCueType`): `master_vol` default **100**, required, `PercentType`, no XSD `default`
+attribute — a **model-layer** default. The `|| 20` fallback diverges by a factor of five. Adopting the
+descriptor's answer is a **behaviour change for operators**, and the spec must say so.
 
-This is also exactly why D25 makes **model-layer defaults non-optional** in the descriptor: an XSD-only
-descriptor could not have answered this question at all.
-
-**NEW — the same magic number appears twice more**, and both must be decided with `:688`:
+The same magic number appears twice more, and all three are decided together:
 
 ```
-:502   master_vol: cueData.master_vol || 20,        (reading a cue's own value on intake)
-:965   newCue.master_vol = cue.master_vol || 20;    (reading a cue's own value on write-back)
+:508    master_vol: cueData.master_vol || 20,        (reading a cue's own value on intake)
+:1003   newCue.master_vol = cue.master_vol || 20;    (reading a cue's own value on write-back)
 ```
 
-Neither is a *template* read, so neither is a descriptor substitution — but both encode the same wrong
-fallback, and fixing only `:688` leaves two sites that still answer 20 where the library answers 100.
-Decide all three together.
+Note also that `:703` looks the example up by the key `AudioCue`, which no longer exists (§2d).
 
 ### 2b. `dmx_channels` — a behaviour choice, not a mechanical substitution
 
 ```
-:726-727   if (dmxTemplate?.DmxCue?.DmxScene?.DmxUniverse?.dmx_channels) {
+:741-743   if (dmxTemplate?.DmxCue?.DmxScene?.DmxUniverse?.dmx_channels) {
              initialChannels = dmxTemplate.DmxCue.DmxScene.DmxUniverse.dmx_channels.map(...)
+:753       newCue.dmx_channels = initialChannels;
 ```
 
-It walks `contents`, finds a `DmxCue`, and unwraps each `{DmxChannel: {...}}` to seed the new cue's
-channel list. **The descriptor's default here is `None`** — an empty starting list, not a channel to
-copy. So preserving today's behaviour means keeping this component's own seed
-(`[{channel: 1, value: 0}]`); adopting the descriptor's answer means new DMX cues start empty.
+**Measured**: the descriptor's default is **`None`** (`script:DmxUniverseType`) — an empty starting list,
+not a channel to copy. Preserving today's behaviour means keeping this component's own seed
+(`[{channel: 1, value: 0}]`); adopting the descriptor's answer means new DMX cues start empty. **Decide
+against the live UI.** The intake unwrapping at `:473-476` and the write-back at `:1106-1134` stay
+either way: they are the wire format, not a default.
 
-**Both are defensible. Decide against the live UI**, not on paper — and note the mirrored unwrapping
-at `:467-469` (intake) and `:1071`/`:1081` (write-back), which stay either way because they are the
-wire format, not a default.
-
-### 2c. `getTemplateOutputStructure` — not a field default at all
+### 2c. `getTemplateOutputStructure` — not a field default, and the descriptor's instance does not fit as-is
 
 ```
-:1570-1571   private getTemplateOutputStructure(cueType: 'audio' | 'video'): any | null {
+:1646-1647   private getTemplateOutputStructure(cueType: 'audio' | 'video'): any | null {
                const template = this.projectsService.projectTemplate();
 ```
 
-It deep-clones the example `AudioCue`'s first `AudioCueOutput` (or `VideoCue`'s `VideoCueOutput`) as
-the structure for a new cue's outputs. **Listed by no earlier pass.** This one needs a constructible
-instance of a **whole nested complex type** — `output_geometry`, `canvas_region`, the mapping shape —
-not a scalar default.
-
-**NEW — three call sites, not one.** Upstream names the definition only:
+It deep-clones the example cue's first output as the structure for a new cue's outputs. Three call
+sites:
 
 ```
-:1022   const templateVideoOutput = this.getTemplateOutputStructure('video');
-:1346   const templateAudioOutput = this.getTemplateOutputStructure('audio');
-:1387   const templateVideoOutput = this.getTemplateOutputStructure('video');
+:1075   const templateVideoOutput = this.getTemplateOutputStructure('video');
+:1411   const templateAudioOutput = this.getTemplateOutputStructure('audio');
+:1452   const templateVideoOutput = this.getTemplateOutputStructure('video');
 ```
 
-**This is the site upstream's clarification Q2 was answered for.** The descriptor emits, per complex
-type, a **constructible empty instance** alongside its five existing facts — recorded upstream as a
-deliberate exception, the only descriptor change feature 010 sanctioned, because the alternatives were
-a hand-authored seed here (which drifts from the schema — the exact failure the cutover ends) and
-cloning from a generated example (which works only while the example happens to contain one of every
-cue type). So the capability **exists**; confirm it covers these three call sites before assuming it
-does, and if it does not, that is an upstream report rather than a local hand-authored seed.
+**Upstream's Q2 capability exists — measured 2026-10-02, and it is not wire-shaped.** The descriptor
+emits per-type instances `script:AudioCueOutputsType` and `script:VideoCueOutputsType` (the latter with
+`output_geometry`, `corners` and `canvas_region`). But:
 
-Leaving any of the three to fall through to `undefined` is not an option.
+| | Descriptor instance | A cue output on the wire (`to_wire()`) |
+|---|---|---|
+| wrapper | none | `{"CueOutput": {...}}` |
+| `channels` | `{"channel": [{"channel_num": null, "channel_vol": null}]}` | `[{"channel": {"channel_num": 0, "channel_vol": 100}}]` |
+| scalars | all `null` | values |
+| `class` | `"audio"` / `"video"` | `"audio"` / `"video"` |
+
+Cloning the instance where the template output was cloned yields a structure the editor's save would
+reject. Per this bundle's rule that is **an upstream report to `cuems-utils`** (instance in `to_wire()`
+shape, or a published projection), not a hand-authored seed here. Record it before planning; it decides
+`00-runnable-flow.md` §5 Q1. Leaving any call site to fall through to `undefined` is still not an option.
+
+### 2d. **NEW** — every hardware-cue key read (cuems-utils 013, delta (c))
+
+013 (complete, `6213b16`) changed the wire key of a hardware cue to `Cue` with a `class` field, and of a
+hardware cue output to `CueOutput` with `class`. `ActionCue`, `FadeCue` and `CueList` keep their keys.
+**Saving is blocked until these change**: measured, `CuemsScript.from_json` still accepts an
+`AudioCue`-keyed payload, but `CuemsScript.save` refuses it
+(`[T1] … Unexpected child with tag 'VideoCue'`), so the operator gets an error frame on every save.
+
+| Site | What |
+|---|---|
+| `project-edit/sequence/sequence.component.ts:962-978` | the `cueTypeKey = 'AudioCue' / 'VideoCue' / 'ActionCue' / 'DmxCue' / 'FadeCue'` ladder |
+| `:1141` | `const result = { [cueTypeKey]: newCue };` — the **save wrapper**: emit `Cue` plus `class` for the three hardware classes |
+| `:238-239`, `:1201` | `getCueTypeKey(...)` then `originalData[cueTypeKey]` — the read side: map `Cue` + `class` to today's internal type |
+| `:349`, `:353`, `:915` | `cueData.AudioCueOutput?…`, `output.AudioCueOutput?…`, `cueKey === 'AudioCue' && cue.AudioCueOutput` |
+| `:703`, `:741` | the template example lookups (§2a, §2b) |
+| `project-show/sequence/sequence.component.ts:117-154` | `cueItem.AudioCue` / `.VideoCue` / `.DmxCue` for id, name, type, data |
+| `shared/audio-mixer/audio-mixer.component.ts:61`, `:63` | `output.AudioCueOutput.output_vol`, read and write |
+
+`grep -rnE "AudioCue|VideoCue|DmxCue" src --include='*.ts' --include='*.html'` gives 94 lines in six
+files; `design.component.html:519` is a literal label in the design gallery, not a wire read. Internal
+vocabulary — unions, icons, i18n keys, routes — may keep the words. A `class` this UI has never seen must
+not be an error.
 
 ## 3. Media duration — two display sites, and the pattern to copy
 
-`Media.duration` is `{"CTimecode": "HH:MM:SS.mmm"}` post-008. **Angular interpolating an object
-renders `[object Object]`.**
+`Media.duration` is `{"CTimecode": "HH:MM:SS.mmm"}`. **Angular interpolating an object renders
+`[object Object]`.**
 
 | Site | Code | Kind |
 |---|---|---|
-| `components/projects/project-show/sequence/sequence.component.ts:194` | `return cueData?.Media?.duration \|\| '-';` | TypeScript, in `getCueDuration` |
-| **NEW** `components/projects/project-edit/sequence/sequence.component.html:134` | `{{ getCueData(cue.originalData)?.Media?.duration \|\| '-' }}` | **Angular template interpolation** |
+| `components/projects/project-show/sequence/sequence.component.ts:197` | `return cueData?.Media?.duration \|\| '-';` | TypeScript, in `getCueDuration` (`:196` already unwraps the FadeCue case) |
+| `components/projects/project-edit/sequence/sequence.component.ts:1256` | `\|\| this.getCueData(cue.originalData)?.Media?.duration` inside `getCueMediaDuration` (`:1248-1257`), rendered by `sequence.component.html:134` `{{ getCueMediaDuration(cue) }}` | TypeScript, reached from the template |
 
-The second is new to this pass and is the easier of the two to miss, because a grep over `*.ts` does
-not find it. Both fail the same way, and neither fails loudly: `'-'` is not printed (the object is
-truthy), so the cell shows `[object Object]` where a timecode used to be. **That is an FR-030a-ii
-instance rendered to an operator** — the code keeps resolving and the answer is wrong.
+The template no longer interpolates the field itself (`22ce4c1`); the object now arrives through the
+method, and only when no media file is selected (the first operand, `cue.selectedMediaFile?.file?.duration`,
+is a string from `file_list`). Neither site fails loudly: the object is truthy, so `'-'` never prints.
+That is an FR-030a-ii instance rendered to an operator.
+
+**The write path** (`:1046`, `44bf807`) sends `Media.duration` back as a bare string from `file_list`.
+The editor accepts a bare timecode on save and overwrites every media duration from its database
+anyway, so this is not a blocker; wrap it for symmetry or leave it and say why.
 
 **The fade path already unwraps correctly and is the pattern to copy**, both directions:
 
 ```
-project-edit/sequence/sequence.component.ts:506   this.formatTimecode(cueData.duration?.CTimecode || '00:00:01.000')
-project-edit/sequence/sequence.component.ts:980   newCue.duration = { CTimecode: this.ensureMilliseconds(...) }
+project-edit/sequence/sequence.component.ts:519    this.formatTimecode(cueData.duration?.CTimecode || '00:00:01.000')
+project-edit/sequence/sequence.component.ts:1024   newCue.duration = { CTimecode: ... }
 ```
-
-Also already wrapped and already handled, so they need no change but show the shape is familiar here:
-`project-show/sequence/sequence.component.ts:156` (`prewait?.CTimecode`), `:166` (`postwait`),
-`project-edit/sequence/sequence.component.ts:484-486` (`offset`, `prewait`, `postwait`),
-`project-edit/project-edit.component.ts:157-160`.
 
 ## 4. The config-domain UI — it exists and it is in daily use
 
 | Site | What |
 |---|---|
-| `components/settings/settings.component.ts:35` | subscribes to the `nodelist_modify` response, `filter(response => response?.type === 'nodelist_modify')` |
-| `components/settings/settings.component.ts:48`, `:56` | reads `projectsService.initialMappings()` — `.value.nodes` and `.value.new_nodes` |
-| `components/settings/settings.component.ts:119-137` | `confirmRemoveNode` / `confirmAddNode`, emitting `{action:'nodelist_modify', modify_action:'ADD'\|'REMOVE', value: uuid}` |
-| `components/settings/settings.component.html:162`, `:172` | the two `(confirm)` bindings that invoke them |
-| `components/projects/project-show/audio-mixer/audio-mixer.component.ts:80` | `localStorage.getItem('initial_mappings')` |
-| `components/projects/project-show/video-mixer/video-mixer.component.ts:94` | `localStorage.getItem('initial_mappings')` |
+| `components/settings/settings.component.ts:37-39` | `mappings = computed(() => projectsService.initialMappings())`; `activeNodes` / `newNodes` from `.value.nodes` / `.value.new_nodes` |
+| `components/settings/settings.component.ts:41-42` | `nodeconfAvailable` from `mappings()?.value?.nodeconf_available` |
+| `components/settings/settings.component.ts:99` | subscribes to the `nodelist_modify` response |
+| `components/settings/settings.component.ts:248-269` | `confirmRemoveNode` / `confirmAddNode`, emitting `{action:'nodelist_modify', modify_action:'ADD'\|'REMOVE', value: uuid}` |
+| `components/settings/settings.component.html:236`, `:246` | the two `(confirm)` bindings that invoke them |
+| `components/projects/project-show/audio-mixer/audio-mixer.component.ts:115` | `localStorage.getItem('initial_mappings')`, filters on `node?.audio` (`:129`) |
+| `components/projects/project-show/video-mixer/video-mixer.component.ts:94` | `localStorage.getItem('initial_mappings')`, filters on `node?.video` (`:107`) |
+| `src/app/services/projects/projects.service.ts:39`, `:41` | the `default_audio_output` / `default_video_output` interface fields; read at `project-edit/sequence/sequence.component.ts:385`, `:455`, `:697`, `:698` |
 
-**The adopt/unadopt emit is the far end of `cuems-nodeconf`'s dispatch chain**, which terminates in a
-real daemon on the controller that operators use today. The RPC response shape
-`{'OK': bool, 'error'?: str}` is a contract with this component. It is also newly served by
-`cuems-engine`'s adopt/un-adopt hop (landed on `feat/nodelist-modify-dispatch`, 2026-09), so all three
-ends of this chain are moving in this release — coordinate, do not assume.
+**Three of these reads stop matching the editor at payload version 1** (`04-wire-contract.md` §4–§5):
+
+- **Nodes and `nodeconf_available` left `initial_mappings`** for the new `node_list` frame. `:37-42`
+  read them from the wrong frame; `:41-42` would then read `undefined`, and `!== false` makes that
+  "available" — a comfortable lie.
+- **The mapping nodes changed shape (013, axis A)**: `node.audio` / `node.video` are now
+  `node.devices[]` of `{"device": {"class": ..., "outputs": ..., "inputs": ...}}`, any class. Both mixer
+  filters match nothing.
+- **The defaults changed shape (013, axis A)**: `default_audio_output` / `default_video_output` are now
+  `defaults[]` of `{"default": {"&": "<port>", "class": "audio", "direction": "output"}}`. The port text
+  is under the key **`"&"`**; an empty default has no `"&"`.
+
+**The adopt/unadopt emit is the far end of a dispatch chain** that terminates in `cuems-nodeconf`'s real
+daemon on the controller. The RPC response shape `{'OK': bool, 'error'?: str}` is a contract with this
+component, unchanged by the editor.
 
 **A naming trap to not inherit**: `settings.component.ts` is named for the **`settings`** domain and
 edits **`network_map`** nodes. The new per-domain views are named for the domain they actually edit.
 
 **`localStorage` is a cache that outlives a schema change.** `initial_template` and `initial_mappings`
-are both cached there (`projects.service.ts:159`, `:167`, `:173-177`, `:243`, `:253-262`). Two
-components read `initial_mappings` from it **directly**, bypassing the service. A cache that survives
-an upgrade is how a UI shows the wrong shape afterwards — the untangling needs an eviction story, not
-just a new payload.
+are both cached there (`projects.service.ts:209`, `:217-227`, `:293`, `:298-312`). Two components read
+`initial_mappings` from it **directly**. After this release the cache holds an old **shape**, not only
+an old split, and `initial_template` is never refreshed at all. The untangling needs an eviction story.
 
-## 4a. The tier that does not exist — an adoption/liveness surface with no UI
+## 4a. The adoption / liveness tier — built on this branch's base, unmerged
 
-Found 2026-09-25, and absent from every upstream document including flow 05.
+On **2026-09-04** the node adopt/un-adopt hop and cluster liveness landed across four repositories, each
+on its own unmerged branch. This repository's tier is **`feat/node-adoption-ui`**, the base of this
+branch:
 
-On **2026-09-04**, fourteen commits landed across **three** repositories as one coordinated feature —
-the node adopt/un-adopt hop and cluster liveness — under three different branch names. **None is merged
-anywhere**, and **this repository's tier was never written**:
-
-| Tier | Repository | Branch | State |
+| Tier | Repository | Branch | State 2026-10-02 |
 |---|---|---|---|
-| **UI** | **`cuems-frontend`** | — | **nothing exists** |
-| middleware | `cuems-editor` | `feat/nodelist-adoption-api` (5 commits) | its migration base, by decision |
-| engine | `cuems-engine` | `feat/nodelist-modify-dispatch` (6 commits) | its migration base, by decision |
-| node daemon | `cuems-nodeconf` | `feat/nodelist-modify-hardening` (3 commits, **47 behind**, unmerged) | divergent — see the editor bundle's §0a |
+| **UI** | **`cuems-frontend`** | `feat/node-adoption-ui` (4 commits past `origin/main`) | **this branch's base** |
+| middleware | `cuems-editor` | `feat/nodelist-adoption-api` | carried into its `feat/xml-refactor` (001), which also changed the frames this tier reads |
+| engine | `cuems-engine` | `feat/nodelist-modify-dispatch` | its migration base |
+| node daemon | `cuems-nodeconf` | `feat/nodelist-modify-hardening` (47 behind, largely superseded) | coordination item for that repository |
 
-Measured here:
+What the tier already does (`4721a65`, `e50eae1`, `5a9fabb`, `13d93b7`):
 
-```bash
-$ grep -rn "nodelist_get\|node_status\|cluster_status\|cluster_warning\|nodeconf_available" src/
-# no matches
-```
+| Surface | Where |
+|---|---|
+| `node_status` polling (`alive`, sub-second) | `settings.component.ts:113`, `:159` |
+| two presence badges, **deliberately not merged** — `online` (~30 s discovery) and `alive` | `settings.component.ts:47-51` (the reason, in a comment), `:163-176` |
+| `nodeconf_available` greying the adopt controls | `settings.component.ts:41-42`; interface `projects.service.ts:152` |
+| the engine's load diagnosis (`cluster_warning`, OSC `/engine/status/cluster_warning`) | `osc.service.ts:11`, `:242-269`; the project warning (`5a9fabb`) |
 
-So the editor is ready to serve four things this UI does not ask for and cannot display:
+So `00-runnable-flow.md` §5 Q7–Q9 are **answered in code**, the right way. What is left is to carry the
+tier across the wire change, and **D35's characterization tests for the settings component pin this
+branch's behaviour**, not `main`'s.
 
-| Message | What it carries | Served by |
-|---|---|---|
-| `nodelist_get` | the node list on demand, rather than only inside `initial_mappings` | `CuemsWsUser.py:437` |
-| `node_status` | `{"alive": [...], "adopted": [...], "controller": uuid, "age_s": n}` — the engine's **sub-second** ping/pong, relayed from its `cluster_status` | `CuemsWsUser.py:463-504` |
-| `cluster_warning` | what the last project load found wrong with the cluster, broadcast | `cuems-engine`'s `_broadcast_cluster_warning` |
-| `nodeconf_available` | whether the node daemon is answering — **injected into `mappings_dict`**, so it already arrives inside `initial_mappings` today | `CuemsWsServer.py:491`, `:537` |
+**Two reads in the tier are wrong against the 001 editor:**
 
-**Three consequences for this feature, and the third is a trap:**
+1. `nodeconf_available` and the node arrays come from `initial_mappings` (`:37-42`). They are on
+   `node_list` now; the `nodelist_get` reply is `node_list` too.
+2. **NEW — `settings.component.ts:176` reads `nodeWrapper?.node?.online === true`**, a strict JSON
+   boolean. The editor sends the library's wire form, `"True"` / `"False"` (it sent JSON `true` before
+   001 only because it projected nodes through the wrong schema — `../cuems-editor/specs/001-cuems-utils-migration/evidence/mappings-capture/`).
+   The `online` badge would read "off" for every node. Use the same dual read the cue code uses
+   (`=== true || === 'True'`). This is exactly the silent-wrong shape FR-030a-ii names.
 
-1. **`initial_mappings` is a three-way entanglement, not two-way.** §4 and `04-wire-contract.md` §5
-   describe `project_mappings` + `network_map` node status. On the editor's base branch it also carries
-   `nodeconf_available`, which belongs to **no schema at all** — it is a liveness observation about a
-   daemon, computed at serve time. A descriptor-driven form for `project_mappings` must not acquire it
-   as a field. Decide where it renders before porting.
-2. **`node_status.alive` is not each node's `online`, and conflating them is a real bug with a real
-   consequence.** `online` is `cuems-nodeconf`'s discovery view, refreshed within **~30 s**; `alive` is
-   the engine's sub-second ping/pong, and the editor's own docstring
-   (`../cuems-editor/src/cuemseditor/CuemsWsUser.py:469-472`) calls it *"the only signal the GO gate
-   trusts"*. `settings.component.ts` shows `online` today. A ported form that renders one "is this node
-   up?" control has silently chosen — probably the staler of the two, on the screen operators use to
-   adopt hardware.
-3. **Whether building the UI tier is in scope is a decision, not an omission to fill in.** It is
-   genuinely new UI work, not a port, and D26's "this is a migration, not a greenfield build" does not
-   cover it. Flow 05 was written before the cluster existed. If it is out of scope, say so explicitly —
-   otherwise the ecosystem ships a liveness and adoption surface three tiers deep that no operator can
-   see.
+`network_map_error` (a duplicate node identity in `network_map.xml`) is new and belongs on this screen.
 
 ## 5. The `schemaLocation` interface property
 
 ```
-src/app/services/projects/projects.service.ts:120    schemaLocation: string;
+src/app/services/projects/projects.service.ts:146    schemaLocation: string;
 ```
 
-A **non-optional** property of the interface describing the `project_load` payload. Delta (a) makes the
-key absent. **Verified 2026-09-25**: it appears exactly once — that declaration — and in no template.
-Nothing reads it, so nothing breaks; but the interface now describes a key that is not there.
-
-**Delete it.** An interface that lies is how the next reader concludes the field is still present.
+A **non-optional** property of the interface describing the `project` frame. Delta (a) makes the key
+absent. Verified 2026-10-02: it appears once — that declaration — and in no template. **Delete it.**
 
 ## 6. Test coverage, as a measured fact
 
 ```
-$ find src -name '*.ts'      | wc -l     117
-$ find src -name '*.spec.ts' | wc -l       5
+$ find src -name '*.ts'      | wc -l     118
+$ find src -name '*.spec.ts' | wc -l       6
 ```
 
-The five: `app.component.spec.ts`, `components/design/design.component.spec.ts`,
-`components/ui/icon/icon.component.spec.ts`, `components/layout/app-header/app-header.component.spec.ts`,
+The six: `app.component.spec.ts`, `core/utils.spec.ts` (added on `origin/main`),
+`components/design/design.component.spec.ts`, `components/ui/icon/icon.component.spec.ts`,
+`components/layout/app-header/app-header.component.spec.ts`,
 `components/layout/app-footer/app-footer.component.spec.ts`.
 
-**None of the five covers any file in §1–§4.** Runner: `npm test` (`ng test`). Stack: Angular 19.2,
-Tailwind 4.1, `osc-js`, `@ngx-translate`; package name `formitgo-tw`, version `0.0.0`.
+**None of the six covers any file in §1–§4a.** Runner: `npm test` (`ng test`). Stack: Angular 19.2,
+Tailwind 4.1, `osc-js`, `@ngx-translate`; package name `formitgo-tw`, version `0.0.0`. A `CLAUDE.md`
+exists (`ef6571a`).
+
+**Recorded payloads exist** for the characterization tests to feed in, so phase zero need not invent
+fixtures: `../cuems-editor/specs/001-cuems-utils-migration/evidence/` holds the pre-001 `project` frame
+(`project-capture/`), the pre-001 `initial_mappings` (`initial-mappings.json`) and the last
+`initial_template` (`create-script-baseline.json`).
 
 ## 7. No dependency pin, and therefore no release-gate edge
 
 This repository does not consume `cuemsutils` — it consumes `cuems-editor`'s WS payloads. It is also
-**not packaged**, so it cannot carry a `debian/` relation, and upstream FR-091's mechanism does not
-reach it.
+**not packaged**, so it cannot carry a `debian/` relation.
 
-Upstream's answer (FR-108) is a **runtime payload-version handshake**: the editor advertises a payload
-version when a client connects, and a UI that does not understand it **refuses and says so** rather
-than rendering a wrapped duration as an object. §3 above is exactly what "rendering a wrapped duration
-as an object" looks like, which is why the handshake is this repository's only gate.
+The gate is the **runtime payload-version handshake**: `cuems-editor` now sends
+`{"type":"payload_version","value":1}` as the first frame on every connection. A UI that does not
+understand the version **refuses and says so** rather than rendering a wrapped duration as an object.
+The refusal path is this repository's to design.
 
-Keep two numbers apart, because merging them is a recorded hazard:
+Keep two numbers apart:
 
 - the **payload version** — this handshake, editor ↔ UI;
 - **`doc_version`** — the on-disk document marker, which **never reaches this repository**. Verified:

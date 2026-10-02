@@ -9,6 +9,9 @@ SPDX-License-Identifier: GPL-3.0-or-later
 re-verified against the live tree. Where the two differ, **this file is the one to run**; the upstream
 original is a dated 2026-09-03 record and is not edited.
 
+**Amended 2026-10-02** after `cuems-utils` 013 completed and `cuems-editor` 001 was implemented, and
+re-based onto `feat/node-adoption-ui`. What changed and why: `05-amendment-2026-10-02.md`.
+
 **Feature name**: `001-schema-descriptor-migration` (this repository has no `specs/` features yet).
 **Branch**: `feat/xml-refactor`, matching every other repository in this work.
 
@@ -17,30 +20,32 @@ combination is why D35 puts characterization tests before anything else.
 
 ---
 
-## 0. State of this repository, measured 2026-09-25
+## 0. State of this repository, measured 2026-10-02
 
 | | |
 |---|---|
-| Current branch | `main` @ `c69dc1c` (2026-05-14), **in sync with `origin/main`**, clean |
-| Base for `feat/xml-refactor` | **`main`** |
+| Current branch | **`feat/xml-refactor`** @ `0f3a522` — this bundle's one commit, **rebased 2026-10-02** onto `feat/node-adoption-ui` |
+| Base | **`origin/feat/node-adoption-ui`** @ `13d93b7` (2026-09-04, unmerged) = `origin/main` @ `8d67d08` (2026-08-11) **+ 4 commits**: the adoption/liveness UI tier (`03-migration-inventory.md` §4a) |
+| Earlier base, superseded | `c69dc1c` (2026-05-14). The 2026-09-25 "in sync with `origin/main`" was measured against an unfetched tracking ref; the real `origin/main` was 23 commits ahead |
 | Spec-kit | **absent** — added on first run, §1 |
 | Constitution | **absent** — written on first run, §2 |
-| `CLAUDE.md` | **absent** — the only repository in this work without one |
+| `CLAUDE.md` | **present** (`ef6571a`, on `origin/main`) |
 | Existing features | none → this becomes **`001-schema-descriptor-migration`** |
 | Stack | Angular 19.2, Tailwind 4.1, `osc-js`, `@ngx-translate`; package name `formitgo-tw`, version `0.0.0` |
-| Tests | `npm test` (`ng test`) — **5 `.spec.ts` files against 112 other `.ts` files** (117 total) |
+| Tests | `npm test` (`ng test`) — **6 `.spec.ts` files against 112 other `.ts` files** (118 total) |
 | `cuemsutils` | **none.** This repository consumes `cuems-editor`'s WS payloads, not the library |
 | Packaged? | **no** — so no release-gate edge is possible here. The payload handshake is the gate instead |
+| Producing end | `cuems-editor` `feat/xml-refactor` @ `8247e9b` (001, milestones 1 and 2), on `cuemsutils` `0.1.0rc16` @ `6213b16` (013 complete). Its frame list: `../cuems-editor/tests/ws-command-responses.txt` |
 
 **The three files this feature rewrites have no tests:**
 
 | File | Lines | Spec? |
 |---|---|---|
-| `src/app/components/projects/project-edit/sequence/sequence.component.ts` | 1662 | no |
-| `src/app/services/projects/projects.service.ts` | 640 | no |
-| `src/app/components/settings/settings.component.ts` | 140 | no |
+| `src/app/components/projects/project-edit/sequence/sequence.component.ts` | 1739 | no |
+| `src/app/services/projects/projects.service.ts` | 696 | no |
+| `src/app/components/settings/settings.component.ts` | 269 | no |
 
-The five that exist cover `app.component`, `components/design`, `components/ui/icon`,
+The six that exist cover `app.component`, `core/utils`, `components/design`, `components/ui/icon`,
 `layout/app-footer` and `layout/app-header`. A green suite here currently evidences **nothing** about
 this feature's blast radius — finding C8.
 
@@ -48,11 +53,17 @@ this feature's blast radius — finding C8.
 
 ## 1. Branch and bootstrap
 
+The branch exists and is already on its base:
+
 ```bash
 cd /disk/Projects/StageLab/cuems-frontend
-git checkout main && git pull --ff-only
-git checkout -b feat/xml-refactor
+git fetch
+git checkout feat/xml-refactor        # 0f3a522, on origin/feat/node-adoption-ui 13d93b7
+git log --oneline origin/feat/node-adoption-ui..HEAD   # expect exactly the bundle commit(s)
 ```
+
+If `feat/node-adoption-ui` moves before this flow starts, rebase onto it again. If it is merged to
+`main` first, rebase onto `main`; either way the tier's four commits must be underneath this feature.
 
 ### The spec-kit bootstrap has a version problem — resolve it before running
 
@@ -82,9 +93,7 @@ standing rules.
 Spec-kit's sequential branch numbering will want its own branch. **Stay on `feat/xml-refactor`**; let
 it name `specs/001-schema-descriptor-migration/` only.
 
-**Consider writing a `CLAUDE.md`** while you are here. This is the only repository in the work without
-one, and the constitution prompt below has to reconstruct from `README.md`, `package.json` and source
-what every other repository's `CLAUDE.md` states directly.
+`CLAUDE.md` already exists; read it before §2, and add a field note for whatever this feature changes.
 
 ---
 
@@ -94,8 +103,8 @@ what every other repository's `CLAUDE.md` states directly.
 /speckit.constitution
 
 Establish the constitution for cuems-frontend, grounded in what this repository actually is.
-It has no CLAUDE.md; read README.md, package.json, and src/app/services/projects/
-projects.service.ts before writing anything.
+Read CLAUDE.md, README.md, package.json, and src/app/services/projects/projects.service.ts
+before writing anything.
 
 WHAT THIS REPOSITORY IS: the Angular 19 browser UI for CueMS, package name formitgo-tw.
 Tailwind 4 for styling, @ngx-translate for i18n, osc-js on the wire alongside a WebSocket
@@ -117,13 +126,17 @@ PRINCIPLES THE CODE ALREADY IMPLIES — derive from these, do not invent unrelat
   refuses to load one, this repository is where that becomes visible or is lost. Silence is
   a failure mode with a user attached.
 - COMPONENTS ARE LARGE AND UNDER-TESTED, and that is a stated position rather than an
-  accident to leave unremarked: 5 spec files against 112 TypeScript files, with the three
+  accident to leave unremarked: 6 spec files against 112 TypeScript files, with the three
   largest and most business-critical components untested. State the direction of travel and
   the gate that actually applies to NEW and CHANGED code, rather than a repository-wide rule
   that would be waived immediately.
 - LOCALSTORAGE IS A CACHE, NEVER A SOURCE OF TRUTH. initial_template and initial_mappings are
   both cached there today; a cache that outlives a schema change is how a UI shows the wrong
-  shape after an upgrade.
+  shape after an upgrade. The editor no longer sends initial_template at all, so its cached
+  copy is never refreshed.
+- TWO LIVENESS FACTS, NEVER ONE. A node's `online` (discovery, ~30 s) and `node_status.alive`
+  (sub-second, what the GO gate trusts) are shown apart. The adoption screen this branch is
+  based on already does this; the constitution should say why.
 
 Include an accessibility or i18n principle only if this repository actually holds itself to
 one — @ngx-translate is wired up, so i18n has a real claim; do not assert an a11y standard
@@ -138,106 +151,121 @@ being honoured, not an exception to it.
 
 ## 3. Context block — paste verbatim into `/speckit.specify` and `/speckit.plan`
 
-Everything below resolves **inside this repository**. That is the point of the bundle.
+Everything below resolves **inside this repository**, plus the producing end's frame list
+`../cuems-editor/tests/ws-command-responses.txt`. Line numbers are on this branch's base,
+`feat/node-adoption-ui` @ `13d93b7`.
 
 ```
-CONTEXT — read all four before writing anything. They are in this repository:
+CONTEXT — read all five before writing anything. They are in this repository:
   specs/planning/xml-refactor/01-settled-decisions.md        the six decisions that bind this repo
   specs/planning/xml-refactor/02-consumer-audit-findings.md  C3, C5, C8 — this repo's three findings
-  specs/planning/xml-refactor/03-migration-inventory.md      THE INVENTORY — re-verified 2026-09-25
+  specs/planning/xml-refactor/03-migration-inventory.md      THE INVENTORY — re-verified 2026-10-02
   specs/planning/xml-refactor/04-wire-contract.md            THE PAYLOAD CONTRACT, consuming end
+  specs/planning/xml-refactor/05-amendment-2026-10-02.md     what changed since 2026-09-25, and why
 
-PHASE ZERO, BEFORE ANY PORT: characterization tests (D35). This repository has 5 spec files
+THE PRODUCING END HAS LANDED ITS HALF. cuems-editor 001 (feat/xml-refactor @ 8247e9b) serves
+the new wire today, on cuemsutils 0.1.0rc16 @ 6213b16 with feature 013 (device-class reshape)
+complete. Nothing has shipped; this repository ships with it under the coordinated tag (D27).
+
+PHASE ZERO, BEFORE ANY PORT: characterization tests (D35). This repository has 6 spec files
 across 112 TypeScript files, and none covers the three files this feature rewrites. Pin today's
 behaviour FIRST, so the port is MEASURED rather than asserted — exactly what feature 008 did
-before moving cuems-nodeconf's network-map logic, and the reason that swap had an acceptance
-criterion at all. Minimum surface:
-  - settings.component.ts's adopt/unadopt cycle: the emit shape
-    ({action:'nodelist_modify', modify_action, value}) and the response subscription at :35.
-  - the five projectTemplate() reads in project-edit/sequence/sequence.component.ts, INCLUDING
-    all THREE getTemplateOutputStructure call sites (:1022, :1346, :1387) — capture what each
-    produces from a representative template payload.
+before moving cuems-nodeconf's network-map logic. Minimum surface:
+  - settings.component.ts as feat/node-adoption-ui left it: the adopt/unadopt emit
+    ({action:'nodelist_modify', modify_action, value}, :248-269) and its response subscription
+    (:99); the node_status poll (:113, :159); the two presence badges (:163-176); the
+    nodeconf_available greying (:41-42).
+  - the five projectTemplate() reads in project-edit/sequence/sequence.component.ts (:702, :731,
+    :875, :947, :1647), INCLUDING all THREE getTemplateOutputStructure call sites (:1075, :1411,
+    :1452) — capture what each produces from a representative template payload.
+  - the save wrapper (:1141) and the cue-type ladder (:962-978): what each cue type produces.
   - projects.service.ts's initial_template and initial_mappings handling, including the
     localStorage round trip and the nullable-payload paths.
+FEED THEM RECORDED PAYLOADS, not invented ones: ../cuems-editor/specs/001-cuems-utils-migration/
+evidence/ holds the pre-001 project frame, initial_mappings and initial_template.
 THE RULE THAT MAKES THEM WORTH WRITING: run them against the new code unchanged. If you find
 yourself editing a characterization test to accommodate the new API, STOP — that is the moment
-the guarantee is lost. cuems-nodeconf ran its vendored yardstick byte-identical against the new
-library and that is why its migration has evidence rather than an argument.
-These same tests are what prove the domain untangling preserved behaviour. They are not overhead
-ahead of the real work; they are the instrument the real work is measured with.
+the guarantee is lost. Where the WIRE changed (the four project deltas, the node_list split),
+the test's INPUT fixture changes to the new recorded payload; its EXPECTED behaviour does not.
 
 WHAT MUST BE TRUE WHEN DONE:
 
-- The template call sites are on the descriptor. All FOUR consuming files, with the THREE
-  value-reading sites on descriptor DEFAULTS.
+- Saving works against the 001 editor. Hardware cues are written as {"Cue": {..., "class"}} and
+  their outputs as {"CueOutput": {..., "class"}} (cuems-utils 013, delta (c)): the save wrapper
+  (:1141), the ladder (:962-978), the read side (:238-239, :1201), the output reads (:349, :353,
+  :915), project-show/sequence/sequence.component.ts:117-154 and shared/audio-mixer :61, :63.
+  Measured: the editor's library accepts an AudioCue-keyed payload on ingest and then REFUSES it
+  at save, so today's UI cannot save at all. An unknown class is not an error.
 
-- master_vol is decided at all THREE sites, not one. :688 (the template read), plus :502 and
-  :965 which carry the same `|| 20`. Measured: the library's model-layer default is 100
-  (cuems-utils/src/cuemsutils/cues/AudioCue.py:9), there is no XSD default attribute, and the
-  current fallback diverges by a factor of five. Adopting the descriptor's answer is a BEHAVIOUR
-  CHANGE FOR OPERATORS — say so in the spec rather than letting it arrive as a side effect.
+- The template call sites are on the descriptor (schema_descriptor; initial_template is no longer
+  sent). All FOUR consuming files, with the THREE value-reading sites on descriptor DEFAULTS.
 
-- getTemplateOutputStructure's source of shape is DECIDED, not defaulted into. It needs a
-  constructible instance of a whole nested complex type (output_geometry, canvas_region, the
-  mapping shape), not a scalar default. Upstream's clarification Q2 answered YES — the descriptor
-  emits a constructible empty instance per complex type, the one descriptor change feature 010
-  sanctioned. CONFIRM it covers these three call sites before assuming it does; if it does not,
-  that is an upstream report, not a local hand-authored seed. Falling through to `undefined` is
-  not an option.
+- master_vol is decided at all THREE sites, not one: :703 (the template read), :508 and :1003. The
+  descriptor's default is 100 (measured: script:AudioCueType), the current fallback is 20.
+  Adopting 100 is a BEHAVIOUR CHANGE FOR OPERATORS — say so in the spec.
+
+- getTemplateOutputStructure's source of shape is DECIDED, not defaulted into. MEASURED
+  2026-10-02: the descriptor's per-type instances exist (script:AudioCueOutputsType,
+  script:VideoCueOutputsType, with output_geometry and canvas_region) but are NOT in wire shape —
+  no CueOutput wrapper, channels as {"channel": [...]} where the wire has [{"channel": {...}}],
+  every scalar null. File the upstream report to cuems-utils before planning; do not hand-author
+  a local seed, and do not let any call site fall through to undefined.
 
 - dmx_channels' behaviour choice is made explicitly, against the live UI. The descriptor's
-  default is None — an empty list, not a channel to copy — so preserving today's behaviour means
-  keeping this component's own seed. Both are defensible; deciding by accident is not.
+  default is None (measured) — an empty list, not a channel to copy.
 
 - The media-duration display unwraps the wrapper at BOTH sites:
-    project-show/sequence/sequence.component.ts:194              (TypeScript)
-    project-edit/sequence/sequence.component.html:134            (Angular template — easy to miss)
-  Both render [object Object] post-008, and neither fails loudly: the object is truthy so the
-  `|| '-'` fallback never fires. Copy the pattern the fade path already uses at
-  project-edit/sequence/sequence.component.ts:506 and :980.
+    project-show/sequence/sequence.component.ts:197                      (getCueDuration)
+    project-edit/sequence/sequence.component.ts:1256                     (getCueMediaDuration,
+                                                                          rendered by .html:134)
+  Both render [object Object]; neither fails loudly. Copy the fade path at :519 and :1024.
 
-- The config-domain UI is PORTED, NOT REBUILT (D26). settings.component.ts (network_map
-  adopt/unadopt), audio-mixer:80 and video-mixer:94 (initial_mappings) move onto a generic
-  schema-form renderer WITH THEIR LOGIC PRESERVED. Adopt and unadopt must still work END TO END
-  through the port — the chain terminates in a real daemon and operators use it today. The RPC
-  response shape {'OK': bool, 'error'?: str} is a contract with this component. Phase zero's
-  tests are how that is proven.
+- The mapping reads follow 013's shape: defaults[].default with class / direction and the port
+  under "&" (replacing default_audio_output / default_video_output: projects.service.ts:39, :41;
+  sequence.component.ts:385, :455, :697, :698), and node.devices[].device by class (replacing
+  node.audio / node.video in audio-mixer :129 and video-mixer :107).
 
-- The remaining three config domains become editable through the same renderer. settings,
-  project_settings and project_mappings have no editing UI today; the renderer that serves
-  network_map serves them, driven by the descriptor's enumerations and defaults. Verify against
-  EVERY restricted enumeration and EVERY model-layer default the six schemas declare — not a
-  hand-picked subset, and not only the three value-reading sites.
+- The config-domain UI is PORTED, NOT REBUILT (D26). settings.component.ts — as
+  feat/node-adoption-ui left it — keeps adopt/unadopt working END TO END against the real daemon;
+  the RPC response shape {'OK': bool, 'error'?: str} is a contract. Its node list and
+  nodeconf_available now come from the node_list frame, not initial_mappings, and node booleans
+  are "True"/"False": :176's `online === true` must become the dual read.
 
-- The new per-domain views are NOT named after settings.component.ts's mistake. That file is
-  named for the `settings` domain and edits network_map nodes; name the new views for the domain
-  they actually edit.
+- The other config domains: settings, project_settings and project_mappings have no editing UI.
+  The renderer that would serve them is BLOCKED UPSTREAM for saving: the editor's config_save
+  answers an error for all four config domains until cuemsutils has public JSON ingestion for
+  config documents (cuems-editor UR-5). Decide whether this feature builds read-only views, or
+  records the item as not performed. Adoption stays nodelist_modify either way.
 
-- The network_map-inside-initial_mappings entanglement is untangled, in step with cuems-editor.
-  Simultaneous across three components here, TWO of which read localStorage directly. Do not
-  land either half alone, and say what invalidates a cache written before the upgrade.
+- The new per-domain views are NOT named after settings.component.ts's mistake.
 
-- The repair report is RENDERED. cuems-editor forwards 008's structured LoadReport as a WS
-  message; this repository shows it to the operator, INCLUDING the "file on disk is now stale"
-  flag — without which "repaired again on every open" reads as a bug. The unrepairable case gets
-  the document name, the failing field, AND a next step (restore from a backup, correct the field,
-  or remove the document). cuemsutils deliberately cannot do this half; it has no UI channel.
+- The network_map-inside-initial_mappings entanglement is untangled. The editor's half has
+  LANDED (initial_mappings = mapping document only; node_list = nodes, new_nodes,
+  nodeconf_available). Move the three consumers here together, and state what invalidates a
+  localStorage cache written before the upgrade — it now holds an old SHAPE, not just an old split.
 
-- The payload-version handshake has a designed refusal path, not just a version check: what the
-  operator sees and what they are told to do. This repository is not packaged, so this handshake
-  is its ONLY compatibility gate (FR-108).
+- The repair report is RENDERED AND ACKNOWLEDGED. document_load_report after every project frame,
+  including file_differs_from_loaded; document_load_failed with the document, the field and all
+  three next_steps. The editor REFUSES project_save of a converted/repaired project
+  (repair_save_refused, reason "unacknowledged") until this session sends repair_acknowledge with
+  that report_id — without that step such projects cannot be saved. "preserve_failed" means
+  nothing was written.
 
-- projects.service.ts:120's unread, non-optional schemaLocation property is DELETED. Verified
-  2026-09-25: one declaration, no template use, nothing reads it.
+- network_map_error (a duplicate node identity) is shown on the adoption screen.
+
+- The payload-version handshake has a designed refusal path. The editor sends
+  {"type":"payload_version","value":1} first on every connection; this repository decides what
+  the operator sees on a mismatch. This repository is not packaged, so it is its ONLY gate.
+
+- projects.service.ts:146's unread, non-optional schemaLocation property is DELETED, and no save
+  sends the key back (the editor refuses such a payload).
 
 OPTIONAL, explicitly a follow-up and NOT a blocker: simplifying the `=== true || === 'True'`
-dual-read at :492. The string boolean form has NOT changed, so this is cleanup, not migration —
-and removing it would be a third wire delta the contract does not sanction.
+dual-read at :498. The string boolean form has NOT changed — and now reaches node fields too.
 
 CONSIDER, as a design option rather than a requirement: having cuems-editor serve PARTIAL
-elements on demand — a script sub-object, a DB-backed duration query — rather than requiring
-this repository to hold or compute full payloads client-side, if it simplifies the new config
-and form entities. Weigh it in /speckit.plan; feature 008 deliberately did not fix it.
+elements on demand rather than requiring this repository to hold or compute full payloads
+client-side. Weigh it in /speckit.plan.
 
 DO NOT re-implement or re-test the node model here (007 FR-030a-i). It lives in cuemsutils
 exclusively, reached through cuems-editor's wire. A node-model test appearing here is a
@@ -260,79 +288,82 @@ regression, not coverage.
 ```
 
 **`check-integration` matters most in a migration**: the failure mode is writing the new call
-*alongside* the old one instead of replacing it. In a 1662-line component with no tests, that is the
+*alongside* the old one instead of replacing it. In a 1739-line component with no tests, that is the
 likely outcome rather than a risk.
 
 ---
 
 ## 5. What `/speckit.clarify` must force
 
-Two of these change **what the port produces**, not merely how, and upstream names them as the pair to
-force out before planning.
-
-1. **`getTemplateOutputStructure`'s source of shape.** The descriptor's constructible empty instance,
-   or an explicit hand-authored seed in this component? Confirm the descriptor's capability covers all
-   three call sites first — the answer depends on a fact, not a preference.
-2. **Does `dmx_channels` keep its hard-coded seed?** The descriptor says empty; today's UI says
-   `[{channel: 1, value: 0}]`. Decide against the live UI.
-3. **Is adopting `master_vol = 100` acceptable to operators?** It is the library's declared default and
-   the current 20 is a five-fold drift — but it is still a visible change to what a new audio cue does.
-   And it is three sites, not one.
-4. **What testing gate does the constitution set, and does phase zero satisfy it?** If the gate would
-   be waived for these three files, it is the wrong gate — the constitution step above asks for an
-   honest one, so do not let the spec quietly raise it and then waive it.
-5. **What invalidates a `localStorage` cache written before the upgrade?** A version key, a clear on
-   connect, or a migration. Two components read `initial_mappings` from it directly.
-6. **What does the handshake refusal look like to an operator?** A version mismatch that silently
-   renders nothing is not better than `[object Object]`.
-7. **Is building the missing adoption/liveness UI tier in scope?** `03-migration-inventory.md` §4a: the
-   editor and engine are ready to serve `nodelist_get`, `node_status`, `cluster_warning` and
-   `nodeconf_available`, and **nothing in this repository asks for any of them**. This is new UI work,
-   not a port, so D26's "migration, not greenfield" does not cover it and flow 05 was written before the
-   cluster existed. In or out — but decided, because out means the ecosystem ships a three-tier
-   liveness surface no operator can see.
-8. **Does `nodeconf_available` render, and where?** It already arrives inside `initial_mappings` on the
-   editor's base branch, and it belongs to **no schema** — so the descriptor cannot place it. It must not
-   become a `project_mappings` form field.
-9. **How do `online` and `node_status.alive` both stay visible?** ~30 s discovery versus sub-second
-   ping/pong, and only the second is the signal the GO gate trusts. One "is this node up?" control on the
-   adoption screen silently picks one, probably the staler.
+1. **`getTemplateOutputStructure`'s source of shape.** *Measured 2026-10-02*: the descriptor's instance
+   exists but is not wire-shaped (§3, `03-migration-inventory.md` §2c). Ask: wait for the upstream fix,
+   or adapt the instance through a documented transform? Not a hand-authored seed.
+2. **Does `dmx_channels` keep its hard-coded seed?** The descriptor says empty (measured); today's UI
+   says `[{channel: 1, value: 0}]`. Decide against the live UI.
+3. **Is adopting `master_vol = 100` acceptable to operators?** Measured as the descriptor's default.
+   Three sites, not one.
+4. **What testing gate does the constitution set, and does phase zero satisfy it?**
+5. **What invalidates a `localStorage` cache written before the upgrade?** A version key (the payload
+   version is a natural one), a clear on connect, or a migration. Two components read `initial_mappings`
+   from it directly, and it now holds an old shape.
+6. **What does the handshake refusal look like to an operator?**
+7. **The adoption/liveness tier — answered in code.** `feat/node-adoption-ui`, this branch's base,
+   built it (`03-migration-inventory.md` §4a). Confirm it is in this feature's scope as a *port*: carry
+   it across the `node_list` split and the string booleans, and pin it in phase zero.
+8. **Where does `nodeconf_available` render?** Answered by both ends: the editor sends it on
+   `node_list`, outside any document; the tier greys the adopt controls with it. Confirm the treatment
+   of an absent flag (`!== false` today makes "absent" mean "available").
+9. **How do `online` and `node_status.alive` both stay visible?** Answered by the tier: two badges.
+   Keep them apart through the port.
+10. **What does the acknowledge step look like?** The editor refuses saves of a repaired or converted
+    project until the session acknowledges its report. Where is the report shown, what does the
+    operator confirm, and what happens on `preserve_failed`?
+11. **How is a cue of an unknown `class` shown?** The vocabulary is open (013); a project may carry a
+    class this UI has no editor for.
+12. **The three unedited config domains**: read-only views now, or not performed until `cuems-utils`
+    publishes JSON ingestion (UR-5)?
 
 ---
 
 ## 6. Per-file scope, for `/speckit.plan`
 
 ```
-- src/app/services/projects/projects.service.ts — :120 schemaLocation, :150 signal,
-  :159/:162/:242-243 localStorage, :219 response types, :395/:420 reads, plus the new
-  descriptor / config-save / repair-report message handling.
-- src/app/services/projects/handlers/project-create.handler.ts — :10, :14, :17-23.
-- src/app/components/projects/project-edit/project-edit.component.ts:141.
-- src/app/components/projects/project-edit/sequence/sequence.component.ts — :687, :716, :850,
-  :909, :1571; the value reads at :688, :726-727, :1570-1600; the three
-  getTemplateOutputStructure calls at :1022, :1346, :1387; and :502 / :965's `|| 20`.
+- src/app/services/projects/projects.service.ts — :39/:41 default_*_output, :146 schemaLocation,
+  :152 nodeconf_available, :182 signal, :209/:217-227/:293/:298-312 localStorage, :269 response
+  types, :290-293 intake, :451/:476 reads; plus payload_version, node_list, schema_descriptor,
+  document_load_report / _failed, repair_acknowledge / repair_save_refused, network_map_error.
+- src/app/services/projects/handlers/project-create.handler.ts — :10, :17 (called :53, :55).
+- src/app/components/projects/project-edit/project-edit.component.ts:151.
+- src/app/components/projects/project-edit/sequence/sequence.component.ts — template reads :702,
+  :731, :875, :947, :1647; value reads :703, :741-753, :1646; the three getTemplateOutputStructure
+  calls :1075, :1411, :1452; :508 / :1003's `|| 20`; cue keys :238-239, :349, :353, :915,
+  :962-978, :1141, :1201; defaults :385, :455, :697-698; duration :1046, :1256.
 - src/app/components/projects/project-edit/sequence/sequence.component.html:134.
-- src/app/components/projects/project-show/sequence/sequence.component.ts:194.
-- src/app/components/settings/settings.component.ts — the whole file, ported and renamed;
-  settings.component.html:162, :172 with it.
-- audio-mixer.component.ts:80, video-mixer.component.ts:94.
-- new: the generic schema-form renderer and the per-domain views.
+- src/app/components/projects/project-show/sequence/sequence.component.ts — :117-154, :197.
+- src/app/components/projects/shared/audio-mixer/audio-mixer.component.ts — :61, :63.
+- src/app/components/settings/settings.component.ts — the whole file (the adoption tier), ported
+  and renamed; settings.component.html :236, :246 with it.
+- project-show/audio-mixer.component.ts :115/:129, video-mixer.component.ts :94/:107.
+- new: the schema-form renderer and the per-domain views; the repair-report and acknowledge UI;
+  the handshake refusal.
 - new: .spec.ts files for the three untested files (phase zero).
 ```
 
-**Sequencing**: the port is gated on `cuems-utils` (the descriptor exists publicly — **already
-closed**, finding C4) and on `cuems-editor` (it serves the descriptor, and accepts config-domain
-saves — **open**). **The characterization tests are gated on nothing** and should start immediately:
-they pin current behaviour, which requires none of the above.
+**Sequencing**: `cuems-utils` serves the descriptor publicly (C4, closed) and 013 is complete.
+`cuems-editor` serves the descriptor, the split node list, the repair report, the save gate and the
+handshake on its `feat/xml-refactor` — **landed, not shipped**. Still open upstream: config-domain saves
+(UR-5) and a wire-shaped descriptor instance (§3). **The characterization tests are gated on nothing**
+and should start immediately: they pin current behaviour, which requires none of the above.
 
 **Constitution check**, against the constitution written in §2:
 
-- *Consumer of a contract* — the two enumerated wire deltas are the whole change. Anything else that
-  moves is a bug in `cuems-editor`'s half, not something to accommodate here.
-- *Nothing is silent* — rendering the repair report is that principle's whole point, not a feature
-  request.
-- *`localStorage` is a cache* — an `initial_template` cached before this upgrade is exactly the
-  stale-shape scenario it warns about. Say what invalidates it.
+- *Consumer of a contract* — the four enumerated `project` deltas and the payload-version-1 frames
+  (`04-wire-contract.md`) are the whole change. Anything else that moves is a bug in `cuems-editor`'s
+  half, not something to accommodate here.
+- *Nothing is silent* — rendering the repair report, and the acknowledge step the editor now requires,
+  are that principle's whole point.
+- *`localStorage` is a cache* — an `initial_template` cached before this upgrade is never refreshed, and
+  `initial_mappings` changes shape. Say what invalidates both.
 - *Testing* — whatever gate the constitution sets for changed code, phase zero satisfies it for the
   three files at issue. If the gate would otherwise be waived here, it is the wrong gate.
 
@@ -343,41 +374,46 @@ they pin current behaviour, which requires none of the above.
 | | Criterion |
 |---|---|
 | 1 | `npm test` green, **including three new spec files that did not exist before** and that pin the behaviour this feature moved. Both commits recorded — the characterization commit **before** the port commit, checkable by date |
-| 2 | Every template call site on the descriptor, with the three value-reading sites on its defaults |
-| 3 | `getTemplateOutputStructure` and `dmx_channels` **decided explicitly**, with the decision and its reason recorded |
-| 4 | Media duration **displayed** rather than `[object Object]`, at **both** sites including the HTML template |
-| 5 | Adopt/unadopt working **end to end** through the ported UI — against the real daemon, not just compiling |
-| 6 | The other three config domains editable through the same renderer, checked against **every** enumeration and **every** model-layer default the six schemas declare |
-| 7 | The entanglement untangled **together with** `cuems-editor`'s half; neither landed alone; the cache-invalidation story stated |
-| 8 | A repaired document producing a notification the operator **actually sees**, and an unrepairable one producing a named field plus a next step |
-| 9 | `schemaLocation` deleted from the interface |
-| 9a | The §4a tier decision **recorded either way** — and if in scope, `node_status.alive` and `online` both visible and labelled, with `nodeconf_available` rendered outside any `project_mappings` form |
-| 10 | Items that could not be performed recorded as **not performed**, per entry. Silence is not an acceptable third state — the convention both landed siblings followed |
+| 2 | A project with audio, video and DMX cues **opens and saves** against the 001 editor: cues written as `Cue` / `CueOutput` with `class` |
+| 3 | Every template call site on the descriptor, with the three value-reading sites on its defaults |
+| 4 | `getTemplateOutputStructure` and `dmx_channels` **decided explicitly**, with the decision and its reason recorded (including the upstream report on the instance shape) |
+| 5 | Media duration **displayed** rather than `[object Object]`, at **both** sites (`project-show/…:197`, `project-edit/…:1256`) |
+| 6 | Adopt/unadopt working **end to end** through the ported UI — against the real daemon — with nodes and `nodeconf_available` from `node_list`, both presence badges correct for `"True"` / `"False"` |
+| 7 | The mixers and default-output reads working on 013's `devices` / `defaults` shape |
+| 8 | The other three config domains: built, or recorded **not performed** with UR-5 as the reason |
+| 9 | The entanglement untangled **together with** `cuems-editor`'s half; the cache-invalidation story stated |
+| 10 | A repaired document producing a report the operator **actually sees**, an acknowledge step after which the save succeeds, and an unrepairable one producing a named field plus the three next steps |
+| 11 | The handshake refusal designed and demonstrated against a version other than 1 |
+| 12 | `schemaLocation` deleted from the interface |
+| 13 | Items that could not be performed recorded as **not performed**, per entry. Silence is not an acceptable third state — the convention the landed siblings followed |
 
 ---
 
 ## 8. The candidate tag, and what it now waits on
 
 When the exit criteria are met: `xml-refactor-merge-candidate`, annotated and **signed**, on
-`feat/xml-refactor`. Three siblings have already cut theirs:
+`feat/xml-refactor`. State of the siblings, `git rev-parse xml-refactor-merge-candidate`, 2026-10-02:
 
-| Repository | Tag at | Carries |
+| Repository | Tag at | Notes |
 |---|---|---|
-| `cuems-power-bridge` | `d5c4226` | features 001 + 002 |
-| `cuems-common` | `3af31cc` | the `node_role` conversion, the fixed `cuems-cluster-poweroff` |
-| `cuems-nodeconf` | `6c0cca7` | its own two features |
-| `cuems-utils` | — | **tags last, by decision** — it is the library everything here pins |
+| `cuems-power-bridge` | `399baf7` (2026-09-29) | |
+| `cuems-common` | `e3c9430` (2026-09-28) | |
+| `cuems-nodeconf` | `5be6cf0` (2026-09-30) | |
+| `cuems-engine` | `1662a99` (2026-10-01) | cut, not pushed |
+| `cuems-editor` | — | 001 implemented; its tag message is written and marked **not ready until this flow lands** |
+| `cuems-utils` | — | **tags last, by decision** |
 
-By the shared convention the tag moves **only** when a candidate is genuinely re-cut (packaged content
-changes), and a re-cut is announced to the other flows.
+By the shared convention the tag moves **only** when a candidate is genuinely re-cut, and a re-cut is
+announced to the other flows. The editor's tag message also names `feat/node-adoption-ui`'s siblings
+(`cuems-editor` `feat/nodelist-adoption-api`, `cuems-engine` `feat/nodelist-modify-dispatch`) as
+included; this repository's tag should name `feat/node-adoption-ui` the same way, since it lands
+through this feature.
 
-**Nothing releases from this branch alone** (D27). And the whole-system tag waits on more than the
-consumer flows: `cuems-utils` features **011–014** (`/etc/cuems` first install, uuid4 convergence, the
-device-class reshape, `hardware_outputs`) are a hard successor, and the tag comes after them. Two of
-those four reach this repository — **013** (the device-class reshape) touches four cue-type unions in
-`project-edit/sequence/sequence.component.ts`, and **014** (`hardware_outputs`) moves the port
-inventory this UI reads to a new place. Neither is in this feature's scope; both are reasons not to
-treat this port as the last word on these files.
+**Nothing releases from this branch alone** (D27). `cuems-utils` features **011, 012 and 013 are
+complete**; **014** (`hardware_outputs`) is not yet specified, and the whole-system tag comes after it.
+013 is **inside** this feature (its wire is delta (c) and the mapping shape). 014 moves the port
+inventory this UI reads to a new place; it is not in this feature's scope and is the reason not to treat
+the mapping reads ported here as final.
 
 ---
 
@@ -390,10 +426,13 @@ of the whole flow.
 lost. If the new API genuinely cannot produce what the old one did, that is a finding to record, not a
 test to adjust.
 
-**`grep` over `*.ts` misses Angular templates.** The second `Media.duration` site is in a `.html` file.
-Any sweep for payload reads must cover `*.html` as well — and in this repository that also means
-`settings.component.html`'s two `(confirm)` bindings, which are how the adopt/unadopt methods are
-reached at all.
+**`grep` over `*.ts` misses Angular templates.** Any sweep for payload reads must cover `*.html` as well
+— in this repository that means `sequence.component.html:134` (it renders the second `Media.duration`
+site through a method) and `settings.component.html`'s two `(confirm)` bindings (`:236`, `:246`), which
+are how the adopt/unadopt methods are reached at all.
+
+**Measure against a fetched remote.** The 2026-09-25 pass called `main` "in sync with `origin/main`"
+from an unfetched tracking ref and was 23 commits behind. `git fetch` before quoting a line number.
 
 **`localStorage` survives everything.** It survives a rebuild, a reload and an upgrade. Two components
 read `initial_mappings` from it directly, bypassing the service that would have re-fetched.
