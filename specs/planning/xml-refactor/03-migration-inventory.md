@@ -184,6 +184,12 @@ are both cached there (`projects.service.ts:209`, `:217-227`, `:293`, `:298-312`
 `initial_mappings` from it **directly**. After this release the cache holds an old **shape**, not only
 an old split, and `initial_template` is never refreshed at all. The untangling needs an eviction story.
 
+> **Owner assigned: this repository** (`cuems-utils` 014, decision 7). `localStorage` is reachable
+> from nowhere else and a server cannot clear another origin's storage; `cuems-editor` can only
+> advertise a version, which it already does as the first frame on connect. The mechanism, the three
+> ways to get it wrong, and why 014's boolean change makes it sharper are in
+> [`06-amendment-feature-014.md`](06-amendment-feature-014.md) §4.
+
 ## 4a. The adoption / liveness tier — built on this branch's base, unmerged
 
 On **2026-09-04** the node adopt/un-adopt hop and cluster liveness landed across four repositories, each
@@ -219,6 +225,15 @@ branch's behaviour**, not `main`'s.
    001 only because it projected nodes through the wrong schema — `../cuems-editor/specs/001-cuems-utils-migration/evidence/mappings-capture/`).
    The `online` badge would read "off" for every node. Use the same dual read the cue code uses
    (`=== true || === 'True'`). This is exactly the silent-wrong shape FR-030a-ii names.
+
+   > **⚠️ Amended by [`06-amendment-feature-014.md`](06-amendment-feature-014.md) §2.** Two
+   > corrections. **(a)** The consequence is worse than a badge: `canAdopt()` at `:187` is
+   > `nodeconfAvailable() && isSeenByDiscovery(...)`, so **the Adopt button is dead for every
+   > node** — a dead control in a screen in daily use, not a mis-coloured dot. **(b)** The dual
+   > read is the right fix **only if this repository ships before `cuems-utils` 014**. 014 retypes
+   > the field to `xs:boolean`, after which `=== true` is correct as written and needs no edit.
+   > Shipping with or after 014 — which the coordinated tag enforces — means changing nothing here.
+   > Also answered there: **there is no adjacent `adopted` read** anywhere in `src/app/`.
 
 `network_map_error` (a duplicate node identity in `network_map.xml`) is new and belongs on this screen.
 

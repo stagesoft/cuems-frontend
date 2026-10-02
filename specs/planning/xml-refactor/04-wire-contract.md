@@ -25,7 +25,9 @@ Two things changed at once, and they are different kinds of change:
   (§4–§7). Those changes are what payload version 1 means.
 
 Everything not listed — every other key of the `project` value, the key order, and the **string boolean
-form** `"True"` / `"False"` — is unchanged.
+form** `"True"` / `"False"` — is unchanged. *(The boolean form is unchanged by editor 001 and
+**changes in `cuems-utils` 014** — see §4's supersession note and
+[`06-amendment-feature-014.md`](06-amendment-feature-014.md).)*
 
 **Not unconditional byte-equality.** That wording stood until 2026-09-03 and contradicted the
 rebuild's own landed decisions (finding C3). Do not restate it, and do not restate "exactly two deltas"
@@ -78,6 +80,21 @@ The client sends the same shape back. Measured against the 001 editor:
 ---
 
 ## 4. The string boolean form survives, and simplifying it is out of scope
+
+> ## ⚠️ SUPERSEDED by [`06-amendment-feature-014.md`](06-amendment-feature-014.md) §1–§3
+>
+> **The string form does not survive.** `cuems-utils` feature **014** retypes `cms:BoolType` to
+> `xs:boolean`, so the wire carries JSON `true` / `false` and the library **refuses** `'True'` on
+> ingestion. Three consequences, each measured in that amendment:
+>
+> - `sequence.component.ts:997` (`cue.enabled ? 'True' : 'False'`) becomes a **hard, simultaneous**
+>   change: saving fails without it. It is the only such line in this repository.
+> - `settings.component.ts:176`'s `online === true` **becomes correct by itself** — do not add the
+>   dual read if this repository ships with or after 014.
+> - the `:498` dual read's `=== 'True'` half becomes dead code and is retired deliberately.
+>
+> The section below is kept as the record of the contract that held until 014 was decided
+> (2026-10-02). Read it for the mechanism, not for the instruction.
 
 ```
 project-edit/sequence/sequence.component.ts:498   enabled: cueData.enabled === true || cueData.enabled === 'True',

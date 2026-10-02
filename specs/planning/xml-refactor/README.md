@@ -11,6 +11,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 **Amended** 2026-10-02 (`05-amendment-2026-10-02.md`): `cuems-utils` 013 is complete, `cuems-editor` 001
 is implemented, and this branch is re-based onto `feat/node-adoption-ui`.
 
+**Amended again** 2026-10-02 (`06-amendment-feature-014.md`): `cuems-utils` feature **014** retypes
+`cms:BoolType` to `xs:boolean`, so the wire's `"True"` / `"False"` becomes JSON `true` / `false`.
+That amendment is this repository's **entire** share of feature 014 — the upstream gate document
+deliberately holds no frontend work — and it **supersedes `04` §4, which says to keep the string
+form**. Read it before planning any boolean work.
+
 **Purpose**: make this repository's spec-driven work **self-contained**. Everything the flow needs is
 here; the sibling `cuems-utils` checkout is no longer required reading.
 
@@ -28,6 +34,7 @@ branch and bootstrap, a constitution step (this repository has none), the `/spec
 | [`03-migration-inventory.md`](03-migration-inventory.md) | Every call site, **re-verified 2026-09-25**, with the sites upstream missed | Your working inventory. **§4a is a whole tier that does not exist here** and a scope decision flow 05 could not have taken |
 | [`04-wire-contract.md`](04-wire-contract.md) | The payload contract, from the consuming end | The four `project` deltas, the payload-version-1 frames, and what each does to code here |
 | [`05-amendment-2026-10-02.md`](05-amendment-2026-10-02.md) | What changed after 2026-09-25, and the measurements behind it | Why the coordinates, the base branch and the wire statements moved |
+| [`06-amendment-feature-014.md`](06-amendment-feature-014.md) | `cuems-utils` **014** moves booleans to `xs:boolean`. **This repository's whole share of that feature**, unloaded from the upstream gate | **Supersedes `04` §4 and `03` §4a item 2.** It carries the one hard-coupled line (saving fails without it), the dead Adopt button, and the `localStorage` eviction this repository now owns |
 
 ## The one thing to understand before starting
 
