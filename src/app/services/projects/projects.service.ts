@@ -636,7 +636,7 @@ export class ProjectsService {
           nodeData.node.dmx.forEach((dmxGroup: any) => {
             if (dmxGroup.outputs && Array.isArray(dmxGroup.outputs)) {
               dmxGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
                 const mapping: InitialMapping = {
                   uuid: nodeUuid,
                   name: displayName,
