@@ -392,6 +392,24 @@
                             </div>
                           </div>
 
+                          <!-- DMX: sólo el destino. Nada de fichero ni volumen,
+                               por eso va en su propio bloque y no ampliando el
+                               de audio/vídeo. El valor es el uuid del nodo a
+                               secas: es lo que el motor espera en output_name
+                               para DMX, y el universo viaja dentro de la cue. -->
+                          <div *ngIf="cue.type === 'dmx'" class="space-y-4">
+                            <div class="field">
+                              <label class="label">{{ 'media.select.outputs.label' | translate }}</label>
+                              <app-multiselect
+                              [options]="getMappingOptionsForCue(cue)"
+                              [multiple]="true"
+                              [placeholder]="getPlaceholderForCue(cue)"
+                              [(ngModel)]="cue.selectedOutputs"
+                              (selectionChange)="onOutputSelectionChange($event, cue)">
+                            </app-multiselect>
+                            </div>
+                          </div>
+
                           <!-- Custom output checkbox -->
                           <div *ngIf="cue.type === 'video'" class="field mt-3">
                             <div class="flex items-center gap-2">
