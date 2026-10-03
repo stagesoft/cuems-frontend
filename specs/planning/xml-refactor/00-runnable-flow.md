@@ -12,6 +12,8 @@ original is a dated 2026-09-03 record and is not edited.
 **Amended 2026-10-02** after `cuems-utils` 013 completed and `cuems-editor` 001 was implemented, and
 re-based onto `feat/node-adoption-ui`. What changed and why: `05-amendment-2026-10-02.md`.
 
+**Amended 2026-10-03** after `cuems-utils` 014 was properly planned and unloaded part of its works to this spec. What changed and why `06-amendment-feature-014.md`.
+
 **Feature name**: `001-schema-descriptor-migration` (this repository has no `specs/` features yet).
 **Branch**: `feat/xml-refactor`, matching every other repository in this work.
 
@@ -156,12 +158,13 @@ Everything below resolves **inside this repository**, plus the producing end's f
 `feat/node-adoption-ui` @ `13d93b7`.
 
 ```
-CONTEXT — read all five before writing anything. They are in this repository:
+CONTEXT — read all six before writing anything. They are in this repository:
   specs/planning/xml-refactor/01-settled-decisions.md        the six decisions that bind this repo
   specs/planning/xml-refactor/02-consumer-audit-findings.md  C3, C5, C8 — this repo's three findings
   specs/planning/xml-refactor/03-migration-inventory.md      THE INVENTORY — re-verified 2026-10-02
   specs/planning/xml-refactor/04-wire-contract.md            THE PAYLOAD CONTRACT, consuming end
   specs/planning/xml-refactor/05-amendment-2026-10-02.md     what changed since 2026-09-25, and why
+  specs/planning/xml-refactor/06-amendment-feature-014.md    what changed since 2026-10-03, and why
 
 THE PRODUCING END HAS LANDED ITS HALF. cuems-editor 001 (feat/xml-refactor @ 8247e9b) serves
 the new wire today, on cuemsutils 0.1.0rc16 @ 6213b16 with feature 013 (device-class reshape)
