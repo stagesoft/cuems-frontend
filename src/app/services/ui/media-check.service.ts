@@ -98,10 +98,14 @@ export class MediaCheckService {
   private content(report: MediaCheckReport, files: MediaFileReport[], unverified: string[]): string {
     const lines: string[] = [];
     for (const file of files.slice(0, MAX_LINES)) {
-      const changes = file.changes
-        .map(c => `${this.t(`mediaCheck.field.${c.field}`)} ${c.stored ?? '—'} → ${c.current ?? '—'}`)
-        .join(', ');
-      lines.push(`${file.file_name} ${this.t('mediaCheck.cues', { count: file.cues })}: ${changes}`);
+      // What the operator sees and hears: the duration and the picture size.
+      // A file whose size or MD5 alone changed is just "the file changed".
+      const visible = file.changes.filter(c => c.field === 'duration' || c.field === 'pixel_size');
+      const detail = visible.length
+        ? visible.map(c => `${this.t(`mediaCheck.field.${c.field}`)} ${c.stored ?? '—'} → ${c.current ?? '—'}`).join(', ')
+        : this.t('mediaCheck.fileChanged');
+      const cues = file.cues > 1 ? ` ${this.t('mediaCheck.cues', { count: file.cues })}` : '';
+      lines.push(`${file.file_name}${cues}: ${detail}`);
     }
     const listed = Math.min(files.length, MAX_LINES);
     const total = Math.max(report.total_files ?? files.length, files.length);

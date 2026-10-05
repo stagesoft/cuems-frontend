@@ -278,13 +278,12 @@
     "footer.promoted.text": "Promoted", 
     "footer.financed.text": "Financed",
     "mediaCheck.title": "Out-of-date media in “{{project}}”",
+    "mediaCheck.fileChanged": "the file changed",
     "mediaCheck.cues": "({{count}} cues)",
     "mediaCheck.more": "and {{count}} more",
     "mediaCheck.unverified": "{{file}}: the file changed; it is measured when the project is loaded or saved",
     "mediaCheck.incomplete": "The check did not finish; it runs again at the next load.",
-    "mediaCheck.footer": "The show uses the stored values until the project is saved. Open the project and save it to apply the new values.",
+    "mediaCheck.footer": "The show uses the stored values until you save the project.",
     "mediaCheck.field.duration": "duration",
-    "mediaCheck.field.pixel_size": "picture size",
-    "mediaCheck.field.file_size": "file size",
-    "mediaCheck.field.file_md5": "MD5 fingerprint"
+    "mediaCheck.field.pixel_size": "picture size"
 }

@@ -279,13 +279,12 @@
     "footer.promoted.text": "Promogut",
     "footer.financed.text": "Financiado",
     "mediaCheck.title": "Mitjans desactualitzats a «{{project}}»",
+    "mediaCheck.fileChanged": "el fitxer ha canviat",
     "mediaCheck.cues": "({{count}} cues)",
     "mediaCheck.more": "i {{count}} més",
     "mediaCheck.unverified": "{{file}}: el fitxer ha canviat; es mesura en carregar o desar el projecte",
     "mediaCheck.incomplete": "La comprovació no ha acabat; es repeteix a la propera càrrega.",
-    "mediaCheck.footer": "L'espectacle fa servir els valors desats fins que es desi el projecte. Obre el projecte i desa'l per aplicar els valors nous.",
+    "mediaCheck.footer": "L'espectacle fa servir els valors desats fins que desis el projecte.",
     "mediaCheck.field.duration": "durada",
-    "mediaCheck.field.pixel_size": "mida d'imatge",
-    "mediaCheck.field.file_size": "mida del fitxer",
-    "mediaCheck.field.file_md5": "empremta MD5"
+    "mediaCheck.field.pixel_size": "mida d'imatge"
 }
