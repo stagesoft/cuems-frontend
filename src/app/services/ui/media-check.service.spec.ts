@@ -100,6 +100,16 @@ describe('MediaCheckService', () => {
     expect(content).toContain('"count":25');
   });
 
+  it('says the cue list already shows the new duration, only when a duration changed', () => {
+    messages.next({ type: 'media_check_report', value: report() });
+    expect(shown()[0].content).toContain('mediaCheck.footerDuration');
+    messages.next({ type: 'media_check_report', value: report({ project_uuid: 'p2', files: [
+      { file_name: 'clip.mov', cues: 1, changes: [{ field: 'file_size', stored: '1', current: '2' }] }] }) });
+    const other = shown().find(w => w.projectUuid === 'p2')!;
+    expect(other.content).not.toContain('mediaCheck.footerDuration');
+    expect(other.content).toContain('mediaCheck.footer');
+  });
+
   it('ignores every other message type', () => {
     messages.next({ type: 'project_ready', value: 'p1' });
     messages.next({ type: 'media_check_reports', value: report() });
