@@ -2,8 +2,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 //
-// Shows the editor's media_check_report as a persistent warning, one per
-// project (ClickUp 869fat84r D20, D22).
+// Keeps the editor's media_check_report as a persistent warning, one per
+// project, shown by MediaWarningsComponent in an inline banner under the
+// header, where it covers no control (ClickUp 869fat84r D20, D22).
 //
 // The editor checks a project's media files when the project is loaded,
 // opened or saved. When a file was replaced by hand after its values were
@@ -11,10 +12,9 @@
 // until the project is saved: the editor never rewrites a project on its own.
 // This service tells the operator. Design: cuems-RELATIONS
 // Plans/2026-10-01-engine-late-go-media-probe.md §8.3, §8.4.
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { TranslateService } from '@ngx-translate/core';
 import { WebsocketService } from '../websocket.service';
-import { NotificationService } from './notification.service';
 
 export interface MediaChange {
   field: 'duration' | 'pixel_size' | 'file_size' | 'file_md5' | string;
@@ -39,16 +39,23 @@ export interface MediaCheckReport {
   total_files: number;
 }
 
+export interface MediaWarning {
+  projectUuid: string;
+  title: string;
+  content: string;
+}
+
 /** Lines listed in one warning; the rest are counted. */
 const MAX_LINES = 5;
 
 @Injectable({ providedIn: 'root' })
 export class MediaCheckService {
   private ws = inject(WebsocketService);
-  private notifications = inject(NotificationService);
   private translate = inject(TranslateService);
-  /** Per project: the warning shown, and the text it was shown with. */
-  private shown = new Map<string, { id: number; text: string }>();
+  /** The warnings shown, one per project, in arrival order. */
+  readonly warnings = signal<MediaWarning[]>([]);
+  /** Per project: the text last reported (a dismissed warning stays hidden until it changes). */
+  private known = new Map<string, string>();
 
   constructor() {
     this.ws.messages.subscribe(message => {
@@ -76,23 +83,25 @@ export class MediaCheckService {
     const title = this.t('mediaCheck.title', { project: report.project_name || uuid });
     const content = this.content(report, files, unverified);
     const text = `${title}\n${content}`;
-    const current = this.shown.get(uuid);
-    if (current?.text === text) {
+    if (this.known.get(uuid) === text) {
       return;   // unchanged: no flicker, and a dismissed warning stays dismissed
     }
-    if (current) {
-      this.notifications.remove(current.id);
-    }
-    const id = this.notifications.show('warning', content, title, false);
-    this.shown.set(uuid, { id, text });
+    this.known.set(uuid, text);
+    const warning: MediaWarning = { projectUuid: uuid, title, content };
+    this.warnings.update(list => {
+      const at = list.findIndex(w => w.projectUuid === uuid);
+      return at < 0 ? [...list, warning] : list.map((w, i) => (i === at ? warning : w));
+    });
+  }
+
+  /** Hide a project's warning until its content changes. */
+  dismiss(uuid: string): void {
+    this.warnings.update(list => list.filter(w => w.projectUuid !== uuid));
   }
 
   private clear(uuid: string): void {
-    const current = this.shown.get(uuid);
-    if (current) {
-      this.notifications.remove(current.id);
-      this.shown.delete(uuid);
-    }
+    this.known.delete(uuid);
+    this.warnings.update(list => list.filter(w => w.projectUuid !== uuid));
   }
 
   private content(report: MediaCheckReport, files: MediaFileReport[], unverified: string[]): string {

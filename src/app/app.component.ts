@@ -13,6 +13,7 @@ import { Subscription } from 'rxjs';
 import { NotificationsComponent } from './components/ui/notifications/notifications.component';
 import { NotificationService } from './services/ui/notification.service';
 import { MediaCheckService } from './services/ui/media-check.service';
+import { MediaWarningsComponent } from './components/ui/media-warnings/media-warnings.component';
 import { ProjectWorkspaceService } from './services/project-workspace.service';
 import { CustomRouteReuseStrategy } from './core/route-reuse.strategy';
 import { ConfirmationDialogComponent } from './components/ui/confirmation-dialog/confirmation-dialog.component';
@@ -28,6 +29,7 @@ import { OscService } from './services/osc.service';
     AppHeaderComponent,
     AppFooterComponent,
     NotificationsComponent,
+    MediaWarningsComponent,
     ConfirmationDialogComponent,
     TranslateModule,
     PlayControlsFloatingComponent,
@@ -42,7 +44,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private projectsService = inject(ProjectsService);
   oscService = inject(OscService);
-  // Shows the editor's media_check_report on every page (869fat84r D20).
+  // Keeps the editor's media_check_report warnings on every page (869fat84r D20).
   private mediaCheck = inject(MediaCheckService);
 
   constructor(
