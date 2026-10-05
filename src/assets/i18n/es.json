@@ -276,5 +276,15 @@
     "nodes.settings.cancel": "Cancelar",
     "footer.powered.text": "Impulsado",
     "footer.promoted.text": "Promovido",
-    "footer.financed.text": "Financiado"
+    "footer.financed.text": "Financiado",
+    "mediaCheck.title": "Medios desactualizados en «{{project}}»",
+    "mediaCheck.cues": "({{count}} cues)",
+    "mediaCheck.more": "y {{count}} más",
+    "mediaCheck.unverified": "{{file}}: el archivo cambió; se mide al cargar o guardar el proyecto",
+    "mediaCheck.incomplete": "La comprobación no terminó; se repite en la próxima carga.",
+    "mediaCheck.footer": "El espectáculo usa los valores guardados hasta que se guarde el proyecto. Abre el proyecto y guárdalo para aplicar los valores nuevos.",
+    "mediaCheck.field.duration": "duración",
+    "mediaCheck.field.pixel_size": "tamaño de imagen",
+    "mediaCheck.field.file_size": "tamaño de archivo",
+    "mediaCheck.field.file_md5": "huella MD5"
 }
