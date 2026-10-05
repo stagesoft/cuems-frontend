@@ -2,13 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 //
-// The editor's media_check_report as a persistent warning, one per project
+// The editor's media_check_report as a persistent warning, one per project,
+// shown in an inline banner under the header (it covers no control)
 // (ClickUp 869fat84r D20; cuems-RELATIONS Plans/2026-10-01-engine-late-go-media-probe.md §8.4).
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 import { TranslateService } from '@ngx-translate/core';
 import { WebsocketService } from '../websocket.service';
-import { NotificationService } from './notification.service';
 import { MediaCheckReport, MediaCheckService } from './media-check.service';
 
 function report(over: Partial<MediaCheckReport> = {}): MediaCheckReport {
@@ -22,30 +22,27 @@ function report(over: Partial<MediaCheckReport> = {}): MediaCheckReport {
 
 describe('MediaCheckService', () => {
   let messages: Subject<any>;
-  let notifications: NotificationService;
+  let service: MediaCheckService;
 
   beforeEach(() => {
     messages = new Subject<any>();
     TestBed.configureTestingModule({
       providers: [
-        NotificationService,
         { provide: WebsocketService, useValue: { messages } },
         { provide: TranslateService, useValue: {
             instant: (key: string, params?: any) => params ? `${key} ${JSON.stringify(params)}` : key } },
       ],
     });
-    notifications = TestBed.inject(NotificationService);
-    TestBed.inject(MediaCheckService);
+    service = TestBed.inject(MediaCheckService);
   });
 
-  const shown = () => notifications.getNotifications()();
+  const shown = () => service.warnings();
 
   it('shows one persistent warning per project, with a title and one line per file', () => {
     messages.next({ type: 'media_check_report', value: report() });
     expect(shown().length).toBe(1);
     const n = shown()[0];
-    expect(n.type).toBe('warning');
-    expect(n.autoClose).toBeFalse();
+    expect(n.projectUuid).toBe('p1');
     expect(n.title).toContain('Show One');
     expect(n.content).toContain('clip.mov');
     expect(n.content).toContain('00:00:10.010');
@@ -55,21 +52,25 @@ describe('MediaCheckService', () => {
 
   it('replaces the warning when the content changes, and leaves it when it does not', () => {
     messages.next({ type: 'media_check_report', value: report() });
-    const first = shown()[0].id;
+    const first = shown()[0];
     messages.next({ type: 'media_check_report', value: report({ context: 'open' }) });
-    expect(shown().map(n => n.id)).toEqual([first]);
+    expect(shown()).toEqual([first]);
     messages.next({ type: 'media_check_report', value: report({
       files: [{ file_name: 'other.mov', cues: 1, changes: [{ field: 'file_size', stored: '1', current: '2' }] }] }) });
     expect(shown().length).toBe(1);
-    expect(shown()[0].id).not.toBe(first);
+    expect(shown()[0]).not.toBe(first);
     expect(shown()[0].content).toContain('other.mov');
   });
 
   it('does not bring back a dismissed warning whose content has not changed', () => {
     messages.next({ type: 'media_check_report', value: report() });
-    notifications.remove(shown()[0].id);
+    service.dismiss('p1');
+    expect(shown().length).toBe(0);
     messages.next({ type: 'media_check_report', value: report({ context: 'open' }) });
     expect(shown().length).toBe(0);
+    messages.next({ type: 'media_check_report', value: report({
+      files: [{ file_name: 'clip.mov', cues: 2, changes: [{ field: 'duration', stored: '00:00:10.010', current: '00:00:30.030' }] }] }) });
+    expect(shown().length).toBe(1);                 // new content: shown again
   });
 
   it('clears only on a complete report with nothing stale and nothing unverified', () => {
