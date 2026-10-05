@@ -284,6 +284,7 @@
     "mediaCheck.unverified": "{{file}}: el archivo cambió; se mide al cargar o guardar el proyecto",
     "mediaCheck.incomplete": "La comprobación no terminó; se repite en la próxima carga.",
     "mediaCheck.footer": "El espectáculo usa los valores guardados hasta que guardes el proyecto.",
+    "mediaCheck.footerDuration": "La lista de cues ya muestra la duración nueva, pero el espectáculo usa la guardada hasta que guardes el proyecto.",
     "mediaCheck.field.duration": "duración",
     "mediaCheck.field.pixel_size": "tamaño de imagen"
 }

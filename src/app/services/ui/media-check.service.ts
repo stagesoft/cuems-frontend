@@ -130,7 +130,10 @@ export class MediaCheckService {
     if (!report.complete) {
       lines.push(this.t('mediaCheck.incomplete'));
     }
-    lines.push(this.t('mediaCheck.footer'));
+    // The cue list takes durations from the media library, so it already
+    // shows the new one: say which of the two the show plays.
+    const durationChanged = files.some(f => f.changes.some(c => c.field === 'duration'));
+    lines.push(this.t(durationChanged ? 'mediaCheck.footerDuration' : 'mediaCheck.footer'));
     return lines.join('\n');
   }
 
