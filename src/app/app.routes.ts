@@ -11,7 +11,7 @@ import { ProjectEditSequenceComponent } from './components/projects/project-edit
 import { ProjectEditAudioMixerComponent } from './components/projects/project-edit/audio-mixer/audio-mixer.component';
 import { ProjectEditVideoMixerComponent } from './components/projects/project-edit/video-mixer/video-mixer.component';
 import { ProjectEditDmxMixerComponent } from './components/projects/project-edit/dmx-mixer/dmx-mixer.component';
-import { SettingsComponent } from './components/settings/settings.component';
+import { NodeAdoptionComponent } from './components/nodes/node-adoption.component';
 import { ProjectShowSequenceComponent } from './components/projects/project-show/sequence/sequence.component';
 import { ProjectShowAudioMixerComponent } from './components/projects/project-show/audio-mixer/audio-mixer.component';
 import { ProjectShowVideoMixerComponent } from './components/projects/project-show/video-mixer/video-mixer.component';
@@ -48,6 +48,9 @@ export const routes: Routes = [
   { path: 'media', component: MediaListComponent },
   { path: 'media/trash', component: MediaTrashComponent },
   { path: 'design', loadComponent: () => import('./components/design/design.component').then(m => m.DesignComponent) },
-  { path: 'settings', component: SettingsComponent },
+  // The adoption screen edits network_map nodes, so it is named for them
+  // (FR-058); the old path still lands there.
+  { path: 'nodes', component: NodeAdoptionComponent },
+  { path: 'settings', redirectTo: 'nodes', pathMatch: 'full' },
   { path: '**', redirectTo: '' }
 ];

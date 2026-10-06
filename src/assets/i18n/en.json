@@ -313,5 +313,8 @@
     "load.failed.next.correct_field_by_hand": "Correct the named field in the file by hand",
     "load.failed.next.remove_document": "Remove the document",
     "load.failed.still-listed": "The project stays in the list, and you can keep working with other projects.",
-    "load.duplicate.title": "The duplicate was made from a document the editor changed when reading it"
+    "load.duplicate.title": "The duplicate was made from a document the editor changed when reading it",
+    "nodes.title": "Nodes",
+    "nodes.network-map-error.duplicate": "The network map names node {{identity}} twice. The node list shown is the last good one and will not update until this is fixed.",
+    "nodes.network-map-error.fix": "Compare the MAC addresses of the two rows to tell which one is the real node, then run cuems-init-node --remint on the other."
 }

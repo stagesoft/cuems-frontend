@@ -207,6 +207,21 @@ not clean is reloaded (`project_load`), so the editor rebuilds its repair state;
 shown and must be acknowledged again before a save goes through. Unsaved cue edits survive as the
 sequence's temporary cues. Remove when the editor's gate survives a reconnect.
 
+**F23 — Phase 7: one `online` read for both version-1 wires; T091 pulled forward.** T079 asks to
+leave `online === true` alone when shipping after the boolean retyping and to dual-read before it.
+Both wires announce payload version 1 (F6), so the client cannot know which it got: the adoption
+screen reads `true` and `"True"` as seen. Against the string form that is the sanctioned `canAdopt`
+flip (FR-057); against the boolean form, nothing changes. The device walk in
+`getAudioOutputs` / `getVideoOutputs` (T091, Phase 8) landed with the rename, since swapping the
+characterization input to `node_list` (which carries `devices`) would otherwise have emptied
+them; `core/mapping-wire.ts` is the shared reader Phase 8 uses for the other four sites.
+
+**F24 — the adoption screen's existing text is not translated (pre-existing).** Most of its
+operator text — the nodeconf banner, the unusable-nodes banner, both badges, the column titles —
+is hard-coded Spanish. Text added by this feature goes through the translate pipe in all three
+locales; the existing strings were left as they are (outside this feature's scope) and are worth a
+follow-up under constitution Principle VII.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.

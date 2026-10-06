@@ -313,5 +313,8 @@
     "load.failed.next.correct_field_by_hand": "Corregir a mano el campo indicado en el archivo",
     "load.failed.next.remove_document": "Eliminar el documento",
     "load.failed.still-listed": "El proyecto sigue en la lista y puedes seguir trabajando con otros proyectos.",
-    "load.duplicate.title": "El duplicado se hizo a partir de un documento que el editor cambió al leerlo"
+    "load.duplicate.title": "El duplicado se hizo a partir de un documento que el editor cambió al leerlo",
+    "nodes.title": "Nodos",
+    "nodes.network-map-error.duplicate": "El mapa de red nombra dos veces el nodo {{identity}}. La lista de nodos que se muestra es la última correcta y no se actualizará hasta que se corrija.",
+    "nodes.network-map-error.fix": "Compara las direcciones MAC de las dos filas para saber cuál es el nodo real y ejecuta cuems-init-node --remint en el otro."
 }

@@ -163,6 +163,45 @@ export interface InitialMappingsResponse {
   };
 }
 
+/**
+ * A node as `node_list` carries it: network-map identity and status, plus the
+ * mapping node's keys (`devices`) when it has one. A `new_nodes` entry has no
+ * `devices`. `adopted` / `online` are JSON booleans from cuems-utils 014 and
+ * "True" / "False" before it, at the same payload version (findings F6):
+ * read both. `online` is discovery (~30 s), NOT liveness.
+ */
+export interface NodeListNode {
+  uuid: string;
+  mac?: string;
+  name?: string;
+  ip?: string;
+  node_role?: string;
+  adopted?: boolean | 'True' | 'False';
+  online?: boolean | 'True' | 'False';
+  role_id?: string;
+  alias?: string;
+  hostname?: string;
+  devices?: Array<{ device: { class: string; outputs?: any[][]; inputs?: any[][] } }>;
+}
+
+/** `node_list` — on connect, after nodelist_modify, on every map change, and the reply to nodelist_get. */
+export interface NodeList {
+  nodes: Array<{ node: NodeListNode }>;
+  new_nodes: Array<{ node: NodeListNode }>;
+  /**
+   * An envelope fact sampled when the frame is built: on no node, in no
+   * document. Absent is a fault, not "available" (FR-056).
+   */
+  nodeconf_available?: boolean;
+}
+
+/** `network_map_error` — standing while network_map.xml names one identity twice; null clears it. */
+export interface NetworkMapError {
+  kind: 'duplicate_identity' | string;
+  identity: string;
+  file: string;
+}
+
 export interface WebSocketResponse {
   type: string;
   value: any;
@@ -199,6 +238,9 @@ export class ProjectsService {
   public projectsInTrash = signal<ProjectList[]>([]);
   public initialMappings = signal<InitialMappingsResponse | null>(null);
   public mappingOptions = signal<InitialMapping[]>([]);
+  /** The node arrays and the nodeconf flag — `node_list`, not the mapping document. */
+  public nodeList = signal<NodeList | null>(null);
+  public networkMapError = signal<NetworkMapError | null>(null);
 
   public projectLoaded = new EventEmitter<any>();
 
@@ -234,7 +276,9 @@ export class ProjectsService {
    * person can match against the map.
    */
   public nodeLabel(uuid: string): string {
-    const value = this.initialMappings()?.value;
+    // Identity rides node_list since payload version 1; the mapping document
+    // carries none.
+    const value = this.nodeList();
     const all = [...(value?.nodes ?? []), ...(value?.new_nodes ?? [])];
     const node = all.find(entry => entry?.node?.uuid === uuid)?.node;
     return node?.alias || node?.role_id || node?.hostname ||
@@ -317,6 +361,18 @@ export class ProjectsService {
         console.error('Error processing initial mappings:', e);
       }
     }   
+
+    if (response && response.type === 'node_list' && response.value) {
+      this.nodeList.set({
+        nodes: Array.isArray(response.value.nodes) ? response.value.nodes : [],
+        new_nodes: Array.isArray(response.value.new_nodes) ? response.value.new_nodes : [],
+        nodeconf_available: response.value.nodeconf_available,
+      });
+    }
+
+    if (response && response.type === 'network_map_error') {
+      this.networkMapError.set(response.value ?? null);
+    }
 
     if (response && response.type === 'project_list' && Array.isArray(response.value)) {
       handleProjectListResponse(response.value, projects => this.projects.set(projects));
@@ -467,6 +523,11 @@ export class ProjectsService {
     } catch (e) {
       console.error('ProjectsService - error restoring cached mappings:', e);
     }
+  }
+
+  /** Targeted refresh of the node list; the reply is an ordinary node_list. */
+  requestNodeList(): void {
+    this.wsService.wsEmit({ action: 'nodelist_get' });
   }
 
   getProjectList(): void {

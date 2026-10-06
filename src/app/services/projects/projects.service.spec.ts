@@ -171,12 +171,13 @@ describe('ProjectsService (characterization)', () => {
 
     describe('nodeLabel', () => {
       it('falls back to a short uuid when the node carries no alias, role_id or hostname', () => {
-        ws.receive(loadFixture('initial-mappings-pre001'));
+        ws.receive(loadFixture('node-list'));
         expect(service.nodeLabel(CONTROLLER)).toBe('0367f391…');
       });
 
+      // input: identity rides node_list since payload version 1 (T075)
       it('prefers alias, then role_id, then hostname', () => {
-        const frame = loadFixture('initial-mappings-pre001');
+        const frame = loadFixture('node-list');
         const node = frame.value.nodes[0].node;
         node.hostname = 'host-a';
         ws.receive(JSON.parse(JSON.stringify(frame)));
@@ -190,7 +191,7 @@ describe('ProjectsService (characterization)', () => {
       });
 
       it('finds a node in new_nodes too', () => {
-        const frame = loadFixture('initial-mappings-pre001');
+        const frame = loadFixture('node-list');
         frame.value.new_nodes[0].node.alias = 'Pending';
         ws.receive(frame);
         expect(service.nodeLabel(frame.value.new_nodes[0].node.uuid)).toBe('Pending');
@@ -406,6 +407,40 @@ describe('ProjectsService (characterization)', () => {
       ws.connect();
       ws.receive({ type: 'project_status', value: { status: 'loaded', project_uuid: 'p2' } });
       expect(service.loadedProjectUuid()).toBe('p2');
+    });
+  });
+
+  // ── the port, Phase 7 (the node-list split) ──
+  describe('node_list and network_map_error (T075, T084)', () => {
+    beforeEach(() => { service = create(); });
+
+    it('holds the node arrays and the flag from node_list, not from the mapping document', () => {
+      const frame = loadFixture('node-list');
+      ws.receive(loadFixture('initial-mappings-tip'));
+      expect(service.nodeList()).toBeNull();
+      ws.receive(frame);
+      expect(service.nodeList()).toEqual(frame.value);
+    });
+
+    it('a later node_list replaces the earlier one (push after nodelist_modify, map change, nodelist_get)', () => {
+      ws.receive(loadFixture('node-list'));
+      const after = loadFixture('node-list');
+      after.value.new_nodes = [];
+      ws.receive(after);
+      expect(service.nodeList()?.new_nodes).toEqual([]);
+    });
+
+    it('nodelist_get asks for a targeted refresh', () => {
+      service.requestNodeList();
+      expect(ws.sent).toContain({ action: 'nodelist_get' });
+    });
+
+    it('network_map_error stands until the null frame clears it', () => {
+      const node = loadFixture('node-list').value.nodes[0].node;
+      ws.receive({ type: 'network_map_error', value: { kind: 'duplicate_identity', identity: node.uuid, file: '/etc/cuems/network_map.xml' } });
+      expect(service.networkMapError()?.identity).toBe(node.uuid);
+      ws.receive({ type: 'network_map_error', value: null });
+      expect(service.networkMapError()).toBeNull();
     });
   });
 });

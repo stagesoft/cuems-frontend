@@ -1,7 +1,7 @@
 <div class="wrapper">
   <app-page-header
-    title="settings"
-    icon="settings">
+    title="nodes.title"
+    icon="node">
   </app-page-header>
 </div>
 
@@ -9,11 +9,20 @@
   <div class="mt-6">
     <h2 class="text-xl font-semibold mb-6">{{ 'nodes.settings.title' | translate }}</h2>
     
-    <div *ngIf="!mappings()" class="p-4 bg-dark-300 rounded-lg">
+    <div *ngIf="!nodeList()" class="p-4 bg-dark-300 rounded-lg">
       <p>{{ 'nodes.settings.loading.message' | translate }}</p>
     </div>
 
-    <div *ngIf="mappings() && mappings()!.value && mappings()!.value.nodes" class="space-y-6">
+    <!-- network_map.xml names one identity on two rows: the editor keeps the
+         last good list and does not retry, so this stands until it is fixed. -->
+    <div *ngIf="networkMapError() as mapError"
+         class="p-4 mb-6 rounded-lg bg-dark-300 border-l-4 border-red-500" data-test="network-map-error">
+      <p class="text-sm font-semibold">{{ 'nodes.network-map-error.duplicate' | translate: { identity: mapError.identity } }}</p>
+      <p class="text-xs opacity-70 mt-1 font-mono">{{ mapError.file }}</p>
+      <p class="text-sm mt-2">{{ 'nodes.network-map-error.fix' | translate }}</p>
+    </div>
+
+    <div *ngIf="nodeList()" class="space-y-6">
       <div *ngIf="!nodeconfAvailable()"
            class="p-4 mb-6 rounded-lg bg-dark-300 border-l-4 border-amber-500">
         <p class="text-sm">
@@ -218,7 +227,7 @@
       </div>
     </div>
 
-    <div *ngIf="mappings() && (!mappings()!.value || !mappings()!.value.nodes || mappings()!.value.nodes.length === 0)" 
+    <div *ngIf="nodeList() && activeNodes().length === 0 && newNodes().length === 0" 
          class="p-8 text-center bg-dark-300 rounded-lg">
       <p class="text-gray-400">{{ 'nodes.settings.no.nodes.configured' | translate }}</p>
     </div>

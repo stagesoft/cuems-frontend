@@ -3,20 +3,28 @@ import { CommonModule } from '@angular/common';
 import { AppPageHeaderComponent } from '../layout/app-page-header/app-page-header.component';
 import { ConfirmationDialogComponent  } from '../ui/confirmation-dialog/confirmation-dialog.component';
 import { IconComponent } from '../ui/icon/icon.component';
-import { ProjectsService, InitialMappingsResponse } from '../../services/projects/projects.service';
+import { ProjectsService } from '../../services/projects/projects.service';
+import { PayloadVersionService } from '../../core/payload-version.service';
 import { TranslateModule } from '@ngx-translate/core';
 import { WebsocketService } from '../../services/websocket.service';
 import { filter } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NotificationService } from '../../services/ui/notification.service';
+import { deviceOutputs } from '../../core/mapping-wire';
 
+/**
+ * Adoption and liveness of the cluster's nodes — the network_map document's
+ * nodes, which is what this screen edits (it was `settings`, a name that
+ * belongs to another document; FR-058).
+ */
 @Component({
-  selector: 'app-settings',
+  selector: 'app-node-adoption',
   imports: [CommonModule, AppPageHeaderComponent, IconComponent, TranslateModule, ConfirmationDialogComponent],
-  templateUrl: './settings.component.html'
+  templateUrl: './node-adoption.component.html'
 })
-export class SettingsComponent implements OnInit, OnDestroy {
+export class NodeAdoptionComponent implements OnInit, OnDestroy {
   private projectsService = inject(ProjectsService);
+  private payloadVersion = inject(PayloadVersionService);
   private wsService = inject(WebsocketService);
   private destroyRef = inject(DestroyRef);
   private notificationService = inject(NotificationService);
@@ -28,18 +36,23 @@ export class SettingsComponent implements OnInit, OnDestroy {
   /**
    * Read straight off the signal, never copied.
    *
-   * The editor pushes a fresh `initial_mappings` after every adopt/un-adopt and
+   * The editor pushes a fresh `node_list` after every adopt/un-adopt and
    * whenever cuems-nodeconf rewrites network_map.xml (a node powered on, a node
    * gone). Copying the arrays once in ngOnInit meant none of that reached the
    * screen: the node stayed in the wrong column until the component was
    * remounted, so a working adoption still looked broken.
    */
-  public mappings = computed(() => this.projectsService.initialMappings());
-  public activeNodes = computed(() => this.mappings()?.value?.nodes ?? []);
-  public newNodes = computed(() => this.mappings()?.value?.new_nodes ?? []);
-  /** False when cuems-nodeconf is not running: adoption cannot work at all. */
-  public nodeconfAvailable = computed(
-    () => this.mappings()?.value?.nodeconf_available !== false);
+  public nodeList = computed(() => this.projectsService.nodeList());
+  public activeNodes = computed(() => this.nodeList()?.nodes ?? []);
+  public newNodes = computed(() => this.nodeList()?.new_nodes ?? []);
+  /**
+   * True only when the frame says so. False means cuems-nodeconf is not
+   * running and every adopt/un-adopt would fail; ABSENT is a fault, not a
+   * default — the flag is always present on this payload version (FR-056).
+   */
+  public nodeconfAvailable = computed(() => this.nodeList()?.nodeconf_available === true);
+  /** A duplicate node identity in network_map.xml, while it stands. */
+  public networkMapError = computed(() => this.projectsService.networkMapError());
 
   /**
    * The engine's runtime view: which nodes answered its last ping.
@@ -138,12 +151,19 @@ export class SettingsComponent implements OnInit, OnDestroy {
           this.notificationService.showError(error.message);
         }
       });
+
+    // A reconnect may have missed a push: ask again rather than wait.
+    this.payloadVersion.sessionRestarted
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.projectsService.requestNodeList());
   }
 
   ngOnInit(): void {
+    // Targeted refresh on entry; liveness stays on its own poll (node_status).
+    this.projectsService.requestNodeList();
     this.requestNodeStatus();
     this.pollHandle = setInterval(
-      () => this.requestNodeStatus(), SettingsComponent.POLL_MS);
+      () => this.requestNodeStatus(), NodeAdoptionComponent.POLL_MS);
   }
 
   ngOnDestroy(): void {
@@ -171,15 +191,20 @@ export class SettingsComponent implements OnInit, OnDestroy {
     return this.liveness()?.age_s ?? null;
   }
 
-  /** nodeconf's discovery view. A different question from isAlive(). */
+  /**
+   * nodeconf's discovery view. A different question from isAlive().
+   * JSON true from cuems-utils 014 on, "True" before it — both arrive at
+   * payload version 1 (findings F6), so both are read.
+   */
   isSeenByDiscovery(nodeWrapper: any): boolean {
-    return nodeWrapper?.node?.online === true;
+    const online = nodeWrapper?.node?.online;
+    return online === true || online === 'True';
   }
 
   /** The controller cannot be un-adopted — nodeconf refuses it. */
   canUnadopt(nodeWrapper: any): boolean {
     return this.nodeconfAvailable()
-      && nodeWrapper?.node?.node_type !== 'NodeType.master';
+      && nodeWrapper?.node?.node_role !== 'controller';
   }
 
   /** nodeconf refuses to adopt a node it has not just seen. */
@@ -194,27 +219,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
   }
 
   getVideoOutputs(node: any): any[] {
-    if (!node.video || !Array.isArray(node.video)) return [];
-    
-    const outputs: any[] = [];
-    node.video.forEach((videoGroup: any) => {
-      if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
-        outputs.push(...videoGroup.outputs);
-      }
-    });
-    return outputs;
+    return deviceOutputs(node, 'video');
   }
 
   getAudioOutputs(node: any): any[] {
-    if (!node.audio || !Array.isArray(node.audio)) return [];
-    
-    const outputs: any[] = [];
-    node.audio.forEach((audioGroup: any) => {
-      if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
-        outputs.push(...audioGroup.outputs);
-      }
-    });
-    return outputs;
+    return deviceOutputs(node, 'audio');
   }
 
   getMappedName(output: any): string {

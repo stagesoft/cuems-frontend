@@ -38,3 +38,13 @@ Collected as each change lands; T115 completes this file.
 - If a save is refused because the original file could not be kept in the trash, you are told
   plainly that nothing was written.
 
+## Nodes
+
+- The node screen is now **Nodes** (`/nodes`; the old `/settings` address still leads there).
+- **Adopting a node works again.** Its button is live for a node that discovery has just seen.
+- **Un-adopting the controller is no longer offered** (it was, and the daemon then refused it).
+- When cuems-nodeconf does not report itself available, adoption is disabled instead of offered.
+- If the network map names the same node twice, the screen says so, shows the file, and how to fix
+  it. The list shown meanwhile is the last good one.
+- The node list refreshes when you open the screen and after the connection is renewed.
+
