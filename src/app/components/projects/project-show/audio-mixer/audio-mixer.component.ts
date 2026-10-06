@@ -7,6 +7,7 @@ import { ProjectsService } from '../../../../services/projects/projects.service'
 import { OscService } from '../../../../services/osc.service';
 import { Subscription } from 'rxjs';
 import { AudioMixerStateService } from '../../../../services/mixers/audio-mixer-state.service';
+import { PayloadCache } from '../../../../core/payload-cache';
 
 @Component({
   selector: 'app-project-show-audio-mixer',
@@ -112,11 +113,11 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
   // }
 
   private getAudioNodesFromLocalStorage(): any[] {
-    const mappingsData = localStorage.getItem('initial_mappings');
-    if (!mappingsData) return [];
+    // Through the payload namespace, so the version gate's eviction covers it.
+    const data = PayloadCache.read<any>('initial_mappings');
+    if (!data) return [];
     
     try {
-      const data = JSON.parse(mappingsData);
       
       const mappings = data.value;
       

@@ -72,3 +72,23 @@ for non-null, so it is harmless there; pinned as-is.
 **F9 — the CLI scaffold specs never ran green (T008).** Six of 26 existing tests failed on a clean
 checkout (missing providers, and one assertion about an `<h1>` the app never had). Fixed in a
 separate commit before the characterization.
+
+## Port (Phase 3 onward)
+
+**F10 — the characterization pinned the storage mechanism the port is required to change.** Seven
+T009–T013 tests asserted *where* and *when* payloads were cached: the bare keys
+`initial_template` / `initial_mappings`, read back in the constructor, and `project_status` sent on
+the socket's `isConnected` edge. FR-071a moves the key into the namespace, FR-075 moves the
+read-back after the version is known, T031 deletes the template cache, and T032b hangs the status
+query on the gate's session start. None of these is one of FR-004a's two sanctioned changes, and
+none is an accommodation of ported code: each is a requirement. The two template-cache tests were
+deleted with the cache; the other five keep their asserted values (the round-tripped frame, the
+re-extracted options, the wrap of a bare value, null for an unparseable entry, one status query per
+connection) and changed only their input — where the cache entry sits, and a connection
+announcing its version.
+
+**F11 — eviction runs on a refused connection too.** Research R8 places eviction after a version
+*match*. It runs as soon as the version is known, match or not: otherwise a payload a refused
+(older or newer) editor sends is cached under the previous connection's version tag and survives
+into the next matching session. Evicting first tags it with the refused version, so the next
+matching connection evicts it.

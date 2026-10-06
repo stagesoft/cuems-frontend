@@ -1,9 +1,11 @@
-import { Injectable, DestroyRef, EventEmitter, inject, signal, effect } from '@angular/core';
+import { Injectable, DestroyRef, EventEmitter, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WebsocketService, WebSocketError } from '../websocket.service';
 import { NotificationService } from '../ui/notification.service';
 import { Router } from '@angular/router';
 import { generateSlug } from '../../core/utils';
+import { PayloadCache } from '../../core/payload-cache';
+import { PayloadVersionService } from '../../core/payload-version.service';
 
 import {
   createProject,
@@ -174,6 +176,10 @@ export interface WebSocketResponse {
 })
 export class ProjectsService {
   private destroyRef = inject(DestroyRef);
+  // First, so the gate is subscribed to the socket before this service is:
+  // it sees each connection's first frame, and evicts the cache, before any
+  // payload below is handled or cached.
+  private payloadVersion = inject(PayloadVersionService);
   private wsService = inject(WebsocketService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
@@ -204,7 +210,8 @@ export class ProjectsService {
    * collapsed both into `status: 'none'`. It now answers `'loaded'` too.
    *
    * ⚠️ Fresh on connect, and it can go stale: `project_status` is queried once
-   * per WebSocket connection, so a load performed elsewhere (another tab, the
+   * per WebSocket connection (on PayloadVersionService.sessionStarted, so a
+   * reconnect re-queries it), so a load performed elsewhere (another tab, the
    * power-bridge's boot auto-load) is not reflected here until this client
    * reconnects. Anything that must be live reads `oscService.loadedProject()`
    * instead, which the engine broadcasts on every change — that is why this
@@ -233,42 +240,17 @@ export class ProjectsService {
   }
 
   constructor() {
-    const savedTemplate = localStorage.getItem('initial_template');
-    if (savedTemplate) {
-      try {
-        this.projectTemplate.set(JSON.parse(savedTemplate));
-      } catch (e) {
-      }
-    }
-
-    const savedMappings = localStorage.getItem('initial_mappings');
-    if (savedMappings) {
-      try {
-        const parsedMappings = JSON.parse(savedMappings);
-        
-        let mappingsToSet: InitialMappingsResponse;
-        if (parsedMappings.type === 'initial_mappings') {
-          mappingsToSet = parsedMappings;
-        } else {
-          mappingsToSet = {
-            type: 'initial_mappings',
-            value: parsedMappings
-          };
-        }
-        
-        this.initialMappings.set(mappingsToSet);
-        
-        this.extractMappingOptions(mappingsToSet.value);        
-      } catch (e) {
-        console.error('ProjectsService constructor - error parsing mappings:', e);
-      }     
-    }
-
-    effect(() => {
-      if (this.wsService.isConnected()) {
+    // The mapping cache is read only once this connection's payload version is
+    // known and the cache evicted for it (FR-075) — never in the constructor,
+    // which runs before the version is known. A live frame always wins.
+    this.payloadVersion.sessionStarted
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.restoreCachedMappings();
+        // Once per connection, reconnects included: this is what closes the
+        // staleness window documented on loadedProjectUuid.
         this.wsService.wsEmit({ action: 'project_status' });
-      }
-    });     
+      });
 
     this.wsService.messages
       .pipe(takeUntilDestroyed(this.destroyRef))
@@ -315,11 +297,7 @@ export class ProjectsService {
 
   public handleWebsocketResponse(response: any): void {
     if (response && response.type === 'initial_template' && response.value) {
-      try {
-        this.projectTemplate.set(response.value);
-        localStorage.setItem('initial_template', JSON.stringify(response.value));
-      } catch (e) {
-      }
+      this.projectTemplate.set(response.value);
     }
 
     if (response && response.type === 'initial_mappings' && (response.value || response)) {
@@ -336,7 +314,7 @@ export class ProjectsService {
         // Extract mapping options for the multiselect
         this.extractMappingOptions(mappingsData);
         
-        localStorage.setItem('initial_mappings', JSON.stringify(completeResponse));
+        PayloadCache.write('initial_mappings', completeResponse);
       } catch (e) {
         console.error('Error processing initial mappings:', e);
       }
@@ -474,6 +452,22 @@ export class ProjectsService {
       } else {
         this.notificationService.showError(error.message || 'Error en la operación');
       }
+    }
+  }
+
+  /** Hydrate from the namespaced cache, unless a live frame already arrived. */
+  private restoreCachedMappings(): void {
+    if (this.initialMappings()) return;
+    const cached = PayloadCache.read<any>('initial_mappings');
+    if (!cached) return;
+    try {
+      const mappingsToSet: InitialMappingsResponse = cached.type === 'initial_mappings'
+        ? cached
+        : { type: 'initial_mappings', value: cached };
+      this.initialMappings.set(mappingsToSet);
+      this.extractMappingOptions(mappingsToSet.value);
+    } catch (e) {
+      console.error('ProjectsService - error restoring cached mappings:', e);
     }
   }
 

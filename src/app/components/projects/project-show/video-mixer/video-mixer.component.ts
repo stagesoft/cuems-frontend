@@ -4,6 +4,7 @@ import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../../ui/icon/icon.component';
 import { OscService } from '../../../../services/osc.service';
+import { PayloadCache } from '../../../../core/payload-cache';
 
 interface VideoOutputRaw {
   parentId: string;
@@ -91,11 +92,11 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
   }
   
   private getVideoNodesFromLocalStorage(): VideoNode[] {
-    const mappingsData = localStorage.getItem('initial_mappings');
-    if (!mappingsData) return [];
+    // Through the payload namespace, so the version gate's eviction covers it.
+    const data = PayloadCache.read<any>('initial_mappings');
+    if (!data) return [];
     
     try {
-      const data = JSON.parse(mappingsData);
       const mappings = data.value;
       
       if (!mappings || !mappings.nodes || !Array.isArray(mappings.nodes)) {

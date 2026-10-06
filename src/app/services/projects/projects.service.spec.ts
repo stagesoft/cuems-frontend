@@ -19,6 +19,8 @@ import { ProjectsService } from './projects.service';
 import { NotificationService } from '../ui/notification.service';
 import { FakeWebsocketService, Harness, setUpCharacterization } from '../../testing/characterization-harness';
 import { loadFixture } from '../../testing/load-fixture';
+import { PAYLOAD_CACHE_PREFIX, PayloadCache } from '../../core/payload-cache';
+import { IMPLEMENTED_PAYLOAD_VERSION } from '../../core/payload-version.service';
 
 const CONTROLLER = '0367f391-ebf4-48b2-9f26-000000000001';
 
@@ -46,8 +48,8 @@ describe('ProjectsService (characterization)', () => {
     try { localStorage.clear(); } catch { /* blocked */ }
   });
 
-  // ── initial_template (retired at payload version 1; T031/T060 delete this) ──
-  describe('initial_template intake and cache (T009)', () => {
+  // ── initial_template (retired at payload version 1; T060 deletes the rest) ──
+  describe('initial_template intake (T009)', () => {
     it('stores the template value in the signal', () => {
       service = create();
       const frame = loadFixture('initial-template-pre001');
@@ -55,25 +57,14 @@ describe('ProjectsService (characterization)', () => {
       expect(service.projectTemplate()).toEqual(frame.value);
     });
 
-    it('writes the value to localStorage under the bare key "initial_template"', () => {
-      service = create();
-      const frame = loadFixture('initial-template-pre001');
-      ws.receive(frame);
-      expect(JSON.parse(localStorage.getItem('initial_template')!)).toEqual(frame.value);
-    });
-
-    it('restores the cached template in the constructor of the next instance', () => {
-      const frame = loadFixture('initial-template-pre001');
-      localStorage.setItem('initial_template', JSON.stringify(frame.value));
-      service = create();
-      expect(service.projectTemplate()).toEqual(frame.value);
-    });
+    // The cache write and the constructor read-back were deleted with the
+    // cache entry itself (T031): a cache for a frame the editor no longer
+    // sends can never be refreshed.
 
     it('ignores a frame with no value', () => {
       service = create();
       ws.receive({ type: 'initial_template', value: null });
       expect(service.projectTemplate()).toBeNull();
-      expect(localStorage.getItem('initial_template')).toBeNull();
     });
   });
 
@@ -120,26 +111,33 @@ describe('ProjectsService (characterization)', () => {
       expect(service.getMappingByUuid('nope')).toBeUndefined();
     });
 
-    it('writes {type, value} to localStorage under the bare key "initial_mappings"', () => {
+    // Storage location: the payload namespace (FR-071a), not a bare key.
+    // Read-back moment: when this connection's version is known and the cache
+    // evicted for it (FR-075), not the constructor. The values are unchanged.
+    it('writes {type, value} to the payload cache', () => {
       service = create();
       const frame = loadFixture('initial-mappings-pre001');
       ws.receive(frame);
-      expect(JSON.parse(localStorage.getItem('initial_mappings')!))
+      expect(PayloadCache.read('initial_mappings'))
         .toEqual({ type: 'initial_mappings', value: frame.value });
     });
 
-    it('restores the cached frame and re-extracts the options in the next constructor', () => {
+    it('restores the cached frame and re-extracts the options when the next session starts', () => {
       const frame = loadFixture('initial-mappings-pre001');
-      localStorage.setItem('initial_mappings', JSON.stringify({ type: 'initial_mappings', value: frame.value }));
+      PayloadCache.setStoredVersion(IMPLEMENTED_PAYLOAD_VERSION);
+      PayloadCache.write('initial_mappings', { type: 'initial_mappings', value: frame.value });
       service = create();
+      ws.connect();
       expect(service.initialMappings()?.value).toEqual(frame.value);
       expect(service.mappingOptions()).toEqual(EXPECTED_OPTIONS as any);
     });
 
     it('wraps a cached bare value (no type) as an initial_mappings frame', () => {
       const frame = loadFixture('initial-mappings-pre001');
-      localStorage.setItem('initial_mappings', JSON.stringify(frame.value));
+      PayloadCache.setStoredVersion(IMPLEMENTED_PAYLOAD_VERSION);
+      PayloadCache.write('initial_mappings', frame.value);
       service = create();
+      ws.connect();
       expect(service.initialMappings()).toEqual({ type: 'initial_mappings', value: frame.value });
       expect(service.mappingOptions().length).toBe(EXPECTED_OPTIONS.length);
     });
@@ -164,17 +162,12 @@ describe('ProjectsService (characterization)', () => {
     });
 
     it('leaves mappings null when the cache entry does not parse', () => {
-      localStorage.setItem('initial_mappings', '{not json');
+      PayloadCache.setStoredVersion(IMPLEMENTED_PAYLOAD_VERSION);
+      localStorage.setItem(`${PAYLOAD_CACHE_PREFIX}initial_mappings`, '{not json');
       service = create();
+      ws.connect();
       expect(service.initialMappings()).toBeNull();
       expect(service.mappingOptions()).toEqual([]);
-      expect(console.error).toHaveBeenCalled();
-    });
-
-    it('leaves the template null when its cache entry does not parse', () => {
-      localStorage.setItem('initial_template', '{not json');
-      service = create();
-      expect(service.projectTemplate()).toBeNull();
     });
 
     it('extracts nothing from a node carrying no per-class output blocks', () => {
@@ -314,10 +307,11 @@ describe('ProjectsService (characterization)', () => {
       service = create();
     });
 
-    it('asks for project_status whenever the socket reports connected', () => {
-      ws.isConnected.set(true);
-      TestBed.flushEffects();
-      expect(ws.sent).toContain({ action: 'project_status' });
+    it('asks for project_status once per connection, reconnects included', () => {
+      ws.connect();
+      expect(ws.sent.filter(m => m.action === 'project_status').length).toBe(1);
+      ws.connect();
+      expect(ws.sent.filter(m => m.action === 'project_status').length).toBe(2);
     });
 
     it('running: both uuids set', () => {
@@ -400,6 +394,35 @@ describe('ProjectsService (characterization)', () => {
     it('saves through project_save with the payload as value', () => {
       service.updateProject({ a: 1 });
       expect(ws.sent).toContain({ action: 'project_save', value: { a: 1 } });
+    });
+  });
+
+  // ── the port, Phase 3 (session prerequisites) ──
+  describe('session (T032b, T033)', () => {
+    beforeEach(() => {
+      service = create();
+    });
+
+    it('ignores a frame type it does not know, without error — new types do not bump the version', () => {
+      const relayed: any[] = [];
+      service.errorEvent.subscribe(e => relayed.push(e));
+      expect(() => ws.receive({ type: 'some_future_frame', value: { x: 1 } })).not.toThrow();
+      expect(relayed).toEqual([]);
+      expect(notifications.showError).not.toHaveBeenCalled();
+    });
+
+    it('does not ask for project_status on a refused connection', () => {
+      ws.connect(2);
+      expect(ws.sent.filter(m => m.action === 'project_status')).toEqual([]);
+    });
+
+    it('keeps the once-per-connection status apart from the live one: a later broadcast does not move it', () => {
+      ws.receive({ type: 'project_status', value: { status: 'loaded', project_uuid: 'p1' } });
+      // a load elsewhere arrives as an engine broadcast (OscService), not here
+      expect(service.loadedProjectUuid()).toBe('p1');
+      ws.connect();
+      ws.receive({ type: 'project_status', value: { status: 'loaded', project_uuid: 'p2' } });
+      expect(service.loadedProjectUuid()).toBe('p2');
     });
   });
 });
