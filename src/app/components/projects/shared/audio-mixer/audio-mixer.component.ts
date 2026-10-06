@@ -57,10 +57,11 @@ export class SharedAudioMixerComponent implements OnChanges {
     });
   }
 
+  /** `output` is a `{"CueOutput": {…, "class": "audio"}}` wrapper (delta (c)). */
   onOutputVolumeChange(cue: any, output: any, newVolume: number): void {
-    const oldVolume = output.AudioCueOutput.output_vol || 0;
+    const oldVolume = output.CueOutput.output_vol || 0;
     
-    output.AudioCueOutput.output_vol = newVolume;
+    output.CueOutput.output_vol = newVolume;
     
     this.outputVolumeChange.emit({
       type: 'output',

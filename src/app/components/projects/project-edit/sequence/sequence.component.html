@@ -119,6 +119,7 @@
                     [style.max-width]="drawerService.isActivityDrawerOpen() ? '80px' : null">
                   <div class="table-name-cell">
                     <span>{{ cue.name }}</span>
+                    <span *ngIf="cue.type === 'other'" class="ml-2 text-xs text-gray-400">({{ cue.cue_class }})</span>
                   </div>
                 </td>
                     
@@ -251,6 +252,9 @@
                         </div>
                         
                         <div *ngIf="cue.activeTab === 'edit'">
+                          <p *ngIf="cue.type === 'other'" class="text-sm text-gray-400 mb-6">
+                            {{ 'cue.class.no-editor' | translate: { class: cue.cue_class } }}
+                          </p>
                           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                             <div class="field">
                               <label class="label">{{ 'project.cue-table.name' | translate }}</label>

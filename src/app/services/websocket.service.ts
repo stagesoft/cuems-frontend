@@ -114,7 +114,9 @@ export class WebsocketService {
       if (match) {
         return match[1];
       }
-      return value;
+      // A refused save arrives as `str(type(e)) + str(e)`: drop the Python
+      // class name, keep the library's sentence — it names the offending cue.
+      return value.replace(/^<class '[^']*'>\s*/, '');
     }
     return 'Ocurrió un error desconocido / Unknown error occurred';
   }

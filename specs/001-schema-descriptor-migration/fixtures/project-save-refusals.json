@@ -1,0 +1,26 @@
+{
+ "top-level uuid beside CuemsScript": {
+  "type": "error",
+  "action": "project_save",
+  "uuid": "00000000-0000-4000-8000-0000000000aa",
+  "value": "<class 'cuemsutils.errors.IngestError'>expected a CuemsScript payload; the mapping declares none of ['id', 'name', 'description', 'created', 'modified', 'CueList', 'ui_properties'] (got ['CuemsScript', 'uuid'])"
+ },
+ "action cue without target": {
+  "type": "error",
+  "action": "project_save",
+  "uuid": "00000000-0000-4000-8000-0000000000aa",
+  "value": "<class 'cuemsutils.errors.ValidationError'>[T2] action_target_required at 00000000-0000-4000-8000-0000000000a4/action_target: action_target is required"
+ },
+ "dangling action_target": {
+  "type": "error",
+  "action": "project_save",
+  "uuid": "00000000-0000-4000-8000-0000000000aa",
+  "value": "<class 'cuemsutils.errors.ValidationError'>[T2] action_target_resolves at 00000000-0000-4000-8000-0000000000a4/action_target: action_target 11111111-1111-4111-8111-111111111111 does not resolve to a cue in this document"
+ },
+ "zero fade duration": {
+  "type": "error",
+  "action": "project_save",
+  "uuid": "00000000-0000-4000-8000-0000000000aa",
+  "value": "<class 'ValueError'>FadeCue duration must be greater than zero: 'empty' (id 00000000-0000-4000-8000-0000000000a5: must be greater than zero)"
+ }
+}

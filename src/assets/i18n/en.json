@@ -276,5 +276,7 @@
     "nodes.settings.cancel": "Cancel",
     "footer.powered.text": "Powered",
     "footer.promoted.text": "Promoted", 
-    "footer.financed.text": "Financed"
+    "footer.financed.text": "Financed",
+    "descriptor.gap": "The schema descriptor has no value for this field, so the cue was not built",
+    "cue.class.no-editor": "This cue has class \"{{class}}\", which this editor cannot edit. Its own settings are kept as they are; the fields below are saved."
 }

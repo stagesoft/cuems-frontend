@@ -34,10 +34,19 @@ Two wires matter, and the fixtures are split between them:
 | `schema-descriptor-{script,settings,project_settings,project_mappings}.json` | tip | same run: `ConfigManager(load_all=False).get_schema_descriptor(SchemaName(name))` rendered by the editor's own `schema_descriptor_value`, `CUEMS_CONF_PATH` = editor `tests/fixtures/conf` |
 | `initial-mappings-tip.frame.json` | tip | **recorded here**: `capture/capture_tip_nodes.py`, server built as editor `evidence/mappings-capture/capture_mappings.py` builds it, conf = that directory. The mapping document alone |
 | `node-list.frame.json` | tip | same run: `node_list_message()`. `nodeconf_available` pinned `true` (host state) |
+| `template-as-script-013.frame.json` | tip | the recorded pre-001 template, **as a project document on the tip wire**. `capture/template_as_script_pre001.py` writes `initial-template-pre001.json` through the pre-001 editor's `project_new` path (editor @ `e099c92`, rc14) to `capture/template-as-script/template_pre013.xml`; `cuems-reshape-devices` (cuems-utils @ `69acaef`) turns that into `template_013.xml`, the same procedure that made the editor's own `script_minimal_013.xml`; `capture/capture_tip.py` loads it with the tip library. Authored values, listed in the script: cue ids (null in the template), the script id and dates (`project_new` assigns them), and the ActionCue/FadeCue `action_target`, which in the template names a cue that does not exist. Load report outcome: `converted` |
+| `project-save-refusals.json` | tip | `capture/save_errors.py`: `template-as-script-013` sent back through the editor's save path (`validate_fade_durations_in_contents`, `CuemsScript.from_json(...).save()`) with one change each, rendered as `received_project`'s error frame (`str(type(e)) + str(e)`). Keyed by case: top-level `uuid` beside `CuemsScript`, action cue without a target, dangling `action_target`, zero fade duration |
 
 `capture-meta.json` records both heads (sha, subject, clean) and the fixture hashes for the
 tip run. The three scripts under `capture/` are the procedure; they import the editor's own
 serialisers rather than re-implementing them.
+
+## Why `template-as-script-013` exists
+
+The characterization fed the DMX, Fade, audio-output and custom-video intake paths from the
+recorded template's entries, because the recorded project frame has none of them. On the tip wire
+those entries must arrive as `Cue` + `class`, so the swap needs the *same document* on the new
+wire, not a different one: same cues, same outputs, same values. That is what this fixture is.
 
 ## Deviations from the plan, and why
 

@@ -100,6 +100,8 @@ export class IconService {
     'fade': FadeIcon,
     'wait': WaitIcon,
     'action': ActionIcon,
+    // a cue whose class this UI has no editor for
+    'other': PointsIcon,
     'noContinue': NoContinueIcon,
     'autoContinue': AutoContinueIcon,
     'autoFollow': AutoFollowIcon,

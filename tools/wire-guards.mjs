@@ -49,6 +49,17 @@ check('localStorage outside PayloadCache holds only operator preferences (FR-071
 check('doc_version appears nowhere in src/ (T035)',
   files.flatMap(lines).filter(l => /doc_version/.test(l.text)));
 
+// Project delta (c), T038–T044, T119: hardware cues travel as `Cue` + class
+// and their outputs as `CueOutput` + class. A per-type wire key left in the
+// source is a read or write of the retired shape, kept alongside the new one.
+// Schema type names (script:AudioCueType, …OutputsType) are not wire keys.
+check('no per-type cue wire keys (AudioCue, VideoCueOutput, …) outside specs (delta (c))',
+  // design.component.html is the style-guide page: "AudioCue" there is sample
+  // tooltip text, not a payload read.
+  files.filter(f => !isTest(f) && rel(f) !== 'src/app/components/design/design.component.html')
+    .flatMap(lines)
+    .filter(l => /\b(Audio|Video|Dmx)Cue(Output)?\b/.test(l.text)));
+
 if (failures.length) {
   for (const { name, offending } of failures) {
     console.error(`\n✗ ${name}`);

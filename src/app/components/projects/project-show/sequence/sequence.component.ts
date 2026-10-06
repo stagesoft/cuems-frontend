@@ -8,6 +8,7 @@ import { DrawerService } from '../../../../services/ui/drawer.service';
 import { Subscription } from 'rxjs';
 import { OscService } from '../../../../services/osc.service';
 import { TranslateModule } from '@ngx-translate/core';
+import { cueClassOf, cueDataOf, cueKindOf, timecodeText } from '../../../../core/cue-wire';
 
 @Component({
   selector: 'app-project-show-sequence',
@@ -113,67 +114,41 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     }
   } 
 
+  /**
+   * A listed cue's body: `Cue` + class for hardware cues, ActionCue and FadeCue
+   * by key (delta (c)). A nested CueList, or an unknown key, is not a cue here.
+   */
+  private cueData(cueItem: any): any {
+    const kind = cueKindOf(cueItem);
+    return kind && kind !== 'cuelist' ? cueDataOf(cueItem) : null;
+  }
+
   getCueId(cueItem: any): string {
-    if (cueItem.AudioCue) return cueItem.AudioCue.id;
-    else if (cueItem.VideoCue) return cueItem.VideoCue.id;
-    else if (cueItem.ActionCue) return cueItem.ActionCue.id;
-    else if (cueItem.DmxCue) return cueItem.DmxCue.id;
-    else if (cueItem.FadeCue) return cueItem.FadeCue.id;
-    return 'unknown';
+    return this.cueData(cueItem)?.id ?? 'unknown';
   }
 
   getCueName(cueItem: any): string {
-    if (cueItem.AudioCue) {
-      return cueItem.AudioCue.name || 'Unnamed Audio Cue';
-    } else if (cueItem.VideoCue) {
-      return cueItem.VideoCue.name || 'Unnamed Video Cue';
-    } else if (cueItem.ActionCue) {
-      return cueItem.ActionCue.name || 'Unnamed Action Cue';
-    } else if (cueItem.DmxCue) {
-      return cueItem.DmxCue.name || 'Unnamed Dmx Cue';
-    } else if (cueItem.FadeCue) {
-      return cueItem.FadeCue.name || 'Unnamed Fade Cue';
-    }
-    return 'Unknown Cue';
+    const cueData = this.cueData(cueItem);
+    if (!cueData) return 'Unknown Cue';
+    const label = (cueKindOf(cueItem) === 'other' ? cueClassOf(cueItem) : cueKindOf(cueItem)) ?? '';
+    return cueData.name || `Unnamed ${label.charAt(0).toUpperCase()}${label.slice(1)} Cue`;
   }
 
   getCueTypeIcon(cueItem: any): string {
-    if (cueItem.AudioCue) return 'audio';
-    if (cueItem.VideoCue) return 'video';
-    if (cueItem.ActionCue) return 'action';
-    if (cueItem.DmxCue) return 'dmx';
-    if (cueItem.FadeCue) return 'fade';
-    return 'action';
+    const kind = cueKindOf(cueItem);
+    return kind && kind !== 'cuelist' ? kind : 'action';
   }
 
   getCuePrewait(cueItem: any): string {
-    let cueData = null;
-    if (cueItem.AudioCue) cueData = cueItem.AudioCue;
-    else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
-    else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
-    else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
-    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
-    return cueData?.prewait?.CTimecode || '00:00:00.000';
+    return this.cueData(cueItem)?.prewait?.CTimecode || '00:00:00.000';
   }
 
   getCuePostwait(cueItem: any): string {
-    let cueData = null;
-    if (cueItem.AudioCue) cueData = cueItem.AudioCue;
-    else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
-    else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
-    else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
-    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
-    return cueData?.postwait?.CTimecode || '00:00:00.000';
+    return this.cueData(cueItem)?.postwait?.CTimecode || '00:00:00.000';
   }
 
   getCueActionIcon(cueItem: any): string {
-    let cueData = null;
-    if (cueItem.AudioCue) cueData = cueItem.AudioCue;
-    else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
-    else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
-    else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
-    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
-    const postGo = cueData?.post_go || 'pause';
+    const postGo = this.cueData(cueItem)?.post_go || 'pause';
     return 'post_go_' + postGo;
   }
 
@@ -185,16 +160,13 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   }
 
   getCueDuration(cueItem: any): string {
-    let cueData = null;
-    if (cueItem.AudioCue) cueData = cueItem.AudioCue;
-    else if (cueItem.VideoCue) cueData = cueItem.VideoCue;
-    else if (cueItem.ActionCue) cueData = cueItem.ActionCue;
-    else if (cueItem.DmxCue) cueData = cueItem.DmxCue;
-    else if (cueItem.FadeCue) cueData = cueItem.FadeCue;
+    const cueData = this.cueData(cueItem);
     // A FadeCue has no Media — its duration is the fade's own cue-level
     // duration (the same source the edit view shows as fade_duration).
-    if (cueItem.FadeCue) return cueData?.duration?.CTimecode || '-';
-    return cueData?.Media?.duration || '-';
+    if (cueKindOf(cueItem) === 'fade') return timecodeText(cueData?.duration) || '-';
+    // Media.duration arrives wrapped (delta (b)); the wrapper is truthy, so
+    // reading it bare rendered `[object Object]`.
+    return timecodeText(cueData?.Media?.duration) || '-';
   }
 
   getCuePlaybackClasses(cueItem: any): string {

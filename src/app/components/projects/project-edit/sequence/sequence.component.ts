@@ -22,12 +22,22 @@ import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/con
 import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
 import { NotificationService } from '../../../../services/ui/notification.service';
 import { findInvalidFadeCuesInContents, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType } from '../../../../core/utils';
+import { cueClassOf, cueDataOf, cueKeyOf, cueKindOf, cueOutputsOf, timecodeText, wrapCueOutput, wrapHardwareCue } from '../../../../core/cue-wire';
+import { DescriptorGapError, SCRIPT_TYPES, SchemaDescriptorService, descriptorDefault, toWireShape } from '../../../../services/projects/handlers/schema-descriptor.handler';
+import { newCueListFromDescriptor } from '../../../../services/projects/handlers/project-create.handler';
 
 interface CueData {
   id: string | number;
   order: number;
   name: string;
-  type: 'action' | 'audio' | 'video' | 'dmx' | 'fade';
+  /**
+   * Internal vocabulary, not wire keys. 'other' is a hardware cue whose class
+   * this UI has no editor for: listed, identified by `cue_class`, and written
+   * back exactly as it arrived (`originalData`).
+   */
+  type: 'action' | 'audio' | 'video' | 'dmx' | 'fade' | 'other';
+  /** The wire `class` of a hardware cue (audio, video, dmx, or any other). */
+  cue_class?: string;
   time: string;
   prewait: string;
   postwait: string;
@@ -89,6 +99,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   private mediaService = inject(MediaService);
   private translateService = inject(TranslateService);
   private notificationService = inject(NotificationService);
+  private schemaDescriptors = inject(SchemaDescriptorService);
   public drawerService = inject(DrawerService);
   private subscription = new Subscription();
   workspace = inject(ProjectWorkspaceService);
@@ -235,8 +246,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     for (const cue of this.cues) {
       if (cue.selectedMediaFile) continue;
 
-      const cueTypeKey = this.getCueTypeKey(cue.originalData);
-      const cueData = cueTypeKey ? cue.originalData[cueTypeKey] : null;
+      const cueData = this.getCueData(cue.originalData);
       if (!cueData?.Media?.file_name) continue;
 
       for (const fileObj of fileList) {
@@ -294,29 +304,14 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
    */
   private transformCuesFromProject(projectCues: any[]): CueData[] {
     return projectCues.map((cueItem, index) => {
-      let cueData: any = null;
-      let cueType: 'action' | 'audio' | 'video' | 'dmx' | 'fade' = 'audio';
-
-      if (cueItem.AudioCue) {
-        cueData = cueItem.AudioCue;
-        cueType = 'audio';
-      } else if (cueItem.VideoCue) {
-        cueData = cueItem.VideoCue;
-        cueType = 'video';
-      } else if (cueItem.ActionCue) {
-        cueData = cueItem.ActionCue;
-        cueType = 'action';
-      } else if (cueItem.DmxCue) {
-        cueData = cueItem.DmxCue;
-        cueType = 'dmx';
-      } else if (cueItem.FadeCue) {
-        cueData = cueItem.FadeCue;
-        cueType = 'fade';
-      }
-
-      if (!cueData) {
+      // `Cue` + class for hardware cues, ActionCue / FadeCue by key (delta (c)).
+      // A nested CueList, or a key this UI does not know, is not listed.
+      const kind = cueKindOf(cueItem);
+      if (!kind || kind === 'cuelist') {
         return null;
       }
+      const cueData: any = cueDataOf(cueItem);
+      const cueType: CueData['type'] = kind;
 
       // Extract media file information if it exists
       let selectedMediaFile: {uuid: string, file: any} | undefined;
@@ -344,22 +339,15 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
       
       if (cueType === 'dmx') {
-        // DmxCueOutput carries only output_name — the bare node uuid — so
+        // A dmx CueOutput carries only output_name — the bare node uuid — so
         // parseOutputString() (which demands a `uuid_name` shape) would
         // return null here. Match against the dmx options directly instead,
         // and keep an unknown value rather than silently dropping it: that
         // is what makes a project mapped to a node this cluster does not
         // have visible to the operator instead of disappearing.
-        const dmxOutputs: string[] = [];
-        if (cueData.outputs && Array.isArray(cueData.outputs)) {
-          for (const output of cueData.outputs) {
-            if (output.DmxCueOutput?.output_name) {
-              dmxOutputs.push(output.DmxCueOutput.output_name);
-            }
-          }
-        } else if (cueData.DmxCueOutput?.output_name) {
-          dmxOutputs.push(cueData.DmxCueOutput.output_name);
-        }
+        const dmxOutputs: string[] = cueOutputsOf(cueData, 'dmx')
+          .map(output => output.output_name)
+          .filter((name: unknown): name is string => !!name);
 
         if (dmxOutputs.length > 0) {
           selectedOutputs = dmxOutputs;
@@ -369,24 +357,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       }
 
       if (cueType === 'audio') {         
-        let audioOutputs: string[] = [];
-        
-        if (cueData.AudioCueOutput?.output_name) {
-          audioOutputs.push(cueData.AudioCueOutput.output_name);
-        } else if (cueData.outputs && Array.isArray(cueData.outputs)) {
-          for (const output of cueData.outputs) {
-            if (output.AudioCueOutput?.output_name) {
-              audioOutputs.push(output.AudioCueOutput.output_name);
-            }
-          }
-        } else {
-          for (const key in cueData) {
-            if (cueData[key] && typeof cueData[key] === 'object' && cueData[key].output_name) {
-              audioOutputs.push(cueData[key].output_name);
-              break;
-            }
-          }
-        }
+        const audioOutputs: string[] = cueOutputsOf(cueData, 'audio')
+          .map(output => output.output_name)
+          .filter((name: unknown): name is string => !!name);
         
         if (audioOutputs.length > 0) {
           const validOutputs: string[] = [];
@@ -420,24 +393,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       } 
       
       if (cueType === 'video') {       
-        let videoOutputs: string[] = [];
-        
-        if (cueData.VideoCueOutput?.output_name) {
-          videoOutputs.push(cueData.VideoCueOutput.output_name);
-        } else if (cueData.outputs && Array.isArray(cueData.outputs)) {
-          for (const output of cueData.outputs) {
-            if (output.VideoCueOutput?.output_name) {
-              videoOutputs.push(output.VideoCueOutput.output_name);
-            }
-          }
-        } else {
-          for (const key in cueData) {
-            if (cueData[key] && typeof cueData[key] === 'object' && cueData[key].output_name) {
-              videoOutputs.push(cueData[key].output_name);
-              break;
-            }
-          }
-        }
+        const videoOutputs: string[] = cueOutputsOf(cueData, 'video')
+          .map(output => output.output_name)
+          .filter((name: unknown): name is string => !!name);
         
         if (videoOutputs.length > 0) {
           const validOutputs: string[] = [];
@@ -448,8 +406,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         
           if (customOutputs.length > 0) {
             // Detect canvas_region of the first custom
-            const customCueOutput = cueData.outputs?.find((o: any) =>
-              o.VideoCueOutput?.output_name?.includes('_custom_'))?.VideoCueOutput;
+            const customCueOutput = cueOutputsOf(cueData, 'video')
+              .find(output => output.output_name?.includes('_custom_'));
             if (customCueOutput?.canvas_region != null) {
               hasCanvasRegion = true;
               canvasRegion = customCueOutput.canvas_region;
@@ -530,7 +488,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         dmx_channels,
         universe_num,
         fade_in_time: cueType === 'dmx' ? (() => { const ms = cueData.fadein_time ?? cueData.fade_in_time; return ms != null ? Number(ms) / 1000 : 0; })() : undefined,
-        master_vol: cueData.master_vol || 20,
+        master_vol: cueData.master_vol || this.defaultMasterVolume(),
         action_target: (cueType === 'action' || cueType === 'fade') ? (cueData.action_target || null) : undefined,
         action_type: cueType === 'action' ? (cueData.action_type || 'play') : cueType === 'fade' ? 'fade_action' : undefined,
         // Normalize on load: projects authored before this fix may carry
@@ -547,6 +505,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         fade_target_value: cueType === 'fade' ? (cueData.target_value ?? 0) : undefined,
         is_custom_output: hasCanvasRegion,
         canvas_region: canvasRegion,
+        cue_class: cueClassOf(cueItem) ?? undefined,
         originalData: cueItem // Keep original data
       };
     }).filter(cue => cue !== null) as CueData[];
@@ -724,8 +683,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
     
     if (type === 'audio') {
-      const template = this.projectsService.projectTemplate();
-      newCue.master_vol = template?.['CuemsScript']?.['CueList']?.['contents']?.find((item: any) => item.AudioCue)?.AudioCue?.master_vol || 20;
+      newCue.master_vol = this.defaultMasterVolume();
       if (this.audioMappingOptions.length > 0) {
         newCue.selectedAudioOutput = this.audioMappingOptions[0].value;
         newCue.selectedOutputs = [this.audioMappingOptions[0].value];
@@ -753,33 +711,14 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }
     
     if (type === 'dmx') {
-      const template = this.projectsService.projectTemplate();
-      let initialChannels = [{
-        channel: 1,
-        value: 0
-      }];
-      
-      if (template?.['CuemsScript']?.['CueList']?.['contents']) {
-        const contents = template['CuemsScript']['CueList']['contents'];
-        const dmxTemplate = contents.find((item: any) => item.DmxCue);
-        
-        if (dmxTemplate?.DmxCue?.DmxScene?.DmxUniverse?.dmx_channels) {
-          initialChannels = dmxTemplate.DmxCue.DmxScene.DmxUniverse.dmx_channels.map((channelWrapper: any) => {
-            const channelData = channelWrapper.DmxChannel || channelWrapper;
-            const rawChannel = Number(channelData.channel ?? 0);
-            return {
-              channel: rawChannel + 1,
-              value: Number(channelData.value || 0)
-            };
-          });
-        }
-      }
-      
-      newCue.dmx_channels = initialChannels;
+      // A UI-level starting value, deliberately differing from the descriptor:
+      // DmxUniverseType.dmx_channels has no default (null). One channel at 1,
+      // value 0, gives the operator a row to edit — it is not the schema's answer.
+      newCue.dmx_channels = [{ channel: 1, value: 0 }];
       newCue.fade_in_time = 0;
 
       // Same courtesy audio and video already get: start on a real target
-      // instead of on nothing. Without this a new DmxCue saves with no
+      // instead of on nothing. Without this a new dmx cue saves with no
       // output_name and never arms on any node.
       const mappingsResponse = this.projectsService.initialMappings();
       const defaultDmxOutput = mappingsResponse?.value?.default_dmx_output;
@@ -833,6 +772,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       name: this.getCopyName(original.name),
       expanded: false,
     };
+    // Field order matters less than identity: an 'other' cue is written back
+    // from originalData, which must carry the copy's id, not the original's.
+    if (duplicate.type === 'other' && duplicate.originalData) {
+      cueDataOf(duplicate.originalData).id = duplicate.id;
+    }
   
     this.cues.splice(index + 1, 0, duplicate); // insert just below
   
@@ -910,31 +854,12 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             updatedProject.CuemsScript = {};
           }
           if (!updatedProject.CuemsScript.CueList) {
-            const template = this.projectsService.projectTemplate();
-            if (template?.['CuemsScript']?.['CueList']) {             
-              updatedProject.CuemsScript.CueList = JSON.parse(JSON.stringify(template['CuemsScript']['CueList']));
-              // Merge the ID and set contents as an empty array
-              updatedProject.CuemsScript.CueList.id = this.generateUUID();
-              updatedProject.CuemsScript.CueList.contents = [];
-            } else {
-              // Fallback
-              updatedProject.CuemsScript.CueList = {
-                autoload: false,
-                description: null,
-                enabled: true,
-                id: this.generateUUID(),
-                loop: 0,
-                name: "empty",
-                offset: { CTimecode: "00:00:00.000" },
-                post_go: "pause",
-                postwait: { CTimecode: "00:00:00.000" },
-                prewait: { CTimecode: "00:00:00.000" },
-                target: null,
-                timecode: false,
-                ui_properties: null,
-                contents: []
-              };
+            const descriptor = this.schemaDescriptors.script();
+            if (!descriptor) {
+              this.reportDescriptorGap(new DescriptorGapError(SCRIPT_TYPES.cueList, '(descriptor)'));
+              return;
             }
+            updatedProject.CuemsScript.CueList = newCueListFromDescriptor(descriptor);
           }
           
           if (modifiedData.sequence.contents === null) {
@@ -944,23 +869,6 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           } else {
             updatedProject.CuemsScript.CueList.contents = modifiedData.sequence.contents;
           }
-          
-
-          if (updatedProject.CuemsScript.CueList.contents) {
-            updatedProject.CuemsScript.CueList.contents.forEach((cueItem: any, index: number) => {
-              const cueKey = Object.keys(cueItem)[0];
-              const cue = cueItem[cueKey];
-              if (cueKey === 'AudioCue' && cue.AudioCueOutput) {
-
-              } else if (cueKey === 'VideoCue' && cue.VideoCueOutput) {
-
-              }
-            });
-          }
-        }
-        
-        if (!updatedProject.uuid && this.projectUuid) {
-          updatedProject.uuid = this.projectUuid;
         }
 
         // Belt and braces: also walk the final server-format payload (covers
@@ -976,69 +884,41 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           return;
         }
 
-        this.projectsService.updateProject(updatedProject);
+        // The editor ingests `{"CuemsScript": …}` and nothing beside it: the
+        // library refuses any other top-level key (a `schemaLocation`, delta
+        // (a), or a `uuid` — the project is identified by CuemsScript.id).
+        this.projectsService.updateProject({ CuemsScript: updatedProject.CuemsScript });
       }
     }
   }
 
   private transformCueToServerFormat(cue: CueData): any {
-    const template = this.projectsService.projectTemplate();
-
-    if (!template?.['CuemsScript']?.['CueList']?.['contents']) {
-      return null;
-    }
-
-    const contents = template['CuemsScript']['CueList']['contents'];
-
-    let templateCue: any = null;
-    let cueTypeKey: string = '';
-
-    for (const item of contents) {
-      const itemKeys = Object.keys(item);
-      if (cue.type === 'audio' && itemKeys.includes('AudioCue')) {
-        templateCue = item['AudioCue'];
-        cueTypeKey = 'AudioCue';
-        break;
-      } else if (cue.type === 'video' && itemKeys.includes('VideoCue')) {
-        templateCue = item['VideoCue'];
-        cueTypeKey = 'VideoCue';
-        break;
-      } else if (cue.type === 'action' && itemKeys.includes('ActionCue')) {
-        templateCue = item['ActionCue'];
-        cueTypeKey = 'ActionCue';
-        break;
-      } else if (cue.type === 'dmx' && itemKeys.includes('DmxCue')) {
-        templateCue = item['DmxCue'];
-        cueTypeKey = 'DmxCue';
-        break;
-      } else if (cue.type === 'fade' && itemKeys.includes('FadeCue')) {
-        templateCue = item['FadeCue'];
-        cueTypeKey = 'FadeCue';
-        break;
+    // A class this UI has no editor for goes back as it arrived: only the
+    // common cue fields the row and the Basic tab edit are applied, so an
+    // operator's edit is never silently dropped and nothing class-specific
+    // is touched (FR-012). Unedited, it round-trips unchanged.
+    if (cue.type === 'other') {
+      if (!cue.originalData) return null;
+      const item = JSON.parse(JSON.stringify(cue.originalData));
+      // Only what the operator changed: compared with what intake derived
+      // from the same original, so an untouched null stays null.
+      const before = this.commonCueFields(this.transformCuesFromProject([cue.originalData])[0]);
+      const after = this.commonCueFields(cue);
+      for (const [field, value] of Object.entries(after)) {
+        if (JSON.stringify(value) !== JSON.stringify(before[field])) cueDataOf(item)[field] = value;
       }
+      return item;
     }
 
-    if (!templateCue) {
+    const newCue = this.newCueBody(cue.type);
+    if (!newCue) {
       return null;
     }
 
-    const newCue = JSON.parse(JSON.stringify(templateCue));
-
-    newCue.name = cue.name;
-    newCue.description = cue.notes;
-    newCue.id = cue.id && typeof cue.id === 'string' && cue.id.includes('-')  ? cue.id  : this.generateUUID();
-    newCue.post_go = cue.post_go;
-    newCue.offset = { CTimecode: this.ensureMilliseconds(cue.time) };
-    newCue.prewait = { CTimecode: this.ensureMilliseconds(cue.prewait) };
-    newCue.postwait = { CTimecode: this.ensureMilliseconds(cue.postwait) };
-
-    newCue.enabled = cue.enabled ? 'True' : 'False';
-
-    // Assign loop: -1 for infinite, positive number for specific times
-    newCue.loop = cue.loop === 'inf' ? -1 : cue.loop_times;
+    Object.assign(newCue, this.commonCueFields(cue));
 
     if (cue.type === 'audio') {
-      newCue.master_vol = cue.master_vol || 20;
+      newCue.master_vol = cue.master_vol || this.defaultMasterVolume();
     }
 
     // For ActionCue, delete Media if it exists in the template
@@ -1119,13 +999,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
                 cue.selectedOutputs.forEach(selectedOutput => {
                   const clonedAlias = JSON.parse(JSON.stringify(templateVideoOutput));
                   clonedAlias.output_name = selectedOutput;
-                  newCue.outputs.push({ VideoCueOutput: clonedAlias });
+                  newCue.outputs.push(wrapCueOutput('video', clonedAlias));
                 });
               }
               const clonedCustom = JSON.parse(JSON.stringify(templateVideoOutput));
               clonedCustom.output_name = `${nodeUuid}_custom_0`;
               clonedCustom.canvas_region = { ...cue.canvas_region };
-              newCue.outputs.push({ VideoCueOutput: clonedCustom });
+              newCue.outputs.push(wrapCueOutput('video', clonedCustom));
             }
         } else {
           let selectedOutputs: string[] = [];
@@ -1176,21 +1056,79 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       newCue.fadein_time = Math.round((cue.fade_in_time ?? 0) * 1000);
 
       // DmxCueOutputsType is a single repeatable output_name and nothing
-      // else, so the structure is built here rather than cloned from the
-      // project template the way audio and video outputs are.
+      // else, so the structure is built here rather than from the descriptor
+      // the way audio and video outputs are.
       const dmxSelected = (cue.selectedOutputs && Array.isArray(cue.selectedOutputs))
         ? cue.selectedOutputs.filter(value => !!value)
         : [];
       if (dmxSelected.length > 0) {
-        newCue.outputs = dmxSelected.map(outputName => ({
-          DmxCueOutput: { output_name: outputName }
-        }));
+        newCue.outputs = dmxSelected.map(outputName => wrapCueOutput('dmx', { output_name: outputName }));
       }
     }
 
-    const result = { [cueTypeKey]: newCue };
-    
-    return result;
+    // Hardware cues travel as `Cue` + class, the rest under their own key.
+    if (cue.type === 'audio' || cue.type === 'video' || cue.type === 'dmx') {
+      return wrapHardwareCue(cue.type, newCue);
+    }
+    return { [cue.type === 'action' ? 'ActionCue' : 'FadeCue']: newCue };
+  }
+
+  /** The fields every cue kind shares, from the row and the Basic tab. */
+  private commonCueFields(cue: CueData): Record<string, any> {
+    return {
+      name: cue.name,
+      description: cue.notes,
+      id: cue.id && typeof cue.id === 'string' && cue.id.includes('-') ? cue.id : this.generateUUID(),
+      post_go: cue.post_go,
+      offset: { CTimecode: this.ensureMilliseconds(cue.time) },
+      prewait: { CTimecode: this.ensureMilliseconds(cue.prewait) },
+      postwait: { CTimecode: this.ensureMilliseconds(cue.postwait) },
+      // Native boolean: the only form the library accepts from cuems-utils
+      // 014 on ("True" is refused), and accepted before it too.
+      enabled: cue.enabled,
+      // -1 for infinite, positive number for specific times
+      loop: cue.loop === 'inf' ? -1 : cue.loop_times,
+    };
+  }
+
+  /** The descriptor's default for a new audio cue's master volume (100). */
+  private defaultMasterVolume(): number {
+    try {
+      return Number(descriptorDefault(this.schemaDescriptors.script(), SCRIPT_TYPES.audio, 'master_vol'));
+    } catch (error) {
+      this.reportDescriptorGap(error);
+      return 0;
+    }
+  }
+
+  /**
+   * A new cue's body, wire-shaped from the script descriptor (UR-1
+   * transform), without its `class` — the wrapper adds that. A hardware cue
+   * starts with no outputs: the descriptor's example output has no class
+   * and the library refuses it; outputs are assigned from the selection.
+   */
+  private newCueBody(type: 'action' | 'audio' | 'video' | 'dmx' | 'fade'): any | null {
+    const descriptor = this.schemaDescriptors.script();
+    try {
+      if (!descriptor) throw new DescriptorGapError(SCRIPT_TYPES[type], '(descriptor)');
+      const { class: _class, ...body } = toWireShape(descriptor, SCRIPT_TYPES[type]);
+      if (type === 'audio' || type === 'video' || type === 'dmx') body['outputs'] = [];
+      return body;
+    } catch (error) {
+      this.reportDescriptorGap(error);
+      return null;
+    }
+  }
+
+  /**
+   * A descriptor that lacks what a call site needs is reported, never
+   * absorbed into a silently empty or partial cue (FR-034).
+   */
+  private reportDescriptorGap(error: unknown): void {
+    const detail = error instanceof DescriptorGapError ? `${error.typeKey}.${error.field}` : String(error);
+    console.error('schema descriptor gap:', detail);
+    this.notificationService.showError(
+      `${this.translateService.instant('descriptor.gap')}: ${detail}`);
   }
 
 
@@ -1219,36 +1157,29 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
   public shouldShowWarningIcon(cue: CueData): boolean {
     // Only for audio/video, no action, no dmx
-    if ((cue.type === 'action') || (cue.type === 'dmx') || (cue.type === 'fade')) return false;
+    if ((cue.type === 'action') || (cue.type === 'dmx') || (cue.type === 'fade') || (cue.type === 'other')) return false;
 
     // If there is a media file selected, no show warning
     if (cue.selectedMediaFile) return false;
 
     let warning = null;
-    if (cue.originalData?.AudioCue?.ui_properties?.warning !== undefined) {
-      warning = cue.originalData.AudioCue.ui_properties.warning;
-    } else if (cue.originalData?.VideoCue?.ui_properties?.warning !== undefined) {
-      warning = cue.originalData.VideoCue.ui_properties.warning;
+    const original = this.getCueData(cue.originalData);
+    if (original?.ui_properties?.warning !== undefined) {
+      warning = original.ui_properties.warning;
     }
 
     // Show if it is null or 2
     return warning === null || warning === 2;
   }
 
+  /** The wire key of a cue item: `Cue` for every hardware class, else its own key. */
   public getCueTypeKey(originalData: any): string | null {
-    if (!originalData) return null;
-    
-    const keys = Object.keys(originalData);
-    const cueTypeKeys = keys.filter(key => 
-      key === 'AudioCue' || key === 'VideoCue' || key === 'ActionCue' || key === 'DmxCue' || key === 'FadeCue'
-    );
-    
-    return cueTypeKeys[0] || null;
+    const key = cueKeyOf(originalData);
+    return key === 'CueList' ? null : key;
   }
 
   public getCueData(originalData: any): any {
-    const cueTypeKey = this.getCueTypeKey(originalData);
-    return cueTypeKey ? originalData[cueTypeKey] : null;
+    return this.getCueTypeKey(originalData) ? cueDataOf(originalData) : null;
   }
 
   public onLoopTypeChange(cue: CueData): void {
@@ -1303,7 +1234,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       return '-';
     }
     return cue.selectedMediaFile?.file?.duration
-      || this.getCueData(cue.originalData)?.Media?.duration
+      || timecodeText(this.getCueData(cue.originalData)?.Media?.duration)
       || '-';
   }
 
@@ -1474,7 +1405,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     const templateAudioOutput = this.getTemplateOutputStructure('audio');
     if (!templateAudioOutput) {
-      console.warn('No se pudo obtener la estructura template para AudioCueOutput');
+      console.warn('No output structure for an audio CueOutput');
       return;
     }
 
@@ -1500,11 +1431,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       const clonedAudioOutput = JSON.parse(JSON.stringify(templateAudioOutput));
       clonedAudioOutput.output_name = outputToAssign;
 
-      const audioOutputData = {
-        AudioCueOutput: clonedAudioOutput
-      };
-
-      audioCue.outputs.push(audioOutputData);
+      audioCue.outputs.push(wrapCueOutput('audio', clonedAudioOutput));
     });
   }
 
@@ -1515,7 +1442,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     const templateVideoOutput = this.getTemplateOutputStructure('video');
     if (!templateVideoOutput) {
-      console.warn('No se pudo obtener la estructura template para VideoCueOutput');
+      console.warn('No output structure for a video CueOutput');
       return;
     }
 
@@ -1541,11 +1468,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       const clonedVideoOutput = JSON.parse(JSON.stringify(templateVideoOutput));
       clonedVideoOutput.output_name = outputToAssign;
 
-      const videoOutputData = {
-        VideoCueOutput: clonedVideoOutput
-      };
-
-      videoCue.outputs.push(videoOutputData);
+      videoCue.outputs.push(wrapCueOutput('video', clonedVideoOutput));
     });
   }
 
@@ -1707,52 +1630,23 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     this.checkForChanges();
   }
 
+  /**
+   * A new output's body, wire-shaped from the script descriptor (UR-1
+   * transform) and without its `class` — wrapCueOutput adds that. Never
+   * undefined: a descriptor that cannot provide it is reported (FR-034) and
+   * the result is null.
+   */
   private getTemplateOutputStructure(cueType: 'audio' | 'video'): any | null {
-    const template = this.projectsService.projectTemplate();
-    
-    if (!template?.['CuemsScript']?.['CueList']?.['contents']) {
+    const descriptor = this.schemaDescriptors.script();
+    const typeKey = cueType === 'audio' ? SCRIPT_TYPES.audioOutput : SCRIPT_TYPES.videoOutput;
+    try {
+      if (!descriptor) throw new DescriptorGapError(typeKey, '(descriptor)');
+      const { class: _class, ...body } = toWireShape(descriptor, typeKey);
+      return body;
+    } catch (error) {
+      this.reportDescriptorGap(error);
       return null;
     }
-
-    const contents = template['CuemsScript']['CueList']['contents'];
-    
-    for (const item of contents) {
-      const itemKeys = Object.keys(item);
-      
-      if (cueType === 'audio' && itemKeys.includes('AudioCue')) {
-        const audioCue = item['AudioCue'];
-        // Search in outputs if it exists
-        if (audioCue.outputs && Array.isArray(audioCue.outputs) && audioCue.outputs.length > 0) {
-          // Return the first AudioCueOutput as template
-          const firstOutput = audioCue.outputs.find((output: any) => output.AudioCueOutput);
-          if (firstOutput) {
-            return JSON.parse(JSON.stringify(firstOutput.AudioCueOutput));
-          }
-        }
-        // Fallback: search AudioCueOutput directly
-        if (audioCue.AudioCueOutput) {
-          return JSON.parse(JSON.stringify(audioCue.AudioCueOutput));
-        }
-        break;
-      } else if (cueType === 'video' && itemKeys.includes('VideoCue')) {
-        const videoCue = item['VideoCue'];
-        // Search in outputs if it exists
-        if (videoCue.outputs && Array.isArray(videoCue.outputs) && videoCue.outputs.length > 0) {
-          // Return the first VideoCueOutput as template
-          const firstOutput = videoCue.outputs.find((output: any) => output.VideoCueOutput);
-          if (firstOutput) {
-            return JSON.parse(JSON.stringify(firstOutput.VideoCueOutput));
-          }
-        }
-          // Fallback: search VideoCueOutput directly
-        if (videoCue.VideoCueOutput) {
-          return JSON.parse(JSON.stringify(videoCue.VideoCueOutput));
-        }
-        break;
-      }
-    }
-    
-    return null;
   }
 
   openDeleteConfirmation(index: number): void {

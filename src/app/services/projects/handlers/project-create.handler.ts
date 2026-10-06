@@ -1,45 +1,57 @@
-import { generateDate, generateSlug } from '../../../core/utils';
+import { generateSlug } from '../../../core/utils';
 import { v4 as uuidv4 } from 'uuid';
-import { ProjectTemplate, InitialMapping } from '../projects.service';
+import { InitialMapping } from '../projects.service';
+import { SCRIPT_TYPES, SchemaDescriptor, toWireShape } from './schema-descriptor.handler';
 
 export interface CreateProjectParams {
   name: string;
   description: string;
 }
 
-export function safeCloneTemplate(template: ProjectTemplate | null): ProjectTemplate {
-  if (!template) {
-    throw new Error('No template available for project creation');
-  }
-  return JSON.parse(JSON.stringify(template));
-}
+const ZERO_TC = '00:00:00.000';
 
-export function prepareTemplateForNewProject(
-  templateClone: ProjectTemplate,
-  projectData: CreateProjectParams
-): void {
-  if (templateClone['CuemsScript'] && templateClone['CuemsScript']['CueList']) {
-    templateClone['CuemsScript']['CueList']['contents'] = [];
-    templateClone['CuemsScript']['CueList']['id'] = uuidv4();
-  }
-
-  if (templateClone['CuemsScript']) {
-    templateClone['CuemsScript']['name'] = projectData.name;
-    templateClone['CuemsScript']['description'] = projectData.description;
-  }
+/**
+ * An empty CueList built from the script descriptor: no contents, a fresh
+ * id, and zero offsets — the timecodes are the caller's, since the
+ * descriptor's CTimecode has no default.
+ */
+export function newCueListFromDescriptor(descriptor: SchemaDescriptor): any {
+  const cueList = toWireShape(descriptor, SCRIPT_TYPES.cueList);
+  cueList.id = uuidv4();
+  cueList.offset = { CTimecode: ZERO_TC };
+  cueList.prewait = { CTimecode: ZERO_TC };
+  cueList.postwait = { CTimecode: ZERO_TC };
+  cueList.contents = [];
+  return cueList;
 }
 
 /**
- * Create a new project using the template and custom data
+ * A new project's script, built from the schema descriptor (it replaces the
+ * retired `initial_template`). `created` / `modified` are the editor's:
+ * `project_new` assigns them.
+ */
+export function newScriptFromDescriptor(
+  descriptor: SchemaDescriptor,
+  projectData: CreateProjectParams
+): { CuemsScript: any } {
+  const script = toWireShape(descriptor, SCRIPT_TYPES.script);
+  script.CueList = newCueListFromDescriptor(descriptor);
+  script.name = projectData.name;
+  script.description = projectData.description;
+  return { CuemsScript: script };
+}
+
+/**
+ * Create a new project from the script descriptor and custom data.
  */
 export function createProject(
   projectData: CreateProjectParams,
-  projectTemplate: ProjectTemplate | null,
+  descriptor: SchemaDescriptor | null,
   initialMappings: InitialMapping[],
   sendMessage: (message: any) => void
 ): void {
-  if (!projectTemplate) {
-    console.error('No template available for project creation');
+  if (!descriptor) {
+    console.error('No schema descriptor available for project creation');
     return;
   }
 
@@ -48,20 +60,13 @@ export function createProject(
     return;
   }
 
-  const projectUuid = uuidv4();
   const unix_name = generateSlug(projectData.name);
-  const templateClone = safeCloneTemplate(projectTemplate);
-
-  prepareTemplateForNewProject(templateClone, projectData);
-
-  const { CuemsScript } = templateClone;
-  console.log('Creating new project with data:', CuemsScript);
-
-  templateClone['CuemsScript']['id'] = projectUuid;
+  const script = newScriptFromDescriptor(descriptor, projectData);
+  script.CuemsScript.id = uuidv4();
 
   sendMessage({
     action: 'project_new',
-    value: templateClone,
+    value: script,
     unix_name
   });
 }

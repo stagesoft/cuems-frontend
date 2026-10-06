@@ -11,6 +11,7 @@ import {
   createProject,
   CreateProjectParams
 } from './handlers/project-create.handler';
+import { SchemaDescriptorService } from './handlers/schema-descriptor.handler';
 import {
   handleProjectListResponse,
   requestProjectList,
@@ -24,8 +25,6 @@ export interface ProjectList {
   created: string;
   modified: string;
 }
-
-export type ProjectTemplate = Record<string, any>;
 
 export interface InitialMapping {
   /**
@@ -154,7 +153,6 @@ export interface InitialMappingsResponse {
         dmx: any;
       };
     }>;
-    schemaLocation: string;
     /**
      * False when cuems-nodeconf is not reachable on the controller, i.e. every
      * adopt/un-adopt would fail. Absent on an editor that predates the flag —
@@ -181,6 +179,8 @@ export class ProjectsService {
   // payload below is handled or cached.
   private payloadVersion = inject(PayloadVersionService);
   private wsService = inject(WebsocketService);
+  // Registers the script descriptor as the gate's second prerequisite.
+  private schemaDescriptors = inject(SchemaDescriptorService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
 
@@ -194,7 +194,6 @@ export class ProjectsService {
 
   public projects = signal<ProjectList[]>([]);
   public projectsInTrash = signal<ProjectList[]>([]);
-  public projectTemplate = signal<ProjectTemplate | null>(null);
   public initialMappings = signal<InitialMappingsResponse | null>(null);
   public mappingOptions = signal<InitialMapping[]>([]);
 
@@ -275,7 +274,7 @@ export class ProjectsService {
           const projectActions = [
             'project_new', 'project_save', 'project_delete', 'project_restore', 
             'project_trash_delete', 'project_list', 'project_trash_list', 
-            'project_load', 'initial_template', 'initial_mappings'
+            'project_load', 'initial_mappings'
           ];
           
           if (error.action && projectActions.includes(error.action)) {
@@ -296,10 +295,6 @@ export class ProjectsService {
   }
 
   public handleWebsocketResponse(response: any): void {
-    if (response && response.type === 'initial_template' && response.value) {
-      this.projectTemplate.set(response.value);
-    }
-
     if (response && response.type === 'initial_mappings' && (response.value || response)) {
       try {
         const mappingsData = response.value || response;
@@ -482,11 +477,14 @@ export class ProjectsService {
   }
 
   createProject(projectData: CreateProjectParams): void {    
-    if (!this.projectTemplate()) {
-      this.notificationService.showError('Error: No hay template disponible');
+    const descriptor = this.schemaDescriptors.script();
+    if (!descriptor) {
+      // The session gate keeps the project domain closed without it, so this
+      // is reached only from outside that domain.
+      this.notificationService.showError('Error: No hay descriptor de esquema disponible');
       this.errorEvent.emit({ 
         action: 'project_new', 
-        message: 'No hay template disponible',
+        message: 'No hay descriptor de esquema disponible',
         raw: null 
       });
       this.newProjectCreated.emit('');
@@ -507,7 +505,7 @@ export class ProjectsService {
     const unix_name = generateSlug(projectData.name);
     createProject(
       projectData,
-      this.projectTemplate(),
+      descriptor,
       this.mappingOptions(),
       (message: any) => {
         const messageWithUnixName = {

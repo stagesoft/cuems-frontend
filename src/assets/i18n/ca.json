@@ -277,5 +277,7 @@
     "nodes.settings.cancel": "Cancelar",
     "footer.powered.text": "Impulsat",
     "footer.promoted.text": "Promogut",
-    "footer.financed.text": "Financiado"
+    "footer.financed.text": "Financiado",
+    "descriptor.gap": "El descriptor de l'esquema no té valor per a aquest camp, així que la cue no s'ha creat",
+    "cue.class.no-editor": "Aquesta cue és de classe \"{{class}}\", que aquest editor no pot editar. Els seus ajustos propis es conserven tal com són; els camps de sota sí que es desen."
 }

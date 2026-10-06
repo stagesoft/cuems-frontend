@@ -50,9 +50,9 @@
             <div class="flex items-center justify-between mb-2">
               <div class="flex items-center gap-2">
                 <app-icon icon="node" class="w-[12px] h-[12px]"></app-icon>
-                <span class="text-sm font-medium text-gray-200">{{ getOutputDisplayName(output.AudioCueOutput.output_name) }}</span>
+                <span class="text-sm font-medium text-gray-200">{{ getOutputDisplayName(output.CueOutput.output_name) }}</span>
               </div>
-              <span class="text-sm text-gray-400">{{ output.AudioCueOutput.output_vol || 0 }}%</span>
+              <span class="text-sm text-gray-400">{{ output.CueOutput.output_vol || 0 }}%</span>
             </div>
             
             <div class="flex items-center gap-4 mb-3">
@@ -62,18 +62,18 @@
                   type="range" 
                   min="0" 
                   max="100" 
-                  [value]="output.AudioCueOutput.output_vol || 0"
+                  [value]="output.CueOutput.output_vol || 0"
                   [disabled]="disabled"
                   (click)="onOutputVolumeChange(cue, output, +$any($event.target).value)"
                   (input)="onOutputVolumeChange(cue, output, +$any($event.target).value)"
                   class="flex-1 h-1.5 bg-gray-300 rounded-lg appearance-none cursor-pointer slider-thumb-small"
                   [class.opacity-50]="disabled">
-                <span class="text-xs text-gray-400 min-w-[35px] text-right">{{ output.AudioCueOutput.output_vol || 0 }}%</span>
+                <span class="text-xs text-gray-400 min-w-[35px] text-right">{{ output.CueOutput.output_vol || 0 }}%</span>
               </div>
             </div>
 
-            <div *ngIf="output.AudioCueOutput.channels && output.AudioCueOutput.channels.length > 0" class="space-y-2">
-              <div *ngFor="let channelWrapper of output.AudioCueOutput.channels" class="flex items-center gap-4">
+            <div *ngIf="output.CueOutput.channels && output.CueOutput.channels.length > 0" class="space-y-2">
+              <div *ngFor="let channelWrapper of output.CueOutput.channels" class="flex items-center gap-4">
                 <label class="text-xs text-gray-500 min-w-[80px]">Ch {{ channelWrapper.channel.channel_num }}:</label>
                 <div class="flex-1 flex items-center gap-3">
                   <input 

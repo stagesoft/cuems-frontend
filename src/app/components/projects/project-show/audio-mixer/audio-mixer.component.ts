@@ -87,7 +87,6 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
         }
         
         this.project = projectData;
-        //this.extractAudioCues();
       }
     });
   }
@@ -98,19 +97,6 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
     }
   }
 
-  // private extractAudioCues(): void {
-  //   this.audioCues = [];
-    
-  //   if (this.project?.CuemsScript?.CueList?.contents) {
-  //     this.project.CuemsScript.CueList.contents.forEach((cueItem: any) => {
-  //       if (cueItem.AudioCue) {
-  //         this.audioCues.push(cueItem.AudioCue);
-  //       }
-  //     });
-  //   }
-    
-  //   console.log('Audio Cues found:', this.audioCues);
-  // }
 
   private getAudioNodesFromLocalStorage(): any[] {
     // Through the payload namespace, so the version gate's eviction covers it.

@@ -92,3 +92,101 @@ announcing its version.
 (older or newer) editor sends is cached under the previous connection's version tag and survives
 into the next matching session. Evicting first tags it with the refused version, so the next
 matching connection evicts it.
+
+**F12 — the descriptor cannot build a saveable output on its own (UR-1, FR-033).** Measured
+against cuems-utils `69acaef` by building payloads from `schema-descriptor-script.json` and
+running them through the editor's save path (`CuemsScript.from_json(...).save()`) in a scratch
+environment. `AudioCueOutputsType.output_vol`, `AudioChannelType.channel_num` / `channel_vol`,
+`VideoOutputGeometryType.x_scale` / `y_scale` and `Coordinates.x` / `y` are **required with a
+null default**; the library refuses a save carrying null in any of them. FR-033's constraint
+("every value originates in the descriptor; nothing is hand-authored") therefore made every audio
+and video output unsaveable. **Decided by the project owner, 2026-10-06:** one constant,
+`UR1_UI_STARTING_VALUES` in `schema-descriptor.handler.ts`, tagged UR-1, used only where a
+required field's descriptor default is null, holding the values the retired template gave
+operators (output volume 80, one channel 0 at 80, scale 1, corners 0) — the standing T055 gives
+the DMX seed. The same measurement found:
+
+- an alias video output must carry **no** `canvas_region` (the library refuses one); the
+  descriptor instance carries it with null scalars. The transform omits an optional field that is
+  still empty, which is a descriptor rule (`required: false`), not a special case;
+- the descriptor's cue-level instance lists one generic `CueOutput` with `class: null` under
+  `outputs`, which the library refuses; a new hardware cue starts with `outputs: []`;
+- `enabled: "True"` is **refused** by the 014 library ("xs:boolean accepts 'true', 'false', '1',
+  '0' or a bool"), so T046 is a requirement, not a nicety;
+- a top-level `schemaLocation` beside `CuemsScript` is refused (`IngestError`), confirming T037;
+- `action_target` is required on ActionCue and FadeCue: a cue left without a target is refused at
+  save with the library's message naming the cue (the T049a path);
+- a bare-string `Media.duration` is still accepted on save, so the media write was left as it is.
+
+**F13 — Phases 4 and 5 land together for the edit sequence.** The tip wire sends no
+`initial_template`, and `transformCueToServerFormat` builds every saved cue by cloning a template
+cue. With only Phase 4's cue-key port, every cue would be dropped at save against the tip. So the
+key port (T037–T041, T045, T046, T048, T049) and the template's replacement by the descriptor
+(T051–T057) are one change for `project-edit/sequence`.
+
+**F14 — FR-004a's closed pair is narrower than the changes the tasks themselves mandate.** Besides
+master volume and `canAdopt`, these tasks *require* expectations to move: the save wrapper and
+output keys (T038/T039, delta (c)), `enabled` as a native boolean (T046), the retired template's
+example values in the structures built from it (T056/T060), and — measured in F10 — the cache
+location. Each moved expectation is listed in the commit that moves it and traces to its task;
+none is an accommodation of ported code. Everything not traceable to a task stays pinned.
+
+**F15 — every save from today's UI is refused by the tip library, independent of cue keys.**
+Both save paths (`project-edit` and its `sequence` child) send the loaded frame back with keys
+*beside* `CuemsScript`: a top-level `uuid` (both), and `name` / `description` / `unix_name` /
+`created` / `modified` (decorations the components add for display, on the shared object). The
+library's `CuemsScript.from_json` refuses any top-level key but `CuemsScript` (`IngestError …
+got ['CuemsScript', 'uuid']`, recorded in `fixtures/project-save-refusals.json`), and the editor
+passes the payload through unstripped. Both paths now send `{"CuemsScript": …}` alone; the
+characterization's "top-level keys included" assertion moved accordingly (T037's rule, widened
+from `schemaLocation` to every sibling key).
+
+**F16 — every save rebuilds each cue from the template / descriptor (pre-existing, unchanged).**
+`transformCueToServerFormat` starts each saved cue from a fresh instance and copies in only the
+fields the UI models. So fields the UI does not edit — `opacity`, `ui_properties`, `autoload`,
+`timecode`, `target`, `fadeout_time` — are reset to the template's (now the descriptor's) values on
+every save. Characterized, and kept: changing it is out of this feature's scope. It is also why
+T049 holds by construction: nothing reads `opacity`, so its new presence (delta (d)) cannot be
+mistaken for an operator's choice. Worth its own feature.
+
+**F17 — T049a: the refusal text already reaches the operator, cue named.** The editor's save
+refusals have no `Reason: …\n` line, so `parseErrorMessage` passes them through whole and the cue
+id survives; `ProjectsService` relays `project_save` errors to a toast. Nothing reads
+`hasRecentError`, so its 3 s window swallows nothing. The one change: the leading Python
+`<class '…'>` is stripped, keeping the library's sentence.
+
+**F18 — offline round trip against the library (part of T120).** The ported component's own save
+payload — the recorded tip project edited, plus one new cue of each kind built from the
+descriptor, with a custom video output and action/fade targets — was captured from the test
+harness and run through the editor's save path and back (`fixtures/capture/validate_save.py`, the
+scratch environment of `fixtures/README.md`): saved, reloaded, outcome `clean`, all ten cues back
+as `Cue`/`audio|video|dmx`, `ActionCue`, `FadeCue`, with native booleans, `master_vol` 100 on the
+new audio cue and the canvas region on the custom output only. The live checks against a running
+editor remain T120's.
+
+**F19 — the `schemaLocation` T036 deletes was on the mapping interface.** The only declaration in
+`projects.service.ts` is `InitialMappingsResponse.value.schemaLocation` — the *mapping* payload,
+which the pre-001 editor did carry. The project frame was never typed (it travels as `any`), and
+its key was namespaced anyway (F7). Deleted all the same: the tip mapping document has no
+`schemaLocation` either. The save paths' real exposure was the keys sent beside `CuemsScript` (F15).
+
+## Upstream reports
+
+Items for other repositories, raised from what this feature measured. Each names its consumer here.
+
+**To `cuems-utils` — UR-1 addendum: required fields with no default.** Beyond UR-1's three shape
+differences (wrapper, `channels` nesting, null scalars), filling scalars from per-field `default`
+is not enough: the required fields listed in F12 have a null default, so no descriptor-only
+output is valid. Expected: a default for each required scalar of the output types, or the
+wire-shaped instance UR-1 asks for with values filled. Consumer: `UR1_UI_STARTING_VALUES`,
+deleted when answered. *Not yet filed upstream.*
+
+**To `cuems-editor` — the boolean form changed without a payload-version bump (F6).** The tip
+carries post-014 JSON booleans at `payload_version` 1, against the editor's own bump rule. A
+version-1 client cannot tell the two version-1 wires apart. Expected: version 2 for the 014 wire,
+or the rule restated. Consumer: every boolean read in this repository, which stays dual for now.
+*Not yet filed upstream.*
+
+**To `cuems-editor` — `capture_load.py` no longer runs.** `evidence/project-capture/capture_load.py`
+calls `CuemsDBProject.load_xml`, which now returns `(CuemsScript, LoadReport)`; the script's
+`json.dumps` fails. Low impact (evidence tooling). *Not yet filed upstream.*

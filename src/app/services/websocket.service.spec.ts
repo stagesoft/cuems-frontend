@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { Subject } from 'rxjs';
 import { WEBSOCKET_FACTORY, WebsocketService } from './websocket.service';
+import { loadFixture } from '../testing/load-fixture';
 
 /** A socket the test drives: open/close/message/error on demand. */
 class FakeSocket extends Subject<any> {
@@ -106,5 +107,18 @@ describe('WebsocketService', () => {
       jasmine.clock().tick(10000);
       expect(sockets.length).toBe(3);
     });
+  });
+
+  it('relays a refused save as the library\'s sentence, cue id intact (T049a)', () => {
+    const errors: any[] = [];
+    service.errors.subscribe(e => errors.push(e));
+    const refusals = loadFixture('project-save-refusals');
+    for (const frame of Object.values<any>(refusals)) current().serverSends(frame);
+    expect(errors.map(e => e.message)).toEqual([
+      "expected a CuemsScript payload; the mapping declares none of ['id', 'name', 'description', 'created', 'modified', 'CueList', 'ui_properties'] (got ['CuemsScript', 'uuid'])",
+      '[T2] action_target_required at 00000000-0000-4000-8000-0000000000a4/action_target: action_target is required',
+      '[T2] action_target_resolves at 00000000-0000-4000-8000-0000000000a4/action_target: action_target 11111111-1111-4111-8111-111111111111 does not resolve to a cue in this document',
+      "FadeCue duration must be greater than zero: 'empty' (id 00000000-0000-4000-8000-0000000000a5: must be greater than zero)",
+    ]);
   });
 });

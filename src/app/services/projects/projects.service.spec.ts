@@ -48,25 +48,9 @@ describe('ProjectsService (characterization)', () => {
     try { localStorage.clear(); } catch { /* blocked */ }
   });
 
-  // ── initial_template (retired at payload version 1; T060 deletes the rest) ──
-  describe('initial_template intake (T009)', () => {
-    it('stores the template value in the signal', () => {
-      service = create();
-      const frame = loadFixture('initial-template-pre001');
-      ws.receive(frame);
-      expect(service.projectTemplate()).toEqual(frame.value);
-    });
-
-    // The cache write and the constructor read-back were deleted with the
-    // cache entry itself (T031): a cache for a frame the editor no longer
-    // sends can never be refreshed.
-
-    it('ignores a frame with no value', () => {
-      service = create();
-      ws.receive({ type: 'initial_template', value: null });
-      expect(service.projectTemplate()).toBeNull();
-    });
-  });
+  // initial_template (T009): retired at payload version 1. Its cache went
+  // with T031 and its intake with T060 — the frame is never sent again, and
+  // new cues are built from the schema descriptor instead.
 
   // ── initial_mappings ──
   describe('initial_mappings intake and extractMappingOptions (T010)', () => {
@@ -144,9 +128,8 @@ describe('ProjectsService (characterization)', () => {
   });
 
   describe('nullable payload paths (T011)', () => {
-    it('starts with null template, null mappings and no options', () => {
+    it('starts with null mappings and no options', () => {
       service = create();
-      expect(service.projectTemplate()).toBeNull();
       expect(service.initialMappings()).toBeNull();
       expect(service.mappingOptions()).toEqual([]);
     });
@@ -355,9 +338,9 @@ describe('ProjectsService (characterization)', () => {
       }
       expect(relayed.map(e => e.action)).toEqual(['project_new', 'project_save', 'project_delete',
         'project_restore', 'project_trash_delete', 'project_list', 'project_trash_list',
-        'project_load', 'initial_template', 'initial_mappings']);
+        'project_load', 'initial_mappings']);
       expect(notifications.showError).toHaveBeenCalledWith('boom project_save');
-      expect(notifications.showError).toHaveBeenCalledTimes(10);
+      expect(notifications.showError).toHaveBeenCalledTimes(9);
     });
 
     it('a failed project_new also signals "no project created"', () => {

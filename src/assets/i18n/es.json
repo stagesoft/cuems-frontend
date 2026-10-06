@@ -276,5 +276,7 @@
     "nodes.settings.cancel": "Cancelar",
     "footer.powered.text": "Impulsado",
     "footer.promoted.text": "Promovido",
-    "footer.financed.text": "Financiado"
+    "footer.financed.text": "Financiado",
+    "descriptor.gap": "El descriptor del esquema no tiene valor para este campo, así que la cue no se ha creado",
+    "cue.class.no-editor": "Esta cue es de clase \"{{class}}\", que este editor no puede editar. Sus ajustes propios se conservan tal cual; los campos de abajo sí se guardan."
 }

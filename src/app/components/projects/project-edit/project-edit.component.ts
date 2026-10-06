@@ -8,11 +8,12 @@ import { ProjectsService } from '../../../services/projects/projects.service';
 import { ProjectEditStateService } from '../../../services/projects/project-edit-state.service';
 import { IconComponent } from '../../ui/icon/icon.component';
 import { DrawerService } from '../../../services/ui/drawer.service';
-import { v4 as uuidv4 } from 'uuid';
 import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
 import { NotificationService } from '../../../services/ui/notification.service';
 import { TranslateService } from '@ngx-translate/core';
 import { findInvalidFadeCuesInContents } from '../../../core/utils';
+import { SchemaDescriptorService } from '../../../services/projects/handlers/schema-descriptor.handler';
+import { newCueListFromDescriptor } from '../../../services/projects/handlers/project-create.handler';
 
 @Component({
   selector: 'app-project-edit',
@@ -28,6 +29,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private workspace = inject(ProjectWorkspaceService);
   private notificationService = inject(NotificationService);
   private translateService = inject(TranslateService);
+  private schemaDescriptors = inject(SchemaDescriptorService);
   
   public project: any;
   public projectUuid: string | null = null;
@@ -148,29 +150,14 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
           updatedProject.CuemsScript = {};
         }
         if (!updatedProject.CuemsScript.CueList) {
-          const template = this.projectsService.projectTemplate();
-          if (template?.['CuemsScript']?.['CueList']) {
-            updatedProject.CuemsScript.CueList = JSON.parse(JSON.stringify(template['CuemsScript']['CueList']));
-            updatedProject.CuemsScript.CueList.id = this.generateUUID();
-            updatedProject.CuemsScript.CueList.contents = [];
-          } else {
-            updatedProject.CuemsScript.CueList = {
-              autoload: false,
-              description: null,
-              enabled: true,
-              id: this.generateUUID(),
-              loop: 0,
-              name: "empty",
-              offset: { CTimecode: "00:00:00.000" },
-              post_go: "pause",
-              postwait: { CTimecode: "00:00:00.000" },
-              prewait: { CTimecode: "00:00:00.000" },
-              target: null,
-              timecode: false,
-              ui_properties: null,
-              contents: []
-            };
+          // From the schema descriptor, which the session gate guarantees in
+          // the project domain; without it there is nothing correct to build.
+          const descriptor = this.schemaDescriptors.script();
+          if (!descriptor) {
+            this.notificationService.showError(this.translateService.instant('descriptor.gap'));
+            return;
           }
+          updatedProject.CuemsScript.CueList = newCueListFromDescriptor(descriptor);
         }
     
         if (modifiedData.sequence.contents === null) {
@@ -197,10 +184,6 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
         }
       }
     
-      if (!updatedProject.uuid && this.projectUuid) {
-        updatedProject.uuid = this.projectUuid;
-      }
-
       // Gate: never send a project whose FadeCues carry zero/invalid
       // durations (silent no-op fades at reveal). No inline UI here, so the
       // toast names the offending cues.
@@ -215,7 +198,10 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
         return;
       }
 
-      this.projectsService.updateProject(updatedProject);
+      // The editor ingests `{"CuemsScript": …}` and nothing beside it: the
+      // top-level uuid / name / unix_name / created / modified / description
+      // this component keeps for display are refused by the library.
+      this.projectsService.updateProject({ CuemsScript: updatedProject.CuemsScript });
     } catch (error) {
       console.error('Error saving complete project:', error);
     }
@@ -223,10 +209,6 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
 
   toggleActivityDrawer(): void {
     this.drawerService.toggleActivityDrawer();
-  }
-
-  private generateUUID(): string {
-    return uuidv4();
   }
 
   closeWorkspaceProject(): void {
