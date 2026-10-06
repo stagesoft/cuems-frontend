@@ -216,4 +216,29 @@ describe('ProjectLoadReport', () => {
     expect(q('duplicate-report')?.textContent).toContain('load.report.outcome.repaired');
     expect(q('acknowledge')).toBeNull();
   });
+
+  describe('reconnect (findings F22, owner\'s decision)', () => {
+    it('reloads a project whose last report was not clean, and the new report must be acknowledged again', () => {
+      ws.receive(repaired());
+      render();
+      reports.acknowledge();
+      ws.receive(echo(repaired()));
+      ws.connect();
+      expect(ws.sent.filter(m => m.action === 'project_load'))
+        .toEqual([{ action: 'project_load', value: repaired().value.project_uuid }]);
+      const reloaded = repaired();
+      reloaded.value.report_id = '00000000-0000-4000-8000-0000000000r3';
+      ws.receive(reloaded);
+      expect(reports.report()?.acknowledged).toBeFalse();
+      expect(reports.report()?.shown).toBeFalse();
+    });
+
+    it('does not reload after a clean load', () => {
+      const clean = loadFixture('project-013-load-report');
+      clean.value.outcome = 'clean';
+      ws.receive(clean);
+      ws.connect();
+      expect(ws.sent.filter(m => m.action === 'project_load')).toEqual([]);
+    });
+  });
 });

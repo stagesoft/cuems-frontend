@@ -47,10 +47,13 @@ export type SaveRefusal =
  * the operator's: it is only ever sent for a report this tab has shown
  * them. Its echo is the go-ahead to retry the save that was refused.
  *
- * A reconnect is a new editor session, which forgets acknowledgements. When
- * a refusal then names a report the operator already acknowledged here, the
- * acknowledgement is re-sent and the save retried — at most once, and the
- * operator is told. Anything else is put in front of them, never retried.
+ * A reconnect is a new editor session, which forgets acknowledgements — and,
+ * against today's editor, the whole repair state. A project whose last report
+ * was not clean is therefore reloaded on reconnect (owner's decision, F22).
+ * Should a refusal still name a report the operator already acknowledged
+ * here, the acknowledgement is re-sent and the save retried — at most once,
+ * and the operator is told. Anything else is put in front of them, never
+ * retried.
  */
 @Injectable({ providedIn: 'root' })
 export class LoadReportService {
@@ -75,10 +78,18 @@ export class LoadReportService {
 
   constructor() {
     this.ws.messages.subscribe(frame => this.onFrame(frame));
-    // A new editor session holds no acknowledgement.
+    // A new editor session holds no repair state at all (findings F22): it
+    // would save a repaired document unacknowledged and without preserving
+    // the original. Reloading a project whose last report was not clean makes
+    // the editor rebuild that state; its new report is shown and must be
+    // acknowledged again. Unsaved cue edits survive as temporary cues.
     this.gate.sessionRestarted.subscribe(() => {
       const current = this.report();
-      if (current) this.report.set({ ...current, acknowledged: false });
+      if (!current) return;
+      this.report.set({ ...current, acknowledged: false });
+      if (current.outcome !== 'clean') {
+        this.ws.wsEmit({ action: 'project_load', value: current.project_uuid });
+      }
     });
   }
 

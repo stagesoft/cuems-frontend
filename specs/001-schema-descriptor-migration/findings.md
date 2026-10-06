@@ -202,6 +202,11 @@ carries repair state across a reconnect — and one detail is tighter than the t
 re-acknowledgement is sent only for a report the operator *acknowledged* in this tab, not merely
 saw. The hole itself is the editor's; see Upstream reports.
 
+**Mitigated here (owner's decision, 2026-10-06):** on a reconnect, a project whose last report was
+not clean is reloaded (`project_load`), so the editor rebuilds its repair state; the new report is
+shown and must be acknowledged again before a save goes through. Unsaved cue edits survive as the
+sequence's temporary cues. Remove when the editor's gate survives a reconnect.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.
