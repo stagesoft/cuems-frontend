@@ -26,3 +26,15 @@ Collected as each change lands; T115 completes this file.
 - A refused save now shows the editor's own explanation without the technical prefix, including
   which cue to fix (for example a fade of zero length, or an action pointing at a cue that no
   longer exists).
+
+## Opening a project
+
+- When the editor converts or repairs a project as it opens it, you now see what it changed, field
+  by field, before you edit — and "this file needs saving" when the change exists only in the
+  editor. The editor will not save such a project until you confirm you have seen the changes.
+  A clean open stays out of the way, with its details one click away.
+- A project the editor cannot open now shows which document, cue and field are at fault, the
+  editor's reason, and the three ways forward. The project stays in the list.
+- If a save is refused because the original file could not be kept in the trash, you are told
+  plainly that nothing was written.
+

@@ -1,0 +1,142 @@
+<!-- A document that could not be loaded: the library's message and all three ways forward. -->
+@if (failure(); as f) {
+  <div class="mt-4 rounded border border-red-500 bg-dark-300 p-4 text-sm" data-test="load-failed">
+    <div class="flex items-start justify-between gap-4">
+      <h3 class="font-semibold text-red-400">{{ 'load.failed.title' | translate }}</h3>
+      <button type="button" class="text-xs" (click)="reports.dismissFailure()">{{ 'load.report.close' | translate }}</button>
+    </div>
+    <dl class="mt-3 grid grid-cols-[max-content_1fr] gap-x-4 gap-y-1">
+      <dt class="text-gray-400">{{ 'load.failed.document' | translate }}</dt><dd class="font-mono break-all">{{ f.document }}</dd>
+      <dt class="text-gray-400">{{ 'load.failed.cue' | translate }}</dt><dd class="font-mono">{{ display(f.cue_id) }}</dd>
+      <dt class="text-gray-400">{{ 'load.failed.field' | translate }}</dt><dd class="font-mono">{{ display(f.field) }}</dd>
+      <dt class="text-gray-400">{{ 'load.failed.message' | translate }}</dt><dd>{{ f.message }}</dd>
+    </dl>
+    <p class="mt-3 text-gray-300">{{ 'load.failed.next' | translate }}</p>
+    <ul class="mt-1 list-disc pl-6">
+      @for (step of f.next_steps; track step) {
+        <li data-test="next-step">{{ ('load.failed.next.' + step) | translate }}</li>
+      }
+    </ul>
+    <p class="mt-3 text-gray-400">{{ 'load.failed.still-listed' | translate }}</p>
+  </div>
+}
+
+<!-- A refused save, explained in terms of the report. -->
+@if (refusal(); as r) {
+  <div class="mt-4 rounded border border-yellow-500 bg-dark-300 p-4 text-sm" data-test="save-refused">
+    @switch (r.kind) {
+      @case ('unacknowledged') {
+        <p>{{ 'load.refused.unacknowledged' | translate }}</p>
+        <div class="mt-3 flex gap-2">
+          @if (report()?.report_id === r.report_id) {
+            <button type="button" class="btn btn-small btn-tertiary" (click)="showRefusedReport()">
+              {{ 'load.refused.show-report' | translate }}
+            </button>
+          }
+          <button type="button" class="btn btn-small btn-muted" (click)="reports.dismissRefusal()">{{ 'load.report.close' | translate }}</button>
+        </div>
+      }
+      @case ('retry_refused') {
+        <p>{{ 'load.refused.retry-refused' | translate }}</p>
+        <button type="button" class="btn btn-small btn-muted mt-3" (click)="reports.dismissRefusal()">{{ 'load.report.close' | translate }}</button>
+      }
+      @case ('preserve_failed') {
+        <p class="font-semibold">{{ 'load.refused.preserve-failed' | translate }}</p>
+        <button type="button" class="btn btn-small btn-muted mt-3" (click)="reports.dismissRefusal()">{{ 'load.report.close' | translate }}</button>
+      }
+    }
+  </div>
+}
+
+<!-- The outcome, discoverable when clean; the file needs saving when it differs. -->
+@if (report(); as rep) {
+  <div class="mt-4 flex items-center gap-3 text-xs text-gray-400" data-test="report-note">
+    <span>{{ ('load.report.outcome.' + rep.outcome) | translate }}</span>
+    @if (rep.file_differs_from_loaded) {
+      <span class="rounded bg-yellow-600/30 px-2 py-0.5 text-yellow-300" data-test="needs-saving">{{ 'load.report.file-differs' | translate }}</span>
+    }
+    <button type="button" class="underline" (click)="openReport()">{{ 'load.report.view' | translate }}</button>
+  </div>
+
+  <app-modal [isOpen]="reportOpen()" size="lg" (close)="closeReport()">
+    <div class="text-gray-900 text-sm" data-test="report">
+      <h2 class="text-lg font-semibold">{{ 'load.report.title' | translate }}</h2>
+      <p class="mt-1">{{ ('load.report.outcome.' + rep.outcome) | translate }}</p>
+      @if (rep.file_differs_from_loaded) {
+        <p class="mt-2 font-semibold">{{ 'load.report.file-differs.explain' | translate }}</p>
+      }
+
+      @if (rep.conversions.length) {
+        <h3 class="mt-4 font-semibold">{{ 'load.report.conversions' | translate }}</h3>
+        @for (c of rep.conversions; track $index) {
+          <div class="mt-2" data-test="conversion">
+            <p>{{ 'load.report.conversion.versions' | translate: { from: c.from_version, to: c.to_version } }} — {{ c.description }}</p>
+            @if (c.dropped_elements.length) {
+              <ul class="list-disc pl-6 text-gray-600">
+                @for (d of c.dropped_elements; track $index) { <li>{{ d }}</li> }
+              </ul>
+            }
+          </div>
+        }
+      }
+
+      @if (rep.repairs.length) {
+        <h3 class="mt-4 font-semibold">{{ 'load.report.repairs' | translate }}</h3>
+        <table class="mt-2 w-full text-left">
+          <thead>
+            <tr>
+              <th>{{ 'load.report.repair.cue' | translate }}</th>
+              <th>{{ 'load.report.repair.field' | translate }}</th>
+              <th>{{ 'load.report.repair.previous' | translate }}</th>
+              <th>{{ 'load.report.repair.substituted' | translate }}</th>
+              <th>{{ 'load.report.repair.rule' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of rep.repairs; track $index) {
+              <tr data-test="repair">
+                <td class="font-mono">{{ repairTarget(r.field_path).cue }}</td>
+                <td class="font-mono">{{ repairTarget(r.field_path).field }}</td>
+                <td>{{ display(r.previous_value) }}</td>
+                <td>{{ display(r.substituted_value) }}</td>
+                <td>{{ r.rule_name }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      @if (rep.outcome !== 'clean') {
+        <p class="mt-4">{{ 'load.report.ack.explain' | translate }}</p>
+      }
+
+      <div class="mt-6 flex justify-end gap-2">
+        @if (rep.outcome !== 'clean' && !rep.acknowledged) {
+          <button type="button" class="btn btn-small btn-tertiary" data-test="acknowledge" (click)="acknowledge()">
+            {{ 'load.report.acknowledge' | translate }}
+          </button>
+        }
+        @if (rep.acknowledged) {
+          <span class="self-center text-green-700">{{ 'load.report.acknowledged' | translate }}</span>
+        }
+        <button type="button" class="btn btn-small btn-muted" (click)="closeReport()">{{ 'load.report.close' | translate }}</button>
+      </div>
+    </div>
+  </app-modal>
+}
+
+<!-- A duplicate made from a document that was not clean: the copy is the repaired one. -->
+@if (duplicateReport(); as dup) {
+  <div class="mt-4 rounded border border-dark-100 bg-dark-300 p-4 text-sm" data-test="duplicate-report">
+    <p>{{ 'load.duplicate.title' | translate }} — {{ ('load.report.outcome.' + dup.outcome) | translate }}</p>
+    <ul class="mt-2 list-disc pl-6">
+      @for (r of dup.repairs; track $index) {
+        <li>{{ r.field_path }}: {{ display(r.previous_value) }} → {{ display(r.substituted_value) }}</li>
+      }
+      @for (c of dup.conversions; track $index) {
+        <li>{{ c.description }}</li>
+      }
+    </ul>
+    <button type="button" class="btn btn-small btn-muted mt-3" (click)="reports.dismissDuplicateReport()">{{ 'load.report.close' | translate }}</button>
+  </div>
+}

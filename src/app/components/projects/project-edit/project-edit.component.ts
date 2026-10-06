@@ -12,13 +12,14 @@ import { ProjectWorkspaceService } from '../../../services/project-workspace.ser
 import { NotificationService } from '../../../services/ui/notification.service';
 import { TranslateService } from '@ngx-translate/core';
 import { findInvalidFadeCuesInContents } from '../../../core/utils';
+import { ProjectLoadReportComponent } from '../project-load-report/project-load-report.component';
 import { SchemaDescriptorService } from '../../../services/projects/handlers/schema-descriptor.handler';
 import { newCueListFromDescriptor } from '../../../services/projects/handlers/project-create.handler';
 
 @Component({
   selector: 'app-project-edit',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent],
+  imports: [CommonModule, RouterModule, AppPageHeaderComponent, TranslateModule, IconComponent, ProjectLoadReportComponent],
   templateUrl: './project-edit.component.html'
 })
 export class ProjectEditComponent implements OnInit, OnDestroy {

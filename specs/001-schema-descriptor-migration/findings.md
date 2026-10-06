@@ -185,6 +185,23 @@ conventions, so another agent or tool session editing the file is the likelier s
 per the owner; a workspace guard (`.vscode/settings.json`, markdown format-on-save/paste off) is
 in place but not committed.
 
+**F22 — after a reconnect the editor has no repair state, so T068's refusal never comes (upstream).**
+Measured in the editor's source (`CuemsWsUser.received_project`, `repair_acknowledge`): the
+repair gate lives on the *session* (`self.repair_state`, set by `send_project`). A reconnect is a
+new session with `repair_state = None`, so on the new connection:
+
+- `project_save` of a project opened as repaired/converted is **accepted with no acknowledgement
+  and without moving the original into the trash** (`preserve` needs a state) — the repaired
+  document is written over the file the gate exists to protect;
+- a re-sent `repair_acknowledge` answers the error frame "no load report to acknowledge on this
+  session", not the echo.
+
+So the reconnect path T068 specifies (a refusal naming a report this session showed) cannot occur
+against this editor. It is implemented as specified — harmless, and correct if the editor ever
+carries repair state across a reconnect — and one detail is tighter than the task: the automatic
+re-acknowledgement is sent only for a report the operator *acknowledged* in this tab, not merely
+saw. The hole itself is the editor's; see Upstream reports.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.
@@ -205,3 +222,11 @@ or the rule restated. Consumer: every boolean read in this repository, which sta
 **To `cuems-editor` — `capture_load.py` no longer runs.** `evidence/project-capture/capture_load.py`
 calls `CuemsDBProject.load_xml`, which now returns `(CuemsScript, LoadReport)`; the script's
 `json.dumps` fails. Low impact (evidence tooling). *Not yet filed upstream.*
+
+**To `cuems-editor` — a reconnect drops the repair gate (F22).** After a reconnect,
+`received_project` saves a document the previous session opened as repaired or converted without
+an acknowledgement and without preserving the original, because the new session has no
+`repair_state`. Expected: the gate keyed by project rather than by session (a save of a project
+whose last load was not clean and not acknowledged is refused, whichever session sends it), or a
+reconnecting client required to reload before saving. Consumer: `LoadReportService` (T068).
+*Not yet filed upstream.*

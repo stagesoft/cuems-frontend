@@ -12,6 +12,7 @@ import {
   CreateProjectParams
 } from './handlers/project-create.handler';
 import { SchemaDescriptorService } from './handlers/schema-descriptor.handler';
+import { LoadReportService } from './load-report.service';
 import {
   handleProjectListResponse,
   requestProjectList,
@@ -181,6 +182,8 @@ export class ProjectsService {
   private wsService = inject(WebsocketService);
   // Registers the script descriptor as the gate's second prerequisite.
   private schemaDescriptors = inject(SchemaDescriptorService);
+  // The repair gate: load reports, acknowledgement, refused saves (US4).
+  private loadReports = inject(LoadReportService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
 
@@ -561,6 +564,7 @@ export class ProjectsService {
   }
 
   updateProject(projectData: any): void {    
+    this.loadReports.noteSave(projectData);
     this.wsService.ws.next({
       action: 'project_save',
       value: projectData
