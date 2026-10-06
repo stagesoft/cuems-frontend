@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { DesignComponent } from './design.component';
 
@@ -8,7 +10,8 @@ describe('DesignComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DesignComponent]
+      imports: [DesignComponent, TranslateModule.forRoot()],
+      providers: [provideRouter([])]
     })
     .compileComponents();
 

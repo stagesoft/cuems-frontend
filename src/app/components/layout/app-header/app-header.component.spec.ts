@@ -1,4 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
+import { provideRouter } from '@angular/router';
+import { TranslateModule } from '@ngx-translate/core';
 
 import { AppHeaderComponent } from './app-header.component';
 
@@ -8,7 +10,8 @@ describe('AppHeaderComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppHeaderComponent]
+      imports: [AppHeaderComponent, TranslateModule.forRoot()],
+      providers: [provideRouter([])]
     })
     .compileComponents();
 
