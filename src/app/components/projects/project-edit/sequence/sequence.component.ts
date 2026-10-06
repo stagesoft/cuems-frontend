@@ -488,7 +488,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         dmx_channels,
         universe_num,
         fade_in_time: cueType === 'dmx' ? (() => { const ms = cueData.fadein_time ?? cueData.fade_in_time; return ms != null ? Number(ms) / 1000 : 0; })() : undefined,
-        master_vol: cueData.master_vol || this.defaultMasterVolume(),
+        // `??`, not `||`: a cue saved at 0 is muted on purpose, and must not
+        // come back at the default (100) — owner's decision, findings F20.
+        master_vol: cueData.master_vol ?? this.defaultMasterVolume(),
         action_target: (cueType === 'action' || cueType === 'fade') ? (cueData.action_target || null) : undefined,
         action_type: cueType === 'action' ? (cueData.action_type || 'play') : cueType === 'fade' ? 'fade_action' : undefined,
         // Normalize on load: projects authored before this fix may carry
@@ -918,7 +920,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     Object.assign(newCue, this.commonCueFields(cue));
 
     if (cue.type === 'audio') {
-      newCue.master_vol = cue.master_vol || this.defaultMasterVolume();
+      newCue.master_vol = cue.master_vol ?? this.defaultMasterVolume();   // 0 stays 0 (F20)
     }
 
     // For ActionCue, delete Media if it exists in the template

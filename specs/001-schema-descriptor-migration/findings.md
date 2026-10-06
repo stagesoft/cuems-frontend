@@ -170,6 +170,21 @@ which the pre-001 editor did carry. The project frame was never typed (it travel
 its key was namespaced anyway (F7). Deleted all the same: the tip mapping document has no
 `schemaLocation` either. The save paths' real exposure was the keys sent beside `CuemsScript` (F15).
 
+**F20 — a deliberate volume of 0 was saved as the default (pre-existing; fixed).** Intake and
+write-back read `master_vol || <default>`, so a cue the operator muted at 0 came back at the
+default: 20 before, and — with the sanctioned change — 100 after. Pinned by the characterization
+as `0 → 20`. **Decided by the project owner, 2026-10-06:** fix it; `??` at both sites, so only a
+missing volume takes the descriptor default. A third moved expectation beyond FR-004a's pair,
+with this decision as its authority (the two tests are marked `moved:` and cite F20).
+
+**F21 — what rewrote `tasks.md`.** Between two commits on 2026-10-06 `tasks.md` lost its SPDX
+header, had `[X]` turned into `[x]` and its list continuations un-indented, with no other content
+change. No markdown formatter is installed in either editor here (VS Code, Cursor); their
+`editor.formatOnSave` has nothing to format markdown with. The shape matches speckit's own
+conventions, so another agent or tool session editing the file is the likelier source. Reverted
+per the owner; a workspace guard (`.vscode/settings.json`, markdown format-on-save/paste off) is
+in place but not committed.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.

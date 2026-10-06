@@ -15,6 +15,8 @@ Collected as each change lands; T115 completes this file.
   schema (its default is 100). Before, a new audio cue took the old template's example volume (66)
   or, without one, 20. A cue whose file carries no volume also reads as 100. **Check levels before
   a show**: a new audio cue starts five times louder than the old fallback.
+- **A cue muted at volume 0 stays at 0.** Before, saving or reopening it brought it back at the
+  default volume.
 - New audio and video outputs keep the starting levels operators already know: output and channel
   volume 80, geometry scale 1, corners at 0.
 - A cue of a class this editor has no editor for (for example `lighting`) is now listed with its

@@ -136,7 +136,11 @@ describe('ProjectEditSequenceComponent (characterization)', () => {
       expect(component.cues.map(c => c.master_vol)).toEqual([100, 100, 66, 100]);
       const contents = loadFixture('project-013').value.CuemsScript.CueList.contents;
       contents[2].Cue.master_vol = 0;
-      // moved: 20 -> 100, sanctioned (FR-032)
+      // moved: 20 -> 0. A deliberate 0 is kept, not replaced by the default —
+      // owner's decision 2026-10-06 (findings F20); a missing volume still
+      // takes the default, above
+      expect(any().transformCuesFromProject(contents)[2].master_vol).toBe(0);
+      delete contents[2].Cue.master_vol;
       expect(any().transformCuesFromProject(contents)[2].master_vol).toBe(100);
     });
 
@@ -379,9 +383,10 @@ describe('ProjectEditSequenceComponent (characterization)', () => {
       addCue('audio');
       component.cues[1].master_vol = 0;
       component.cues[2].master_vol = undefined;
-      // moved: [66, 20, 20] -> [100, 100, 100]; the creation and write-back
-      // values are the descriptor default, sanctioned (FR-032, findings F2)
-      expect(savedContents()!.map(item => item.Cue.master_vol)).toEqual([100, 100, 100]);
+      // moved: [66, 20, 20] -> [100, 0, 100]. Creation and a missing value take
+      // the descriptor default (sanctioned, FR-032, findings F2); a deliberate
+      // 0 is kept (owner's decision, findings F20)
+      expect(savedContents()!.map(item => item.Cue.master_vol)).toEqual([100, 0, 100]);
     });
 
     it('builds an audio cue from the template, with the selected output cloned in', () => {
