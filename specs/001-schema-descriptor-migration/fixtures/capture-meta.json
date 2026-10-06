@@ -1,0 +1,18 @@
+{
+  "captured_with": "capture_tip.py (this directory), mirroring cuems-editor CuemsDBProject.open + CuemsWsUser.send_project / schema_descriptor",
+  "fixture": "script_minimal_013.xml",
+  "fixture_sha256_before": "df367383d80d0c844aef6ff1f603b19c7f7f5646f5c98d2ce4fc9e88e6e5ed0b",
+  "fixture_sha256_after": "df367383d80d0c844aef6ff1f603b19c7f7f5646f5c98d2ce4fc9e88e6e5ed0b",
+  "cuemsutils": {
+    "version": "0.1.0rc16",
+    "sha": "69acaef1e298e846e3d343944c3e916648fca50c",
+    "subject": "docs(014): T028 green \u2014 all five gates in, T033 complete, and \u00a74.5 had a third order",
+    "dirty": false
+  },
+  "cuems_editor": {
+    "sha": "22093fd1bad0330c9cc6bc67deac919eebf0c82c",
+    "subject": "docs(001): UR-5 resolved by cuems-utils 014; file UR-6 for the path-existence gap",
+    "dirty": false
+  },
+  "load_report_ids": "report_id/project_uuid are fixed placeholders; the editor mints a fresh uuid per load"
+}
