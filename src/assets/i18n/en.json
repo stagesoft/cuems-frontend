@@ -276,5 +276,15 @@
     "nodes.settings.cancel": "Cancel",
     "footer.powered.text": "Powered",
     "footer.promoted.text": "Promoted", 
-    "footer.financed.text": "Financed"
+    "footer.financed.text": "Financed",
+    "mediaCheck.title": "Out-of-date media in “{{project}}”",
+    "mediaCheck.fileChanged": "the file changed",
+    "mediaCheck.cues": "({{count}} cues)",
+    "mediaCheck.more": "and {{count}} more",
+    "mediaCheck.unverified": "{{file}}: the file changed; it is measured when the project is loaded or saved",
+    "mediaCheck.incomplete": "The check did not finish; it runs again at the next load.",
+    "mediaCheck.footer": "The show uses the stored values until you save the project.",
+    "mediaCheck.footerDuration": "The cue list already shows the new duration, but the show uses the stored one until you save the project.",
+    "mediaCheck.field.duration": "duration",
+    "mediaCheck.field.pixel_size": "picture size"
 }
