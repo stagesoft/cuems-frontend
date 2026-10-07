@@ -67,6 +67,16 @@ check('no config_save is sent from src/app (T108, UR-2)',
   files.filter(f => !isTest(f)).flatMap(lines)
     .filter(l => /config_save/.test(l.text) && !/^\s*(\*|\/\/)/.test(l.text)));
 
+// T119: nothing of the retired wire is read alongside the new one —
+// initial_template, node_type, the per-class default_* fields and the
+// per-class node.audio / .video / .dmx blocks. Comments are allowed (they
+// explain what was retired); payload-cache.ts names the retired bare keys it
+// removes.
+const RETIRED = /initial_template|projectTemplate|node_type|NodeType\.master|default_(audio|video|dmx)_(output|input)|\.node\??\.(audio|video|dmx)\b/;
+check('no read of the retired wire beside the new one (T119)',
+  files.filter(f => !isTest(f) && rel(f) !== 'src/app/core/payload-cache.ts').flatMap(lines)
+    .filter(l => RETIRED.test(l.text) && !/^\s*(\*|\/\/|\/\*)/.test(l.text)));
+
 if (failures.length) {
   for (const { name, offending } of failures) {
     console.error(`\n✗ ${name}`);

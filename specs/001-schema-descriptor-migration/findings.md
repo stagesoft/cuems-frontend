@@ -252,6 +252,11 @@ type, repeated/optional, enumeration, the schema default labelled as such — an
 values and editing are not yet available. `tools/wire-guards.mjs` fails on any `config_save` in
 `src/app` until then. T112 (register the frontend against UR-5) is moot: UR-5 is closed.
 
+**F28 — the initial bundle grew by about 28 kB (warning, not error).** `ng build`'s 1 MB budget
+warning was 47.8 kB over after Phase 3 and is 75.4 kB over at the end of the feature: the load
+report, gate, node and config screens and their locale strings. Worth a lazy-loaded route for the
+config views if the budget is to hold.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.

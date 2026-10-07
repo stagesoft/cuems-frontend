@@ -5,7 +5,8 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # Release notes — schema-descriptor migration (operator-visible changes)
 
-Collected as each change lands; T115 completes this file.
+Operator-visible changes of the CueMS XML refactor, frontend half. Ships with `cuems-editor`'s half
+under the coordinated tag; this interface refuses an editor of a different payload version.
 
 ## Projects
 
