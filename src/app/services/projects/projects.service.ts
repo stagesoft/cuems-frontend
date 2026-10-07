@@ -45,6 +45,23 @@ export interface InitialMappingsResponse {
       node: {
         uuid: string;
         mac: string;
+        /**
+         * Identity and state, all optional: a partially migrated
+         * network_map.xml legitimately omits role_id/alias/hostname, and the
+         * frontend must degrade to the "Node NN" label rather than break.
+         * See cuems-common/docs/node-identity-contract.md — uuid is the only
+         * stable key; the rest are mutable projections.
+         */
+        name?: string;
+        ip?: string;
+        node_type?: string;
+        adopted?: boolean;
+        /** cuems-nodeconf's discovery view, refreshed within ~30 s. NOT
+         *  runtime liveness — that is the engine's ping/pong. */
+        online?: boolean;
+        role_id?: string;
+        alias?: string;
+        hostname?: string;
         audio: Array<{
           outputs: Array<{
             output: {
@@ -83,6 +100,15 @@ export interface InitialMappingsResponse {
       node: {
         uuid: string;
         mac: string;
+        /** Same identity fields as an adopted node — see `nodes` above. */
+        name?: string;
+        ip?: string;
+        node_type?: string;
+        adopted?: boolean;
+        online?: boolean;
+        role_id?: string;
+        alias?: string;
+        hostname?: string;
         audio: Array<{
           outputs: Array<{
             output: {
@@ -118,6 +144,12 @@ export interface InitialMappingsResponse {
       };
     }>;
     schemaLocation: string;
+    /**
+     * False when cuems-nodeconf is not reachable on the controller, i.e. every
+     * adopt/un-adopt would fail. Absent on an editor that predates the flag —
+     * treat only an explicit false as unavailable.
+     */
+    nodeconf_available?: boolean;
   };
 }
 
@@ -155,7 +187,25 @@ export class ProjectsService {
 
   public runningProjectUuid = signal<string | null>(null);
 
-  constructor() {    
+  /**
+   * A node UUID as the operator knows it.
+   *
+   * Names are resolved here, in the browser, and deliberately never sent by
+   * the engine: `alias`/`role_id`/`hostname` are mutable projections of the
+   * UUID (the node-identity contract), and a second source of truth for them
+   * is what that contract forbids. Same fallback chain as the settings panel,
+   * ending in a short UUID so even an unknown node prints as something a
+   * person can match against the map.
+   */
+  public nodeLabel(uuid: string): string {
+    const value = this.initialMappings()?.value;
+    const all = [...(value?.nodes ?? []), ...(value?.new_nodes ?? [])];
+    const node = all.find(entry => entry?.node?.uuid === uuid)?.node;
+    return node?.alias || node?.role_id || node?.hostname ||
+           `${uuid.slice(0, 8)}…`;
+  }
+
+  constructor() {
     const savedTemplate = localStorage.getItem('initial_template');
     if (savedTemplate) {
       try {
