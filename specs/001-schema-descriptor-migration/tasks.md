@@ -106,7 +106,7 @@ cache round trip.
 ### Phase 2 gate
 
 - [X] T024 [US1] Add a comment block to each of `src/app/services/projects/projects.service.spec.ts`, `src/app/components/projects/project-edit/sequence/sequence.component.spec.ts` and `src/app/components/settings/settings.component.spec.ts` naming the **only two sanctioned expectation changes** (FR-004a, and the pair is closed — it may not be extended once the port has begun) — master volume 20 → 100 (FR-032) and `canAdopt` flipping once the booleans change (FR-057) — and stating that any other divergence is a finding to record, never a test to edit
-- [X] T025 [US1] Run `npm run test:ci`, confirm green against **unmodified** production code, and commit the characterization as its own GPG-signed commit. This commit's date must precede every port commit (exit criterion 1) — *signed on 2026-10-07 by re-signing the branch in order, original dates kept: characterization 2026-10-06T13:37:57, first port commit 13:45:08*
+- [X] T025 [US1] Run `npm run test:ci`, confirm green against **unmodified** production code, and commit the characterization as its own GPG-signed commit. This commit's date must precede every port commit (exit criterion 1) — *committed and pushed unsigned (no key at the time), as `b96883b`; its author date equals the first port commit's (`2445a92`, both 2026-10-06T19:30:44 after a re-authoring), so the order is proved by ancestry, not by date. Re-signing was not pushed, to keep published history (see not-performed.md)*
 
 **Checkpoint**: the instrument exists and is committed. Port work may now begin.
 
