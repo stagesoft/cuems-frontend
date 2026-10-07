@@ -12,6 +12,11 @@
  * carry no `inputs`, and a discovered-but-unadopted node carries no `devices`.
  */
 
+/** Whether a node has a device of this class (outputs or not). */
+export function hasDeviceClass(node: any, cls: string): boolean {
+  return Array.isArray(node?.devices) && node.devices.some((wrapper: any) => wrapper?.device?.class === cls);
+}
+
 /** A node's output wrappers (`{"output": {…}}`) of one device class, flattened. */
 export function deviceOutputs(node: any, cls: string): any[] {
   const devices = node?.devices;

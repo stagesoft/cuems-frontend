@@ -7,7 +7,7 @@ import { ProjectsService } from '../../../../services/projects/projects.service'
 import { OscService } from '../../../../services/osc.service';
 import { Subscription } from 'rxjs';
 import { AudioMixerStateService } from '../../../../services/mixers/audio-mixer-state.service';
-import { PayloadCache } from '../../../../core/payload-cache';
+import { deviceOutputs, hasDeviceClass } from '../../../../core/mapping-wire';
 
 @Component({
   selector: 'app-project-show-audio-mixer',
@@ -98,52 +98,36 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
   }
 
 
-  private getAudioNodesFromLocalStorage(): any[] {
-    // Through the payload namespace, so the version gate's eviction covers it.
-    const data = PayloadCache.read<any>('initial_mappings');
-    if (!data) return [];
-    
-    try {
-      
-      const mappings = data.value;
-      
-      if (!mappings || !mappings.nodes || !Array.isArray(mappings.nodes)) {
-        console.error('Invalid mappings structure');
-        return [];
-      }
-      
-      return mappings.nodes
-        .filter((nodeWrapper: any) => Array.isArray(nodeWrapper?.node?.audio))
-        .map((nodeWrapper: any, nodeIndex: number) => {
-          const node = nodeWrapper.node;
-          const outputs: any[] = [];
-          node.audio.forEach((audioSection: any) => {
-            if (audioSection.outputs) {
-              audioSection.outputs.forEach((outputWrapper: any) => {
-                const outputId = outputWrapper.output.id;
-                outputs.push({
-                  parentId: node.uuid,
-                  id: `${node.uuid}_${outputId}`,
-                  name: outputWrapper.output.name,
-                  volume: this.audioMixerStateService.getOutputVolume(`${node.uuid}_${outputId}`),
-                  index: outputId
-                });
-              });
-            }
-          });
-          
+  /**
+   * Audio nodes from the mapping document, read through ProjectsService
+   * (T094) so the version gate's eviction cannot be bypassed by a screen
+   * reading storage on its own. Outputs come from `devices[].device` of class
+   * audio (site 4 of 5); any other class is ignored.
+   */
+  private getAudioNodesFromMappings(): any[] {
+    const nodes = this.projectsService.initialMappings()?.value?.nodes;
+    if (!Array.isArray(nodes)) return [];
+    return nodes
+      .filter((nodeWrapper: any) => hasDeviceClass(nodeWrapper?.node, 'audio'))
+      .map((nodeWrapper: any, nodeIndex: number) => {
+        const node = nodeWrapper.node;
+        const outputs = deviceOutputs(node, 'audio').map((outputWrapper: any) => {
+          const outputId = outputWrapper.output.id;
           return {
-            index: nodeIndex,
-            uuid: node.uuid,
-            volume: this.audioMixerStateService.getNodeVolume(node.uuid),
-            outputs: outputs
+            parentId: node.uuid,
+            id: `${node.uuid}_${outputId}`,
+            name: outputWrapper.output.name,
+            volume: this.audioMixerStateService.getOutputVolume(`${node.uuid}_${outputId}`),
+            index: outputId
           };
         });
-        
-    } catch (error) {
-      console.error('Error parsing mappings JSON:', error);
-      return [];
-    }
+        return {
+          index: nodeIndex,
+          uuid: node.uuid,
+          volume: this.audioMixerStateService.getNodeVolume(node.uuid),
+          outputs: outputs
+        };
+      });
   }
   
   private loadAudioNodesWithRetry(): void {
@@ -151,7 +135,7 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
   }
   
   private tryLoad(attempt: number = 1, maxAttempts: number = 5): void {
-    this.audioNodes = this.getAudioNodesFromLocalStorage();
+    this.audioNodes = this.getAudioNodesFromMappings();
     
     if (this.audioNodes.length > 0) {
       console.log('Mappings loaded successfully:', this.audioNodes);

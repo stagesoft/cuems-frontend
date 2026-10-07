@@ -379,8 +379,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
             selectedAudioOutput = validOutputs[0];
 
           } else {
-            const mappingsResponse = this.projectsService.initialMappings();
-            const defaultOutput = mappingsResponse?.value?.default_audio_output;
+            const defaultOutput = this.projectsService.defaultOutput('audio');
             if (defaultOutput && this.audioMappingOptions.length > 0) {
               selectedAudioOutput = this.audioMappingOptions[0].value;
               selectedOutputs = [this.audioMappingOptions[0].value];
@@ -434,8 +433,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
               selectedOutputs = validOutputs;
               selectedVideoOutput = validOutputs[0];
             } else {
-              const mappingsResponse = this.projectsService.initialMappings();
-              const defaultOutput = mappingsResponse?.value?.default_video_output;
+              const defaultOutput = this.projectsService.defaultOutput('video');
               if (defaultOutput && this.videoMappingOptions.length > 0) {
                 selectedVideoOutput = this.videoMappingOptions[0].value;
                 selectedOutputs = [this.videoMappingOptions[0].value];
@@ -675,14 +673,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       this.loadInitialMappings();
     }
     
-    const mappingsResponse = this.projectsService.initialMappings();
-    let defaultAudioOutput = '';
-    let defaultVideoOutput = '';
-    
-    if (mappingsResponse?.value) {
-      defaultAudioOutput = mappingsResponse.value.default_audio_output || '';
-      defaultVideoOutput = mappingsResponse.value.default_video_output || '';
-    }
+    // defaults[] by class and direction (T088); none when the document has none.
+    const defaultAudioOutput = this.projectsService.defaultOutput('audio') ?? '';
+    const defaultVideoOutput = this.projectsService.defaultOutput('video') ?? '';
     
     if (type === 'audio') {
       newCue.master_vol = this.defaultMasterVolume();
@@ -722,8 +715,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       // Same courtesy audio and video already get: start on a real target
       // instead of on nothing. Without this a new dmx cue saves with no
       // output_name and never arms on any node.
-      const mappingsResponse = this.projectsService.initialMappings();
-      const defaultDmxOutput = mappingsResponse?.value?.default_dmx_output;
+      const defaultDmxOutput = this.projectsService.defaultOutput('dmx');
       if (defaultDmxOutput && this.dmxMappingOptions.some(o => o.value === defaultDmxOutput)) {
         newCue.selectedOutputs = [defaultDmxOutput];
       } else if (this.dmxMappingOptions.length > 0) {

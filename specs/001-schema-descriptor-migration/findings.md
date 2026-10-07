@@ -222,6 +222,15 @@ is hard-coded Spanish. Text added by this feature goes through the translate pip
 locales; the existing strings were left as they are (outside this feature's scope) and are worth a
 follow-up under constitution Principle VII.
 
+**F25 — T097: the mapping reads port with no expectation moved.** With the projects-service and
+sequence characterization fed the recorded tip mapping document instead of the pre-013 one, the
+full mapping-option list (audio and video keyed `<uuid>_<id>`, DMX on the bare uuid, one DMX entry
+per node), the lookups, and the default-output paths match their pinned values unchanged. The only
+edits were input-side: the input variations that mutated a mapping node now mutate its
+`devices[]` equivalent, and the label test puts alias/role_id on `node_list`, where identity rides
+since payload version 1. Consequence carried into the code: option labels are recomputed when a
+`node_list` arrives after the mapping document.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.

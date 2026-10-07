@@ -48,3 +48,10 @@ Collected as each change lands; T115 completes this file.
   it. The list shown meanwhile is the last good one.
 - The node list refreshes when you open the screen and after the connection is renewed.
 
+## Outputs and mixers
+
+- Every cue's output selector, new cues' default outputs, the node screen's output lists and both
+  mixers read the current mapping format again (they had gone blank).
+- Devices of a kind this editor does not handle (for example lighting) are left out of these
+  lists instead of breaking them.
+

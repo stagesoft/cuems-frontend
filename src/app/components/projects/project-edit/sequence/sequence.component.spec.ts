@@ -24,7 +24,7 @@
  * -> descriptor default 100 (sanctioned, FR-032), the retired template's
  * example output_name (T056/T060), no top-level key beside CuemsScript on
  * save (findings F15), and a missing descriptor reported, not defaulted
- * (FR-034a). Mappings stay on today's wire until Phase 8.
+ * (FR-034a). Mappings: the recorded tip mapping document since Phase 8.
  *
  * The recorded project frame has no DMX or Fade cue, so their intake is fed
  * the recorded template's DmxCue / FadeCue entries, which carry the same
@@ -54,7 +54,7 @@ describe('ProjectEditSequenceComponent (characterization)', () => {
     projects = TestBed.inject(ProjectsService);
     editState = TestBed.inject(ProjectEditStateService);
     if (template) h.ws.receive(loadFixture('schema-descriptor-script'));
-    if (mappings) h.ws.receive(loadFixture('initial-mappings-pre001'));
+    if (mappings) h.ws.receive(loadFixture('initial-mappings-tip'));
     component = instantiate(ProjectEditSequenceComponent);
     any().loadInitialMappings();
   }
@@ -270,9 +270,9 @@ describe('ProjectEditSequenceComponent (characterization)', () => {
     it('audio: the mapping default when there are no options, else nothing', () => {
       setUp({ mappings: false });
       expect(addCue('audio').selectedOutputs).toEqual([]);
-      const frame = loadFixture('initial-mappings-pre001');
-      delete frame.value.nodes[0].node.audio;
-      delete frame.value.nodes[0].node.video;
+      const frame = loadFixture('initial-mappings-tip');
+      frame.value.nodes[0].node.devices = frame.value.nodes[0].node.devices
+        .filter((d: any) => d.device.class !== 'audio' && d.device.class !== 'video');
       h.ws.receive(frame);
       const cue = addCue('audio');
       expect(cue.selectedAudioOutput).toBe(`${C}_system:playback_1`);

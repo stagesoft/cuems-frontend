@@ -13,6 +13,7 @@ import {
 } from './handlers/project-create.handler';
 import { SchemaDescriptorService } from './handlers/schema-descriptor.handler';
 import { LoadReportService } from './load-report.service';
+import { defaultPort, deviceOutputs } from '../../core/mapping-wire';
 import {
   handleProjectListResponse,
   requestProjectList,
@@ -42,124 +43,19 @@ export interface InitialMapping {
   type: 'audio' | 'video' | 'dmx';
 }
 
+/**
+ * `initial_mappings` — the output mapping document alone, since payload
+ * version 1 (no node status, no nodeconf flag: those ride node_list). Shape
+ * in core/mapping-wire.ts: `defaults[]` by class and direction, a node's
+ * outputs under `devices[].device`, open class vocabulary.
+ */
 export interface InitialMappingsResponse {
   type: string;
   value: {
     number_of_nodes: number;
-    default_audio_input: string;
-    default_audio_output: string;
-    default_video_input: string | null;
-    default_video_output: string;
-    default_dmx_input: string | null;
-    default_dmx_output: string | null;
-    nodes: Array<{
-      node: {
-        uuid: string;
-        mac: string;
-        /**
-         * Identity and state, all optional: a partially migrated
-         * network_map.xml legitimately omits role_id/alias/hostname, and the
-         * frontend must degrade to the "Node NN" label rather than break.
-         * See cuems-common/docs/node-identity-contract.md — uuid is the only
-         * stable key; the rest are mutable projections.
-         */
-        name?: string;
-        ip?: string;
-        node_type?: string;
-        adopted?: boolean;
-        /** cuems-nodeconf's discovery view, refreshed within ~30 s. NOT
-         *  runtime liveness — that is the engine's ping/pong. */
-        online?: boolean;
-        role_id?: string;
-        alias?: string;
-        hostname?: string;
-        audio: Array<{
-          outputs: Array<{
-            output: {
-              id: number;
-              name: string;
-              mappings: Array<{
-                mapped_to: string;
-              }>;
-            };
-          }>;
-          inputs: Array<{
-            input: {
-              id: number;
-              name: string;
-              mappings: Array<{
-                mapped_to: string;
-              }>;
-            };
-          }>;
-        }>;
-        video: Array<{
-          outputs: Array<{
-            output: {
-              id: number;
-              name: string;
-              mappings: Array<{
-                mapped_to: string;
-              }>;
-            };
-          }>;
-        }>;
-        dmx: any;
-      };
-    }>;
-    new_nodes: Array<{
-      node: {
-        uuid: string;
-        mac: string;
-        /** Same identity fields as an adopted node — see `nodes` above. */
-        name?: string;
-        ip?: string;
-        node_type?: string;
-        adopted?: boolean;
-        online?: boolean;
-        role_id?: string;
-        alias?: string;
-        hostname?: string;
-        audio: Array<{
-          outputs: Array<{
-            output: {
-              id: number;
-              name: string;
-              mappings: Array<{
-                mapped_to: string;
-              }>;
-            };
-          }>;
-          inputs: Array<{
-            input: {
-              id: number;
-              name: string;
-              mappings: Array<{
-                mapped_to: string;
-              }>;
-            };
-          }>;
-        }>;
-        video: Array<{
-          outputs: Array<{
-            output: {
-              id: number;
-              name: string;
-              mappings: Array<{
-                mapped_to: string;
-              }>;
-            };
-          }>;
-        }>;
-        dmx: any;
-      };
-    }>;
-    /**
-     * False when cuems-nodeconf is not reachable on the controller, i.e. every
-     * adopt/un-adopt would fail. Absent on an editor that predates the flag —
-     * treat only an explicit false as unavailable.
-     */
-    nodeconf_available?: boolean;
+    defaults?: Array<{ default: { '&'?: string; class: string; direction: 'input' | 'output' } }>;
+    nodes: Array<{ node: { uuid: string; mac?: string; devices?: Array<{ device: any }> } }>;
+    new_nodes: Array<{ node: { uuid: string; mac?: string; devices?: Array<{ device: any }> } }>;
   };
 }
 
@@ -368,6 +264,9 @@ export class ProjectsService {
         new_nodes: Array.isArray(response.value.new_nodes) ? response.value.new_nodes : [],
         nodeconf_available: response.value.nodeconf_available,
       });
+      // Option labels use node identity, which rides node_list.
+      const mappings = this.initialMappings()?.value;
+      if (mappings) this.extractMappingOptions(mappings);
     }
 
     if (response && response.type === 'network_map_error') {
@@ -654,61 +553,33 @@ export class ProjectsService {
         const nodeUuid = nodeData.node.uuid;
         const nodeLabel = this.getNodeLabel(nodeData.node, index);
 
-        if (nodeData.node.audio && Array.isArray(nodeData.node.audio)) {
-          nodeData.node.audio.forEach((audioGroup: any) => {
-            if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
-              audioGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
-                const mapping: InitialMapping = {
-                  uuid: `${nodeUuid}_${outputData.output.id}`,
-                  name: displayName,
-                  type: 'audio'
-                };
-                mappingOptions.push(mapping);
-              });
-            }
-          });
-        }
-        
-        if (nodeData.node.video && Array.isArray(nodeData.node.video)) {
-          nodeData.node.video.forEach((videoGroup: any) => {
-            if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
-              videoGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
-                const mapping: InitialMapping = {
-                  uuid: `${nodeUuid}_${outputData.output.id}`,
-                  name: displayName,
-                  type: 'video'
-                };
-                mappingOptions.push(mapping);
-              });
-            }
+        // devices[].device by class (site 1 of 5): a class this UI does not
+        // map — lighting, say — is skipped, and so is a device with no outputs.
+        for (const cls of ['audio', 'video'] as const) {
+          deviceOutputs(nodeData.node, cls).forEach((outputData: any) => {
+            mappingOptions.push({
+              uuid: `${nodeUuid}_${outputData.output.id}`,
+              name: this.getOutputDisplayName(outputData, nodeLabel),
+              type: cls
+            });
           });
         }
 
         // DMX. Note the uuid has no `_id` suffix, unlike audio and video —
-        // see InitialMapping. A node with no DMX hardware declares an empty
-        // <dmx> section and simply contributes nothing here.
-        if (nodeData.node.dmx && Array.isArray(nodeData.node.dmx)) {
-          nodeData.node.dmx.forEach((dmxGroup: any) => {
-            if (dmxGroup.outputs && Array.isArray(dmxGroup.outputs)) {
-              dmxGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
-                const mapping: InitialMapping = {
-                  uuid: nodeUuid,
-                  name: displayName,
-                  type: 'dmx'
-                };
-                // One entry per node: every DMX output of a node resolves to
-                // the same bare uuid, so more than one would be a duplicate
-                // the operator cannot tell apart.
-                if (!mappingOptions.some(m => m.type === 'dmx' && m.uuid === nodeUuid)) {
-                  mappingOptions.push(mapping);
-                }
-              });
-            }
-          });
-        }
+        // see InitialMapping. A node with no DMX device simply contributes
+        // nothing here.
+        deviceOutputs(nodeData.node, 'dmx').forEach((outputData: any) => {
+          // One entry per node: every DMX output of a node resolves to
+          // the same bare uuid, so more than one would be a duplicate
+          // the operator cannot tell apart.
+          if (!mappingOptions.some(m => m.type === 'dmx' && m.uuid === nodeUuid)) {
+            mappingOptions.push({
+              uuid: nodeUuid,
+              name: this.getOutputDisplayName(outputData, nodeLabel),
+              type: 'dmx'
+            });
+          }
+        });
       });
     }
     
@@ -716,16 +587,27 @@ export class ProjectsService {
   }
 
   /**
+   * The mapping document's default port for a class and direction (T087),
+   * from `defaults[]`. Null when there is none — an empty default carries no
+   * port, and none is invented.
+   */
+  public defaultOutput(cls: 'audio' | 'video' | 'dmx'): string | null {
+    return defaultPort(this.initialMappings()?.value?.defaults, cls, 'output');
+  }
+
+  /**
    * Human-readable node label: the operator-facing identity from
    * network_map.xml (alias, then role_id), falling back to the positional
-   * number. Mirrors SettingsComponent.getNodeName so both screens name a node
-   * the same way -- the number alone is misleading, since it counts positions
-   * in the mappings array and the controller, being first, reads as 'node1'.
-   * cuems-editor merges those identity fields into the mappings it serves
-   * (CuemsWsServer.merge_node_data), so they are available here.
+   * number. Mirrors NodeAdoptionComponent.getNodeName so both screens name a
+   * node the same way -- the number alone is misleading, since it counts
+   * positions in the mappings array and the controller, being first, reads as
+   * 'node1'. The identity comes from node_list, matched by uuid.
    */
   private getNodeLabel(node: any, index: number): string {
-    return node?.alias || node?.role_id || `node${index + 1}`;
+    // Identity rides node_list since payload version 1; the mapping node has none.
+    const listed = [...(this.nodeList()?.nodes ?? []), ...(this.nodeList()?.new_nodes ?? [])]
+      .find(entry => entry?.node?.uuid === node?.uuid)?.node;
+    return listed?.alias || listed?.role_id || `node${index + 1}`;
   }
 
   private getOutputDisplayName(outputData: any, nodeLabel: string): string {
@@ -801,27 +683,12 @@ export class ProjectsService {
       return null;
     }
     
-    if (node.node.audio && Array.isArray(node.node.audio)) {
-      for (const audioGroup of node.node.audio) {
-        if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
-          const output = audioGroup.outputs.find((outputData: any) =>
-            outputData.output.name === name || String(outputData.output.id) === name);
-          if (output) {
-            return { type: 'audio', output, node: node.node };
-          }
-        }
-      }
-    }
-    
-    if (node.node.video && Array.isArray(node.node.video)) {
-      for (const videoGroup of node.node.video) {
-        if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
-          const output = videoGroup.outputs.find((outputData: any) =>
-            outputData.output.name === name || String(outputData.output.id) === name);
-          if (output) {
-            return { type: 'video', output, node: node.node };
-          }
-        }
+    // devices[].device by class (site 2 of 5); audio first, as before.
+    for (const cls of ['audio', 'video'] as const) {
+      const output = deviceOutputs(node.node, cls).find((outputData: any) =>
+        outputData.output.name === name || String(outputData.output.id) === name);
+      if (output) {
+        return { type: cls, output, node: node.node };
       }
     }
     

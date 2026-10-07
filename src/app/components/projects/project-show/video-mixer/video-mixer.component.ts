@@ -4,7 +4,8 @@ import { ActivatedRoute } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { IconComponent } from '../../../ui/icon/icon.component';
 import { OscService } from '../../../../services/osc.service';
-import { PayloadCache } from '../../../../core/payload-cache';
+import { ProjectsService } from '../../../../services/projects/projects.service';
+import { deviceOutputs, hasDeviceClass } from '../../../../core/mapping-wire';
 
 interface VideoOutputRaw {
   parentId: string;
@@ -57,6 +58,7 @@ interface Corners {
 export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private oscService = inject(OscService);
+  private projectsService = inject(ProjectsService);
   
   projectUuid: string | null = null;
   Math = Math;
@@ -91,49 +93,31 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
     window.removeEventListener('mouseup', this.handleGlobalMouseUp.bind(this));
   }
   
-  private getVideoNodesFromLocalStorage(): VideoNode[] {
-    // Through the payload namespace, so the version gate's eviction covers it.
-    const data = PayloadCache.read<any>('initial_mappings');
-    if (!data) return [];
-    
-    try {
-      const mappings = data.value;
-      
-      if (!mappings || !mappings.nodes || !Array.isArray(mappings.nodes)) {
-        console.error('Invalid mappings structure');
-        return [];
-      }
-      
-      return mappings.nodes
-        .filter((nodeWrapper: any) => Array.isArray(nodeWrapper?.node?.video))
-        .map((nodeWrapper: any, nodeIndex: number) => {
-          const node = nodeWrapper.node;
-          const outputs: VideoOutputRaw[] = [];
-          
-          node.video.forEach((videoSection: any) => {
-            if (videoSection.outputs) {
-              videoSection.outputs.forEach((outputWrapper: any) => {
-                outputs.push({
-                  parentId: node.uuid,
-                  id: `${node.uuid}_${outputWrapper.output.id}`,
-                  name: outputWrapper.output.name,
-                  index: outputWrapper.output.id
-                });
-              });
-            }
-          });
-          
-          return {
-            index: nodeIndex,
-            uuid: node.uuid,
-            outputs: outputs
-          };
-        });
-        
-    } catch (error) {
-      console.error('Error parsing mappings JSON:', error);
-      return [];
-    }
+  /**
+   * Video nodes from the mapping document, read through ProjectsService
+   * (T094) so the version gate's eviction cannot be bypassed. Outputs come
+   * from `devices[].device` of class video (site 5 of 5); any other class is
+   * ignored.
+   */
+  private getVideoNodesFromMappings(): VideoNode[] {
+    const nodes = this.projectsService.initialMappings()?.value?.nodes;
+    if (!Array.isArray(nodes)) return [];
+    return nodes
+      .filter((nodeWrapper: any) => hasDeviceClass(nodeWrapper?.node, 'video'))
+      .map((nodeWrapper: any, nodeIndex: number) => {
+        const node = nodeWrapper.node;
+        const outputs: VideoOutputRaw[] = deviceOutputs(node, 'video').map((outputWrapper: any) => ({
+          parentId: node.uuid,
+          id: `${node.uuid}_${outputWrapper.output.id}`,
+          name: outputWrapper.output.name,
+          index: outputWrapper.output.id
+        }));
+        return {
+          index: nodeIndex,
+          uuid: node.uuid,
+          outputs: outputs
+        };
+      });
   }
   
   private loadVideoNodesWithRetry(): void {
@@ -141,7 +125,7 @@ export class ProjectShowVideoMixerComponent implements OnInit, OnDestroy {
   }
   
   private tryLoadVideoNodes(attempt: number = 1, maxAttempts: number = 5): void {
-    this.videoNodes = this.getVideoNodesFromLocalStorage();
+    this.videoNodes = this.getVideoNodesFromMappings();
     
     if (this.videoNodes.length > 0) {
       console.log('Video nodes loaded successfully:', this.videoNodes);

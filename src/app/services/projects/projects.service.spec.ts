@@ -24,6 +24,11 @@ import { IMPLEMENTED_PAYLOAD_VERSION } from '../../core/payload-version.service'
 
 const CONTROLLER = '0367f391-ebf4-48b2-9f26-000000000001';
 
+/** The first node's device of a class, in a recorded mapping frame (013 shape). */
+function device(frame: any, cls: string): any {
+  return frame.value.nodes[0].node.devices.find((d: any) => d.device.class === cls).device;
+}
+
 describe('ProjectsService (characterization)', () => {
   let h: Harness;
   let ws: FakeWebsocketService;
@@ -66,31 +71,31 @@ describe('ProjectsService (characterization)', () => {
 
     it('stores the frame as {type, value}', () => {
       service = create();
-      const frame = loadFixture('initial-mappings-pre001');
+      const frame = loadFixture('initial-mappings-tip');
       ws.receive(frame);
       expect(service.initialMappings()).toEqual({ type: 'initial_mappings', value: frame.value });
     });
 
     it('extracts audio and video options keyed <node uuid>_<output id>, and DMX keyed by the bare node uuid', () => {
       service = create();
-      ws.receive(loadFixture('initial-mappings-pre001'));
+      ws.receive(loadFixture('initial-mappings-tip'));
       expect(service.mappingOptions()).toEqual(EXPECTED_OPTIONS as any);
       expect(service.getInitialMappings()).toEqual(EXPECTED_OPTIONS as any);
     });
 
     it('keeps one DMX entry per node however many DMX outputs the node has', () => {
       service = create();
-      const frame = loadFixture('initial-mappings-pre001');
-      const dmx = frame.value.nodes[0].node.dmx[0];
-      dmx.outputs.push(JSON.parse(JSON.stringify(dmx.outputs[0])));
-      dmx.outputs[1].output.id = 1;
+      const frame = loadFixture('initial-mappings-tip');
+      const dmx = device(frame, 'dmx');
+      dmx.outputs[0].push(JSON.parse(JSON.stringify(dmx.outputs[0][0])));
+      dmx.outputs[0][1].output.id = 1;
       ws.receive(frame);
       expect(service.mappingOptions().filter(m => m.type === 'dmx').length).toBe(1);
     });
 
     it('looks an option up by uuid (first match wins)', () => {
       service = create();
-      ws.receive(loadFixture('initial-mappings-pre001'));
+      ws.receive(loadFixture('initial-mappings-tip'));
       expect(service.getMappingByUuid(`${CONTROLLER}_0`)).toEqual(EXPECTED_OPTIONS[0] as any);
       expect(service.getMappingByUuid('nope')).toBeUndefined();
     });
@@ -100,14 +105,14 @@ describe('ProjectsService (characterization)', () => {
     // evicted for it (FR-075), not the constructor. The values are unchanged.
     it('writes {type, value} to the payload cache', () => {
       service = create();
-      const frame = loadFixture('initial-mappings-pre001');
+      const frame = loadFixture('initial-mappings-tip');
       ws.receive(frame);
       expect(PayloadCache.read('initial_mappings'))
         .toEqual({ type: 'initial_mappings', value: frame.value });
     });
 
     it('restores the cached frame and re-extracts the options when the next session starts', () => {
-      const frame = loadFixture('initial-mappings-pre001');
+      const frame = loadFixture('initial-mappings-tip');
       PayloadCache.setStoredVersion(IMPLEMENTED_PAYLOAD_VERSION);
       PayloadCache.write('initial_mappings', { type: 'initial_mappings', value: frame.value });
       service = create();
@@ -117,7 +122,7 @@ describe('ProjectsService (characterization)', () => {
     });
 
     it('wraps a cached bare value (no type) as an initial_mappings frame', () => {
-      const frame = loadFixture('initial-mappings-pre001');
+      const frame = loadFixture('initial-mappings-tip');
       PayloadCache.setStoredVersion(IMPLEMENTED_PAYLOAD_VERSION);
       PayloadCache.write('initial_mappings', frame.value);
       service = create();
@@ -136,7 +141,7 @@ describe('ProjectsService (characterization)', () => {
 
     it('treats an initial_mappings frame with no value wrapper as its own value', () => {
       service = create();
-      const frame = loadFixture('initial-mappings-pre001');
+      const frame = loadFixture('initial-mappings-tip');
       const unwrapped = { type: 'initial_mappings', ...frame.value };
       ws.receive(unwrapped);
       expect(service.initialMappings()).toEqual({ type: 'initial_mappings', value: unwrapped } as any);
@@ -153,12 +158,10 @@ describe('ProjectsService (characterization)', () => {
       expect(service.mappingOptions()).toEqual([]);
     });
 
-    it('extracts nothing from a node carrying no per-class output blocks', () => {
+    it('extracts nothing from a node carrying no devices', () => {
       service = create();
-      const frame = loadFixture('initial-mappings-pre001');
-      delete frame.value.nodes[0].node.audio;
-      delete frame.value.nodes[0].node.video;
-      delete frame.value.nodes[0].node.dmx;
+      const frame = loadFixture('initial-mappings-tip');
+      delete frame.value.nodes[0].node.devices;
       ws.receive(frame);
       expect(service.mappingOptions()).toEqual([]);
     });
@@ -204,18 +207,20 @@ describe('ProjectsService (characterization)', () => {
 
     describe('getNodeLabel (through the option names)', () => {
       it('uses alias, then role_id, then node<position>', () => {
-        const frame = loadFixture('initial-mappings-pre001');
-        frame.value.nodes[0].node.role_id = 'ctrl';
-        ws.receive(JSON.parse(JSON.stringify(frame)));
+        // input: identity rides node_list since payload version 1 (T075)
+        ws.receive(loadFixture('initial-mappings-tip'));
+        const list = loadFixture('node-list');
+        list.value.nodes[0].node.role_id = 'ctrl';
+        ws.receive(JSON.parse(JSON.stringify(list)));
         expect(service.mappingOptions()[0].name).toBe('ctrl:system:playback_1');
-        frame.value.nodes[0].node.alias = 'Main';
-        ws.receive(frame);
+        list.value.nodes[0].node.alias = 'Main';
+        ws.receive(list);
         expect(service.mappingOptions()[0].name).toBe('Main:system:playback_1');
       });
 
       it('names an output with no name "unknown"', () => {
-        const frame = loadFixture('initial-mappings-pre001');
-        delete frame.value.nodes[0].node.audio[0].outputs[0].output.name;
+        const frame = loadFixture('initial-mappings-tip');
+        delete device(frame, 'audio').outputs[0][0].output.name;
         ws.receive(frame);
         expect(service.mappingOptions()[0].name).toBe('node1:unknown');
       });
@@ -223,7 +228,7 @@ describe('ProjectsService (characterization)', () => {
 
     it('getNodeNumberByUuid is the 1-based position in nodes, else null', () => {
       expect(service.getNodeNumberByUuid(CONTROLLER)).toBeNull();
-      ws.receive(loadFixture('initial-mappings-pre001'));
+      ws.receive(loadFixture('initial-mappings-tip'));
       expect(service.getNodeNumberByUuid(CONTROLLER)).toBe(1);
       expect(service.getNodeNumberByUuid('0367f391-ebf4-48b2-9f26-000000000003')).toBeNull();
     });
@@ -241,7 +246,7 @@ describe('ProjectsService (characterization)', () => {
     });
 
     it('formatOutputNameForDisplay renders <node label>:<name>, else the input unchanged', () => {
-      ws.receive(loadFixture('initial-mappings-pre001'));
+      ws.receive(loadFixture('initial-mappings-tip'));
       expect(service.formatOutputNameForDisplay(`${CONTROLLER}_system:playback_1`))
         .toBe('node1:system:playback_1');
       const stranger = '11111111-2222-3333-4444-555555555555_x';
@@ -250,7 +255,7 @@ describe('ProjectsService (characterization)', () => {
     });
 
     describe('findOutputInMappings', () => {
-      beforeEach(() => ws.receive(loadFixture('initial-mappings-pre001')));
+      beforeEach(() => ws.receive(loadFixture('initial-mappings-tip')));
 
       it('finds an audio output by name or by id', () => {
         const byName = service.findOutputInMappings(CONTROLLER, 'system:playback_2');
@@ -278,8 +283,8 @@ describe('ProjectsService (characterization)', () => {
 
       it('never matches a DMX output', () => {
         // dmx output id 0 name "0" exists, but only audio/video are walked; "0" hits audio
-        const frame = loadFixture('initial-mappings-pre001');
-        frame.value.nodes[0].node.dmx[0].outputs[0].output.name = 'dmx-only';
+        const frame = loadFixture('initial-mappings-tip');
+        device(frame, 'dmx').outputs[0][0].output.name = 'dmx-only';
         ws.receive(frame);
         expect(service.findOutputInMappings(CONTROLLER, 'dmx-only')).toBeNull();
       });
