@@ -55,3 +55,13 @@ Collected as each change lands; T115 completes this file.
 - Devices of a kind this editor does not handle (for example lighting) are left out of these
   lists instead of breaking them.
 
+## Connecting to the editor
+
+- On the first connection after this upgrade, cached editor data in the browser is cleared; your
+  language and the play-controls panel position are kept.
+- If the editor and this interface are from different releases, or the editor does not provide the
+  project schema, the project, media, mixer and node screens stay closed and a message says why
+  and what to do. The header — and the language choice — keep working.
+- A short reconnection no longer closes the screen you are on; a notice shows while the connection
+  is checked again.
+

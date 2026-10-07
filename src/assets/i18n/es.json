@@ -316,5 +316,16 @@
     "load.duplicate.title": "El duplicado se hizo a partir de un documento que el editor cambió al leerlo",
     "nodes.title": "Nodos",
     "nodes.network-map-error.duplicate": "El mapa de red nombra dos veces el nodo {{identity}}. La lista de nodos que se muestra es la última correcta y no se actualizará hasta que se corrija.",
-    "nodes.network-map-error.fix": "Compara las direcciones MAC de las dos filas para saber cuál es el nodo real y ejecuta cuems-init-node --remint en el otro."
+    "nodes.network-map-error.fix": "Compara las direcciones MAC de las dos filas para saber cuál es el nodo real y ejecuta cuems-init-node --remint en el otro.",
+    "gate.version.title": "Esta interfaz y el editor hablan versiones distintas",
+    "gate.version.versions": "El editor envía la versión de datos {{announced}}; esta interfaz lee la versión {{implemented}}.",
+    "gate.version.silent": "El editor no ha anunciado ninguna versión, lo que significa que es anterior a esta interfaz.",
+    "gate.version.action": "Proyectos, medios y mezcladores quedan cerrados para que no se lea nada mal. Instala en la controladora la interfaz y el editor de la misma versión y vuelve a cargar esta página.",
+    "gate.descriptor.title": "El editor no ha proporcionado el esquema de proyecto",
+    "gate.descriptor.descriptor_unanswered": "Se pidió el descriptor del esquema y nunca llegó.",
+    "gate.descriptor.descriptor_refused": "El editor se negó a enviar el descriptor del esquema:",
+    "gate.descriptor.descriptor_unusable": "El descriptor del esquema llegó pero le falta lo necesario para crear cues nuevas:",
+    "gate.descriptor.action": "Los proyectos quedan cerrados: las cues y proyectos nuevos se crean a partir de este esquema y no hay sustituto seguro. Revisa el registro del editor y vuelve a cargar esta página.",
+    "gate.connecting": "Conectando con el editor…",
+    "gate.reconnecting": "Conexión con el editor renovada; comprobándola de nuevo…"
 }

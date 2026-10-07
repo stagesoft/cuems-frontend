@@ -2,7 +2,15 @@
   <app-notifications></app-notifications>
   <app-header></app-header>
   <main class="flex-grow">
-    <router-outlet></router-outlet>
+    <!-- The session gate (FR-034b, FR-070a): one surface for every routed
+         screen. The outlet exists only once the gate has opened, and is
+         hidden — not destroyed — while it is refused. -->
+    <app-payload-gate></app-payload-gate>
+    @if (payloadVersion.everOpened()) {
+      <div [hidden]="payloadVersion.gate().status === 'refused'">
+        <router-outlet></router-outlet>
+      </div>
+    }
   </main>
   <app-footer></app-footer>
 </div>

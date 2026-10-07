@@ -15,6 +15,8 @@ import { ConfirmationDialogComponent } from './components/ui/confirmation-dialog
 import { ProjectsService } from './services/projects/projects.service';
 import { PlayControlsFloatingComponent } from './components/ui/play-controls/play-controls-floating/play-controls-floating.component';
 import { ClusterWarning, OscService } from './services/osc.service';
+import { PayloadGateComponent } from './components/payload-gate/payload-gate.component';
+import { PayloadVersionService } from './core/payload-version.service';
 
 @Component({
   selector: 'app-root',
@@ -27,6 +29,7 @@ import { ClusterWarning, OscService } from './services/osc.service';
     ConfirmationDialogComponent,
     TranslateModule,
     PlayControlsFloatingComponent,
+    PayloadGateComponent,
   ],
   templateUrl: './app.component.html',
 })
@@ -38,6 +41,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private router = inject(Router);
   private projectsService = inject(ProjectsService);
   oscService = inject(OscService);
+  payloadVersion = inject(PayloadVersionService);
 
   constructor(
     private translate: TranslateService,

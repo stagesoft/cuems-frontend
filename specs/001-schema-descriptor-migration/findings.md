@@ -231,6 +231,16 @@ edits were input-side: the input variations that mutated a mapping node now muta
 since payload version 1. Consequence carried into the code: option labels are recomputed when a
 `node_list` arrives after the mapping document.
 
+**F26 — the gate covers every routed screen, and survives a reconnect without destroying one.**
+T098 names project, media, mixer and configuration screens; the surface sits at the shell around
+the one router outlet, so it covers every routed screen (the node screen and the dashboard
+included) — the only shape that cannot be forgotten by a screen. Two details the tasks do not
+state: the outlet is created only once the gate has opened (content *projected* into a gate
+component would still be instantiated by the shell and run its screens behind a refusal, so the
+condition lives in the shell template), and afterwards a refusal hides the outlet rather than
+destroying it, while a reconnect's brief re-check only shows a notice. Otherwise every dropped
+socket would tear down the open edit screen.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.

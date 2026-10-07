@@ -317,5 +317,16 @@
     "load.duplicate.title": "El duplicat es va fer a partir d'un document que l'editor va canviar en llegir-lo",
     "nodes.title": "Nodes",
     "nodes.network-map-error.duplicate": "El mapa de xarxa anomena dues vegades el node {{identity}}. La llista de nodes que es mostra és l'última correcta i no s'actualitzarà fins que es corregeixi.",
-    "nodes.network-map-error.fix": "Compara les adreces MAC de les dues files per saber quin és el node real i executa cuems-init-node --remint a l'altre."
+    "nodes.network-map-error.fix": "Compara les adreces MAC de les dues files per saber quin és el node real i executa cuems-init-node --remint a l'altre.",
+    "gate.version.title": "Aquesta interfície i l'editor parlen versions diferents",
+    "gate.version.versions": "L'editor envia la versió de dades {{announced}}; aquesta interfície llegeix la versió {{implemented}}.",
+    "gate.version.silent": "L'editor no ha anunciat cap versió, cosa que vol dir que és anterior a aquesta interfície.",
+    "gate.version.action": "Projectes, mitjans i mescladors queden tancats perquè no es llegeixi res malament. Instal·la a la controladora la interfície i l'editor de la mateixa versió i torna a carregar aquesta pàgina.",
+    "gate.descriptor.title": "L'editor no ha proporcionat l'esquema de projecte",
+    "gate.descriptor.descriptor_unanswered": "Es va demanar el descriptor de l'esquema i no va arribar mai.",
+    "gate.descriptor.descriptor_refused": "L'editor es va negar a enviar el descriptor de l'esquema:",
+    "gate.descriptor.descriptor_unusable": "El descriptor de l'esquema va arribar però li falta el que cal per crear cues noves:",
+    "gate.descriptor.action": "Els projectes queden tancats: les cues i projectes nous es creen a partir d'aquest esquema i no hi ha substitut segur. Revisa el registre de l'editor i torna a carregar aquesta pàgina.",
+    "gate.connecting": "Connectant amb l'editor…",
+    "gate.reconnecting": "Connexió amb l'editor renovada; tornant-la a comprovar…"
 }

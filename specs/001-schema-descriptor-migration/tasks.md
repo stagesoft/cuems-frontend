@@ -273,12 +273,12 @@ demonstrated.
 **Independent Test**: load with a pre-upgrade cache and confirm no screen renders from it; point at a
 peer announcing a different version and confirm the refusal.
 
-- [ ] T098 [US7] Create `src/app/components/payload-gate/payload-gate.component.ts` as the **single** refusal surface: while a mismatch stands, no project, media, mixer or configuration screen renders. It must not be a per-screen condition — a surface that forgets it would present misread values as data
-- [ ] T099 [US7] Render the refusal in `src/app/components/payload-gate/payload-gate.component.html` naming **both** versions and what the operator should do, and keep the shell alive behind it so the message is readable and the language selection still works. A mismatch that renders nothing is no better than rendering a wrapped value as an object
-- [ ] T100 [US7] Render the descriptor-prerequisite failure through the same `src/app/components/payload-gate/payload-gate.component.ts` surface with the descriptor named as the reason, exercising T028's shared mechanism rather than adding a second gate
-- [ ] T101 [US7] Treat a peer that never announces a version as the pre-upgrade wire and refuse it on the same basis, in `src/app/core/payload-version.service.ts`
-- [ ] T102 [P] [US7] Create `src/app/components/payload-gate/payload-gate.component.spec.ts` covering a mismatch, a silent peer, the descriptor failure, and the shell remaining usable
-- [ ] T103 [P] [US7] Add translation keys for the refusal text to all three locale files in `src/assets/i18n/`
+- [X] T098 [US7] Create `src/app/components/payload-gate/payload-gate.component.ts` as the **single** refusal surface: while a mismatch stands, no project, media, mixer or configuration screen renders. It must not be a per-screen condition — a surface that forgets it would present misread values as data
+- [X] T099 [US7] Render the refusal in `src/app/components/payload-gate/payload-gate.component.html` naming **both** versions and what the operator should do, and keep the shell alive behind it so the message is readable and the language selection still works. A mismatch that renders nothing is no better than rendering a wrapped value as an object
+- [X] T100 [US7] Render the descriptor-prerequisite failure through the same `src/app/components/payload-gate/payload-gate.component.ts` surface with the descriptor named as the reason, exercising T028's shared mechanism rather than adding a second gate
+- [X] T101 [US7] Treat a peer that never announces a version as the pre-upgrade wire and refuse it on the same basis, in `src/app/core/payload-version.service.ts`
+- [X] T102 [P] [US7] Create `src/app/components/payload-gate/payload-gate.component.spec.ts` covering a mismatch, a silent peer, the descriptor failure, and the shell remaining usable
+- [X] T103 [P] [US7] Add translation keys for the refusal text to all three locale files in `src/assets/i18n/`
 
 **Checkpoint**: both prerequisites refuse visibly through one surface, and a pre-upgrade cache cannot render.
 

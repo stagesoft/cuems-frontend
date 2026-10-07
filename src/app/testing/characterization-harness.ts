@@ -23,6 +23,11 @@ import { MediaService } from '../services/media/media.service';
 import { ProjectWorkspaceService } from '../services/project-workspace.service';
 import { IMPLEMENTED_PAYLOAD_VERSION } from '../core/payload-version.service';
 
+class RecordingSubject extends Subject<any> {
+  constructor(private readonly record: any[]) { super(); }
+  override next(msg: any): void { this.record.push(msg); }
+}
+
 /**
  * The WebSocket boundary: records what is sent, replays what is received.
  *
@@ -40,7 +45,8 @@ export class FakeWebsocketService {
   hasRecentError = false;
   /** Every frame the code under test sent, in order. */
   sent: any[] = [];
-  ws = { next: (msg: any) => { this.sent.push(msg); } };
+  /** Outgoing frames are recorded; it is a Subject so code that pipes it works. */
+  ws = new RecordingSubject(this.sent);
   private connections = 0;
   private announcedThisConnection = false;
 

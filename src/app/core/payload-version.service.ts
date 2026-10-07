@@ -1,4 +1,4 @@
-import { Injectable, Signal, computed, inject, signal } from '@angular/core';
+import { Injectable, Signal, computed, effect, inject, signal } from '@angular/core';
 import { Subject } from 'rxjs';
 import { WebsocketService } from '../services/websocket.service';
 import { PayloadCache } from './payload-cache';
@@ -106,10 +106,20 @@ export class PayloadVersionService {
     return { status: 'open' };
   });
 
+  /**
+   * The gate has opened at least once in this page's life. The shell creates
+   * the routed screens only from then on, and afterwards hides rather than
+   * destroys them while refused, so a dropped socket costs no open screen.
+   */
+  readonly everOpened = signal(false);
+
   /** Names in resolution order — the shared mechanism, inspectable. */
   readonly prerequisiteNames = computed(() => this.prerequisites().map(p => p.name));
 
   constructor() {
+    effect(() => {
+      if (this.gate().status === 'open') this.everOpened.set(true);
+    });
     this.ws.connectionOpened.subscribe(n => this.onConnectionOpened(n));
     this.ws.messages.subscribe(frame => this.onFrame(frame));
   }

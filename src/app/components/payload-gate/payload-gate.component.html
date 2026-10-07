@@ -1,0 +1,41 @@
+@if (refused()) {
+  <div class="wrapper mt-10" data-test="gate-refused">
+    <div class="rounded-lg border-l-4 border-red-500 bg-dark-300 p-6">
+      @switch (reason()) {
+        @case ('version_mismatch') {
+          <h2 class="text-lg font-semibold">{{ 'gate.version.title' | translate }}</h2>
+          <p class="mt-2" data-test="gate-versions">
+            {{ 'gate.version.versions' | translate: { announced: detail()['announced'], implemented: detail()['implemented'] } }}
+          </p>
+          @if (detail()['announced'] === 0) {
+            <p class="mt-2">{{ 'gate.version.silent' | translate }}</p>
+          }
+          <p class="mt-4">{{ 'gate.version.action' | translate }}</p>
+        }
+        @default {
+          <h2 class="text-lg font-semibold">{{ 'gate.descriptor.title' | translate }}</h2>
+          <p class="mt-2" data-test="gate-reason">{{ ('gate.descriptor.' + reason()) | translate }}</p>
+          @if (detail()['message']) {
+            <p class="mt-2 font-mono text-sm">{{ detail()['message'] }}</p>
+          }
+          @if (detail()['gaps']?.length) {
+            <ul class="mt-2 list-disc pl-6 font-mono text-sm" data-test="gate-gaps">
+              @for (gap of detail()['gaps']; track gap) { <li>{{ gap }}</li> }
+            </ul>
+          }
+          <p class="mt-4">{{ 'gate.descriptor.action' | translate }}</p>
+        }
+      }
+    </div>
+  </div>
+} @else if (pending()) {
+  @if (everOpened()) {
+    <div class="wrapper mt-4" data-test="gate-reconnecting">
+      <p class="rounded bg-dark-300 px-4 py-2 text-sm text-gray-300">{{ 'gate.reconnecting' | translate }}</p>
+    </div>
+  } @else {
+    <div class="wrapper mt-10" data-test="gate-pending">
+      <p class="text-gray-400">{{ 'gate.connecting' | translate }}</p>
+    </div>
+  }
+}

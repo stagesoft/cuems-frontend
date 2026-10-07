@@ -316,5 +316,16 @@
     "load.duplicate.title": "The duplicate was made from a document the editor changed when reading it",
     "nodes.title": "Nodes",
     "nodes.network-map-error.duplicate": "The network map names node {{identity}} twice. The node list shown is the last good one and will not update until this is fixed.",
-    "nodes.network-map-error.fix": "Compare the MAC addresses of the two rows to tell which one is the real node, then run cuems-init-node --remint on the other."
+    "nodes.network-map-error.fix": "Compare the MAC addresses of the two rows to tell which one is the real node, then run cuems-init-node --remint on the other.",
+    "gate.version.title": "This interface and the editor speak different versions",
+    "gate.version.versions": "The editor sends payload version {{announced}}; this interface reads version {{implemented}}.",
+    "gate.version.silent": "The editor did not announce a version at all, which means it predates this interface.",
+    "gate.version.action": "Projects, media and mixers stay closed so nothing is misread. Install the interface and editor of the same release on the controller, then reload this page.",
+    "gate.descriptor.title": "The editor did not provide the project schema",
+    "gate.descriptor.descriptor_unanswered": "The schema descriptor was requested and never arrived.",
+    "gate.descriptor.descriptor_refused": "The editor refused to send the schema descriptor:",
+    "gate.descriptor.descriptor_unusable": "The schema descriptor arrived but lacks what new cues are built from:",
+    "gate.descriptor.action": "Projects stay closed: new cues and projects are built from this schema, and there is no safe substitute. Check the editor's log, then reload this page.",
+    "gate.connecting": "Connecting to the editor…",
+    "gate.reconnecting": "Connection to the editor renewed; checking it again…"
 }
