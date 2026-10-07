@@ -22,9 +22,7 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   public project: any;
   public projectUuid: string | null = null;
-  public audioCues: any[] = [];
   private projectLoadedSubscription?: Subscription;
-  public audioMappingOptions: { value: string, label: string }[] = [];
   public audioNodes: any[] = [];
   private audioNodesReady = signal(false);
 
@@ -86,7 +84,6 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
         }
         
         this.project = projectData;
-        //this.extractAudioCues();
       }
     });
   }
@@ -96,20 +93,6 @@ export class ProjectShowAudioMixerComponent implements OnInit, OnDestroy {
       this.projectLoadedSubscription.unsubscribe();
     }
   }
-
-  // private extractAudioCues(): void {
-  //   this.audioCues = [];
-    
-  //   if (this.project?.CuemsScript?.CueList?.contents) {
-  //     this.project.CuemsScript.CueList.contents.forEach((cueItem: any) => {
-  //       if (cueItem.AudioCue) {
-  //         this.audioCues.push(cueItem.AudioCue);
-  //       }
-  //     });
-  //   }
-    
-  //   console.log('Audio Cues found:', this.audioCues);
-  // }
 
   private getAudioNodesFromLocalStorage(): any[] {
     const mappingsData = localStorage.getItem('initial_mappings');
