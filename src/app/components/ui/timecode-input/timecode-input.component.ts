@@ -16,6 +16,7 @@ const SEGMENT_DIGITS: Record<Segment, number> = { hh: 2, mm: 2, ss: 2, mmm: 3 };
 export class TimecodeInputComponent {
   variant = input<'inline' | 'default'>('default');
   value = model<string>('00:00:00.000');
+  invalid = input<boolean>(false);
 
   private container = viewChild<ElementRef>('container');
   activeSegment = signal<Segment | null>(null);

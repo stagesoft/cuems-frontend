@@ -505,13 +505,13 @@ export class ProjectsService {
     if (mappingsData.nodes && Array.isArray(mappingsData.nodes)) {
       mappingsData.nodes.forEach((nodeData: any, index: number) => {
         const nodeUuid = nodeData.node.uuid;
-        const nodeNumber = index + 1;
+        const nodeLabel = this.getNodeLabel(nodeData.node, index);
 
         if (nodeData.node.audio && Array.isArray(nodeData.node.audio)) {
           nodeData.node.audio.forEach((audioGroup: any) => {
             if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
               audioGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
                 const mapping: InitialMapping = {
                   uuid: `${nodeUuid}_${outputData.output.id}`,
                   name: displayName,
@@ -527,7 +527,7 @@ export class ProjectsService {
           nodeData.node.video.forEach((videoGroup: any) => {
             if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
               videoGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
                 const mapping: InitialMapping = {
                   uuid: `${nodeUuid}_${outputData.output.id}`,
                   name: displayName,
@@ -544,8 +544,21 @@ export class ProjectsService {
     this.mappingOptions.set(mappingOptions);
   }
 
-  private getOutputDisplayName(outputData: any, nodeNumber: number): string {
-    return `node${nodeNumber}:${outputData.output?.name || 'unknown'}`;
+  /**
+   * Human-readable node label: the operator-facing identity from
+   * network_map.xml (alias, then role_id), falling back to the positional
+   * number. Mirrors SettingsComponent.getNodeName so both screens name a node
+   * the same way -- the number alone is misleading, since it counts positions
+   * in the mappings array and the controller, being first, reads as 'node1'.
+   * cuems-editor merges those identity fields into the mappings it serves
+   * (CuemsWsServer.merge_node_data), so they are available here.
+   */
+  private getNodeLabel(node: any, index: number): string {
+    return node?.alias || node?.role_id || `node${index + 1}`;
+  }
+
+  private getOutputDisplayName(outputData: any, nodeLabel: string): string {
+    return `${nodeLabel}:${outputData.output?.name || 'unknown'}`;
   }
 
   /**
@@ -585,7 +598,7 @@ export class ProjectsService {
   }
 
   /**
-   * Convert a complete output_name to a readable format (node1:output_name)
+   * Convert a complete output_name to a readable format (Controller:output_name)
    */
   public formatOutputNameForDisplay(outputString: string): string {
     const parsedOutput = this.parseOutputString(outputString);
@@ -593,9 +606,10 @@ export class ProjectsService {
       return outputString; // Fallback to the original string
     }
     
-    const nodeNumber = this.getNodeNumberByUuid(parsedOutput.uuid);
-    if (nodeNumber) {
-      return `node${nodeNumber}:${parsedOutput.name}`;
+    const nodes = this.initialMappings()?.value?.nodes;
+    const nodeIndex = nodes?.findIndex((nodeData: any) => nodeData.node.uuid === parsedOutput.uuid) ?? -1;
+    if (nodes && nodeIndex !== -1) {
+      return `${this.getNodeLabel(nodes[nodeIndex].node, nodeIndex)}:${parsedOutput.name}`;
     }
     
     return outputString; // Fallback to the original string

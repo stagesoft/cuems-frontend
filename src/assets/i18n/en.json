@@ -188,6 +188,8 @@
     "fade.curve.logarithmic": "Logarithmic",
     "fade.curve.sigmoid": "Sigmoidal",
     "fade.duration": "Duration",
+    "fade.duration.invalid": "Fade duration must be greater than zero",
+    "fade.duration.invalid.save": "Cannot save: a fade cue has an invalid duration",
     "fade.target.value": "Target value",
     "dmx.universe": "Universe num",
     "dmx.channels": "DMX Channels",

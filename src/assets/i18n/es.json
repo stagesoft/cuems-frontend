@@ -188,6 +188,8 @@
     "fade.curve.logarithmic": "Logarítmica",
     "fade.curve.sigmoid": "Sigmoidal",
     "fade.duration": "Duración",
+    "fade.duration.invalid": "La duración del fundido debe ser mayor que cero",
+    "fade.duration.invalid.save": "No se puede guardar: un cue de fundido tiene una duración no válida",
     "fade.target.value": "Valor de destino",
     "dmx.universe": "Universe num",
     "dmx.channels": "Canales DMX",

@@ -10,6 +10,9 @@ import { IconComponent } from '../../ui/icon/icon.component';
 import { DrawerService } from '../../../services/ui/drawer.service';
 import { v4 as uuidv4 } from 'uuid';
 import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
+import { NotificationService } from '../../../services/ui/notification.service';
+import { TranslateService } from '@ngx-translate/core';
+import { findInvalidFadeCuesInContents } from '../../../core/utils';
 
 @Component({
   selector: 'app-project-edit',
@@ -23,6 +26,8 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private editStateService = inject(ProjectEditStateService);
   private drawerService = inject(DrawerService);
   private workspace = inject(ProjectWorkspaceService);
+  private notificationService = inject(NotificationService);
+  private translateService = inject(TranslateService);
   
   public project: any;
   public projectUuid: string | null = null;
@@ -195,7 +200,21 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
       if (!updatedProject.uuid && this.projectUuid) {
         updatedProject.uuid = this.projectUuid;
       }
-    
+
+      // Gate: never send a project whose FadeCues carry zero/invalid
+      // durations (silent no-op fades at reveal). No inline UI here, so the
+      // toast names the offending cues.
+      const invalidFades = findInvalidFadeCuesInContents(
+        updatedProject.CuemsScript?.CueList?.contents
+      );
+      if (invalidFades.length > 0) {
+        this.notificationService.showError(
+          this.translateService.instant('fade.duration.invalid.save') +
+          ': ' + invalidFades.map(o => o.name).join(', ')
+        );
+        return;
+      }
+
       this.projectsService.updateProject(updatedProject);
     } catch (error) {
       console.error('Error saving complete project:', error);

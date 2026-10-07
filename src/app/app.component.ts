@@ -101,14 +101,23 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private handleWebSocketError(error: any): void {
     if (error._handledByProjectShow) return;
+    // WebsocketService emits {action, message, raw} — the old error.value
+    // branch was always undefined, so every backend rejection surfaced as the
+    // generic toast. Match special cases against the raw backend text and
+    // otherwise show the parsed message (stripping the "<class '...'>"
+    // prefix the editor prepends to forwarded exceptions).
     let errorMessage = 'Ha ocurrido un error';
-    if (error.value && typeof error.value === 'string') {
-      if (error.value.includes('cannot be lesser than 3')) {
+    const detail = typeof error.message === 'string' ? error.message : '';
+    const rawValue = typeof error.raw?.value === 'string' ? error.raw.value : '';
+    const haystack = rawValue || detail;
+    if (haystack) {
+      if (haystack.includes('cannot be lesser than 3')) {
         errorMessage = 'El nombre debe tener al menos 3 caracteres';
-      } else if (error.value.includes('XMLSchemaValidationError')) {
+      } else if (haystack.includes('XMLSchemaValidationError')) {
         errorMessage = 'Error de validación: ' + error.action;
       } else {
-        errorMessage = `Error en la acción "${error.action}"`;
+        const cleaned = detail.replace(/^<class '[^']+'>/, '').trim();
+        errorMessage = cleaned || `Error en la acción "${error.action}"`;
       }
     }
     this.notificationService.showError(errorMessage);
