@@ -17,6 +17,12 @@
             <span class="sr-only">Success:</span>
           </div>
         }
+        @if (notification.type === 'warning') {
+          <div class="flex-shrink-0" data-notification-icon="warning">
+            <span aria-hidden="true" class="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-amber-500 text-lg font-bold text-amber-500">!</span>
+            <span class="sr-only">Warning:</span>
+          </div>
+        }
         @if (notification.type === 'error') {
           <div class="flex-shrink-0">
             <span aria-hidden="true" class="inline-flex h-6 w-6 items-center justify-center rounded-full border-2 border-red-600 text-lg font-bold text-red-600">×</span>
@@ -25,7 +31,10 @@
         }
         <!-- Text -->
         <div class="ml-3 w-0 flex-1 pt-0.5">
-          <p class="text-sm font-medium leading-5 text-gray-900">{{ notification.content }}</p>
+          @if (notification.title) {
+            <p class="text-sm font-semibold leading-5 text-gray-900">{{ notification.title }}</p>
+          }
+          <p data-notification-content class="text-sm font-medium leading-5 text-gray-900 whitespace-pre-line break-words">{{ notification.content }}</p>
         </div>
         <!-- Remove button -->
         <div class="ml-4 flex flex-shrink-0">

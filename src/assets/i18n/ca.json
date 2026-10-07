@@ -277,5 +277,15 @@
     "nodes.settings.cancel": "Cancelar",
     "footer.powered.text": "Impulsat",
     "footer.promoted.text": "Promogut",
-    "footer.financed.text": "Financiado"
+    "footer.financed.text": "Financiado",
+    "mediaCheck.title": "Mitjans desactualitzats a «{{project}}»",
+    "mediaCheck.fileChanged": "el fitxer ha canviat",
+    "mediaCheck.cues": "({{count}} cues)",
+    "mediaCheck.more": "i {{count}} més",
+    "mediaCheck.unverified": "{{file}}: el fitxer ha canviat; es mesura en carregar o desar el projecte",
+    "mediaCheck.incomplete": "La comprovació no ha acabat; es repeteix a la propera càrrega.",
+    "mediaCheck.footer": "L'espectacle fa servir els valors desats fins que desis el projecte.",
+    "mediaCheck.footerDuration": "La llista de cues ja mostra la durada nova, però l'espectacle fa servir la desada fins que desis el projecte.",
+    "mediaCheck.field.duration": "durada",
+    "mediaCheck.field.pixel_size": "mida d'imatge"
 }
