@@ -65,3 +65,10 @@ Collected as each change lands; T115 completes this file.
 - A short reconnection no longer closes the screen you are on; a notice shows while the connection
   is checked again.
 
+## Configuration
+
+- New read-only pages under **Configuration** (`/config`) describe the controller settings, the
+  project settings and the project output mappings: every field, its type, the allowed values and
+  the schema's default. They cannot show the controller's current values or edit them yet — the
+  editor offers no way to read them — and they say so.
+

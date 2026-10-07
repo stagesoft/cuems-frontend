@@ -327,5 +327,17 @@
     "gate.descriptor.descriptor_unusable": "El descriptor del esquema llegó pero le falta lo necesario para crear cues nuevas:",
     "gate.descriptor.action": "Los proyectos quedan cerrados: las cues y proyectos nuevos se crean a partir de este esquema y no hay sustituto seguro. Revisa el registro del editor y vuelve a cargar esta página.",
     "gate.connecting": "Conectando con el editor…",
-    "gate.reconnecting": "Conexión con el editor renovada; comprobándola de nuevo…"
+    "gate.reconnecting": "Conexión con el editor renovada; comprobándola de nuevo…",
+    "config.title": "Configuración",
+    "config.settings.title": "Ajustes de la controladora",
+    "config.project_settings.title": "Ajustes de proyecto",
+    "config.project_mappings.title": "Mapeos de salidas del proyecto",
+    "config.values.unavailable": "Aquí se muestran los campos del documento tal como los describe su esquema. Los valores de la controladora aún no se pueden mostrar: el editor no ofrece forma de leerlos.",
+    "config.editing.unavailable": "La edición aún no está disponible: guardar sustituye todo el documento y, sin sus valores actuales, sobrescribiría la configuración de la controladora.",
+    "config.loading": "Pidiendo al editor el esquema de este documento…",
+    "config.field.repeated": "repetible",
+    "config.field.optional": "opcional",
+    "config.field.one-of": "uno de:",
+    "config.field.default": "valor por defecto del esquema:",
+    "config.field.undescribed": "no descrito por el esquema"
 }

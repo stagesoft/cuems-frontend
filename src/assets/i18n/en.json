@@ -327,5 +327,17 @@
     "gate.descriptor.descriptor_unusable": "The schema descriptor arrived but lacks what new cues are built from:",
     "gate.descriptor.action": "Projects stay closed: new cues and projects are built from this schema, and there is no safe substitute. Check the editor's log, then reload this page.",
     "gate.connecting": "Connecting to the editor…",
-    "gate.reconnecting": "Connection to the editor renewed; checking it again…"
+    "gate.reconnecting": "Connection to the editor renewed; checking it again…",
+    "config.title": "Configuration",
+    "config.settings.title": "Controller settings",
+    "config.project_settings.title": "Project settings",
+    "config.project_mappings.title": "Project output mappings",
+    "config.values.unavailable": "This shows the document's fields as its schema describes them. The values on the controller cannot be shown yet: the editor offers no way to read them.",
+    "config.editing.unavailable": "Editing is not available yet: saving replaces the whole document, and without its current values that would overwrite the controller's configuration.",
+    "config.loading": "Asking the editor for this document's schema…",
+    "config.field.repeated": "repeated",
+    "config.field.optional": "optional",
+    "config.field.one-of": "one of:",
+    "config.field.default": "schema default:",
+    "config.field.undescribed": "not described by the schema"
 }

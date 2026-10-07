@@ -328,5 +328,17 @@
     "gate.descriptor.descriptor_unusable": "El descriptor de l'esquema va arribar però li falta el que cal per crear cues noves:",
     "gate.descriptor.action": "Els projectes queden tancats: les cues i projectes nous es creen a partir d'aquest esquema i no hi ha substitut segur. Revisa el registre de l'editor i torna a carregar aquesta pàgina.",
     "gate.connecting": "Connectant amb l'editor…",
-    "gate.reconnecting": "Connexió amb l'editor renovada; tornant-la a comprovar…"
+    "gate.reconnecting": "Connexió amb l'editor renovada; tornant-la a comprovar…",
+    "config.title": "Configuració",
+    "config.settings.title": "Ajustos de la controladora",
+    "config.project_settings.title": "Ajustos de projecte",
+    "config.project_mappings.title": "Mapatges de sortides del projecte",
+    "config.values.unavailable": "Aquí es mostren els camps del document tal com els descriu el seu esquema. Els valors de la controladora encara no es poden mostrar: l'editor no ofereix cap manera de llegir-los.",
+    "config.editing.unavailable": "L'edició encara no està disponible: desar substitueix tot el document i, sense els valors actuals, sobreescriuria la configuració de la controladora.",
+    "config.loading": "Demanant a l'editor l'esquema d'aquest document…",
+    "config.field.repeated": "repetible",
+    "config.field.optional": "opcional",
+    "config.field.one-of": "un de:",
+    "config.field.default": "valor per defecte de l'esquema:",
+    "config.field.undescribed": "no descrit per l'esquema"
 }

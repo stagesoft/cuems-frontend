@@ -241,6 +241,17 @@ condition lives in the shell template), and afterwards a refusal hides the outle
 destroying it, while a reconnect's brief re-check only shows a notice. Otherwise every dropped
 socket would tear down the open edit screen.
 
+**F27 — US8: no config read exists, so the views are descriptor-only and editing waits (T103a).**
+Measured (research R10): the editor's action list has `config_save` for all four config domains
+but nothing that returns a document's contents, and `initial_mappings` is `default_mappings.xml`,
+not a project's `mappings.xml`. The owner had widened US8 to editing (2026-10-06) after UR-5
+closed; with the read missing, `config_save` (which replaces the whole document) would overwrite a
+working configuration with blanks or defaults. **Decided by the owner, 2026-10-07:** views now,
+editing once **UR-2** (filed here) is answered. The views render every field from the descriptor —
+type, repeated/optional, enumeration, the schema default labelled as such — and say plainly that
+values and editing are not yet available. `tools/wire-guards.mjs` fails on any `config_save` in
+`src/app` until then. T112 (register the frontend against UR-5) is moot: UR-5 is closed.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.
@@ -269,3 +280,9 @@ an acknowledgement and without preserving the original, because the new session 
 whose last load was not clean and not acknowledged is refused, whichever session sends it), or a
 reconnecting client required to reload before saving. Consumer: `LoadReportService` (T068).
 *Not yet filed upstream.*
+
+**To `cuems-editor` — UR-2, no way to read a config document.** Filed as
+`upstream-reports/UR-2-no-config-document-read.md` in this repository: a `config_load` symmetric to
+`config_save`, returning the document in the form `config_save` accepts, with an explicit "no
+document yet" for a project file never saved. Consumer: `src/app/components/config/`.
+*Authored here; not yet linked from cuems-editor.*

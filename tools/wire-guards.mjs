@@ -60,6 +60,13 @@ check('no per-type cue wire keys (AudioCue, VideoCueOutput, …) outside specs (
     .flatMap(lines)
     .filter(l => /\b(Audio|Video|Dmx)Cue(Output)?\b/.test(l.text)));
 
+// T108: the config views are read-only. config_save replaces a whole
+// document and no read action exists (research R10, UR-2), so nothing in the
+// app may send it until UR-2 is answered.
+check('no config_save is sent from src/app (T108, UR-2)',
+  files.filter(f => !isTest(f)).flatMap(lines)
+    .filter(l => /config_save/.test(l.text) && !/^\s*(\*|\/\/)/.test(l.text)));
+
 if (failures.length) {
   for (const { name, offending } of failures) {
     console.error(`\n✗ ${name}`);

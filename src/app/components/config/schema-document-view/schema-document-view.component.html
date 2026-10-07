@@ -1,0 +1,35 @@
+<div class="rounded-lg bg-dark-300 p-4 text-sm" data-test="read-only-note">
+  <p>{{ 'config.values.unavailable' | translate }}</p>
+  <p class="mt-1 text-gray-400">{{ 'config.editing.unavailable' | translate }}</p>
+</div>
+
+@if (!descriptor()) {
+  <p class="mt-6 text-gray-400" data-test="loading">{{ 'config.loading' | translate }}</p>
+} @else {
+  <ul class="mt-6 space-y-1" data-test="outline">
+    @for (field of outline(); track field.name) {
+      <ng-container [ngTemplateOutlet]="fieldRow" [ngTemplateOutletContext]="{ $implicit: field, depth: 0 }" />
+    }
+  </ul>
+}
+
+<ng-template #fieldRow let-field let-depth="depth">
+  <li [style.padding-left.rem]="depth * 1.25" data-test="field">
+    <span class="font-mono">{{ field.name }}</span>
+    @if (field.type) { <span class="ml-2 text-xs text-gray-400">{{ field.type }}</span> }
+    @if (field.repeated) { <span class="ml-2 text-xs text-gray-400">{{ 'config.field.repeated' | translate }}</span> }
+    @if (!field.required) { <span class="ml-2 text-xs text-gray-400">{{ 'config.field.optional' | translate }}</span> }
+    @if (field.enumValues?.length) {
+      <span class="ml-2 text-xs" data-test="enum">{{ 'config.field.one-of' | translate }} {{ field.enumValues.join(', ') }}</span>
+    }
+    @if (field.defaultValue !== null && field.defaultValue !== undefined) {
+      <span class="ml-2 text-xs text-gray-300" data-test="default">{{ 'config.field.default' | translate }} {{ display(field.defaultValue) }}</span>
+    }
+    @if (field.undescribed) {
+      <span class="ml-2 text-xs text-yellow-300" data-test="undescribed">{{ 'config.field.undescribed' | translate }}</span>
+    }
+  </li>
+  @for (child of field.children; track child.name) {
+    <ng-container [ngTemplateOutlet]="fieldRow" [ngTemplateOutletContext]="{ $implicit: child, depth: depth + 1 }" />
+  }
+</ng-template>

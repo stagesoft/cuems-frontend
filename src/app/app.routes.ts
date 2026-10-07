@@ -12,6 +12,9 @@ import { ProjectEditAudioMixerComponent } from './components/projects/project-ed
 import { ProjectEditVideoMixerComponent } from './components/projects/project-edit/video-mixer/video-mixer.component';
 import { ProjectEditDmxMixerComponent } from './components/projects/project-edit/dmx-mixer/dmx-mixer.component';
 import { NodeAdoptionComponent } from './components/nodes/node-adoption.component';
+import { ControllerSettingsComponent } from './components/config/controller-settings/controller-settings.component';
+import { ProjectSettingsComponent } from './components/config/project-settings/project-settings.component';
+import { ProjectMappingsComponent } from './components/config/project-mappings/project-mappings.component';
 import { ProjectShowSequenceComponent } from './components/projects/project-show/sequence/sequence.component';
 import { ProjectShowAudioMixerComponent } from './components/projects/project-show/audio-mixer/audio-mixer.component';
 import { ProjectShowVideoMixerComponent } from './components/projects/project-show/video-mixer/video-mixer.component';
@@ -52,5 +55,10 @@ export const routes: Routes = [
   // (FR-058); the old path still lands there.
   { path: 'nodes', component: NodeAdoptionComponent },
   { path: 'settings', redirectTo: 'nodes', pathMatch: 'full' },
+  // Read-only config documents, each named for the document it shows.
+  { path: 'config', redirectTo: 'config/settings', pathMatch: 'full' },
+  { path: 'config/settings', component: ControllerSettingsComponent },
+  { path: 'config/project-settings', component: ProjectSettingsComponent },
+  { path: 'config/project-mappings', component: ProjectMappingsComponent },
   { path: '**', redirectTo: '' }
 ];

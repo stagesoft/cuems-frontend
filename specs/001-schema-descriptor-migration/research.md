@@ -296,6 +296,29 @@ the frontend views unchanged, so the frontend's row adds a consumer, not a requi
 
 ---
 
+## R10 — Where the config documents' values come from (T103a, measured 2026-10-07)
+
+**Decision**: outcome **(b)** — no frame carries them. The three views are built from the
+descriptor (fields, types, enumerations, defaults labelled as defaults) and state that values are
+not yet available; the value half and editing are recorded as not performed against **UR-2**
+(filed by this feature).
+
+**Measured** at `cuems-editor` `feat/xml-refactor` @ `22093fd` (`tests/ws-command-responses.txt` and
+the action map in `CuemsWsUser.py`): the actions are `project_*`, `file_*`, `hw_discovery`,
+`nodeconf`, `nodelist_modify`, `nodelist_get`, `node_status`, `repair_acknowledge`,
+`schema_descriptor` and `config_save`. None returns a config document's contents.
+
+- `schema_descriptor` serves the *schema* — fields, types, enums, defaults — not values.
+- `initial_mappings` is `default_mappings.xml` (`cli.get_mappings`), the library-wide default
+  mapping document — **not** a project's `mappings.xml`, and the one file `config_save` refuses.
+- `node_list` carries network-map nodes merged with mapping keys, not the `network_map` document.
+- `config_save` now persists all four domains (UR-5 closed upstream by cuems-utils 014; a
+  project's first save still fails pending UR-6). It replaces the whole document.
+
+**Consequence for the owner's 2026-10-06 decision to add editing to US8**: without a read, an edit
+form starts from blanks or defaults and `config_save` would overwrite the controller's real
+configuration with them. Decided 2026-10-07: views now, editing once UR-2 is answered.
+
 ## Consolidated decisions
 
 | | Decision | Rationale | Alternative rejected |

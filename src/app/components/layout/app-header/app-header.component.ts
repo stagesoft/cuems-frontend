@@ -5,6 +5,7 @@ import { RouterModule, RouterLink, RouterLinkActive } from '@angular/router';
 import { IconComponent } from '../../ui/icon/icon.component';
 import { OpenProjectsDropdownComponent } from '../../ui/open-projects-dropdown/open-projects-dropdown.component';
 import { ShowProjectLoadedIndicatorComponent } from '../../ui/show-project-loaded-indicator/show-project-loaded-indicator.component';
+import { CONFIG_VIEWS } from '../../config/config-nav.component';
 
 @Component({
   selector: 'app-header',
@@ -34,6 +35,7 @@ import { ShowProjectLoadedIndicatorComponent } from '../../ui/show-project-loade
   `]
 })
 export class AppHeaderComponent {
+  readonly configViews = CONFIG_VIEWS;
   isMobileMenuOpen = false;
   isProfileDropdownOpen = false;
   constructor(private elementRef: ElementRef) {}
