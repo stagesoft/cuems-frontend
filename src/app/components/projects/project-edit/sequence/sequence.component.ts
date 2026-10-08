@@ -253,8 +253,18 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Reflect each resolution in the unsaved-changes baseline for THAT cue
+    // only (matched by id, never by index). Snapshotting the whole array
+    // here used to erase every unsaved edit's baseline whenever another tab
+    // uploaded or restored a file and this list refreshed (869fej3kv).
     if (changed) {
-      this.originalCues = JSON.parse(JSON.stringify(this.cues));
+      for (const cue of this.cues) {
+        if (!cue.selectedMediaFile) continue;
+        const original = this.originalCues.find(o => o.id === cue.id);
+        if (original && !original.selectedMediaFile) {
+          original.selectedMediaFile = JSON.parse(JSON.stringify(cue.selectedMediaFile));
+        }
+      }
     }
   }
 

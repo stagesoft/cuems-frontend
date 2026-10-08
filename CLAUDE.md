@@ -16,6 +16,10 @@ The sequence view maps the engine's `post_go` field to labels in `sequence.compo
 
 `OscService.engineCueNames` is fed by `/engine/status/cue_name/<uuid>` (cuems-engine branch `fix/869fedahu-cue-names-broadcast` or later; the engine sends it after `/engine/status/load`, so the table is cleared on every load change and on disconnect) and is **authoritative** for "Siguiente cue". The page-fed `cueNames` (show sequence page) is only the fallback for older engines. Never merge the two: duplicated projects share cue uuids, so a page-fed name can belong to the wrong project.
 
+## Lists changed by other sessions
+
+The editor broadcasts `{"type": "list_update", "value": "project_list" | "project_trash_list" | "file_list" | "file_trash_list"}` to every *other* session when a list changes (create, save, duplicate, upload, trash, restore, delete). `ProjectsService` and `MediaService` refetch the named list on it; nothing else may decide when a list is stale. A list refresh re-runs the edit page's media rematch, which only fills empty `selectedMediaFile` slots and records that resolution per cue in the unsaved-changes baseline — never a whole-array snapshot (869fej3kv).
+
 ## Deploy / "Updating the UI"
 
 When asked to "update the UI", run in order:
