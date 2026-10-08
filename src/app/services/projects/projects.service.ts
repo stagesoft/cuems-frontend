@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable, DestroyRef, EventEmitter, inject, signal, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WebsocketService, WebSocketError } from '../websocket.service';
@@ -314,6 +317,15 @@ export class ProjectsService {
   }
 
   public handleWebsocketResponse(response: any): void {
+    // The editor tells the OTHER sessions when a list changed (project
+    // created, saved, duplicated, trashed, restored…). Without this, a tab's
+    // list stayed as it was when the tab opened (869fej3kv).
+    if (response && response.type === 'list_update') {
+      if (response.value === 'project_list') this.getProjectList();
+      else if (response.value === 'project_trash_list') this.getProjectTrashList();
+      return;
+    }
+
     if (response && response.type === 'initial_template' && response.value) {
       try {
         this.projectTemplate.set(response.value);
