@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -12,7 +15,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { ProjectWorkspaceService } from '../../../services/project-workspace.service';
 import { NotificationService } from '../../../services/ui/notification.service';
 import { TranslateService } from '@ngx-translate/core';
-import { findInvalidFadeCuesInContents } from '../../../core/utils';
+import { findInvalidFadeCuesInContents, findMediaCueProblems } from '../../../core/utils';
+import { MediaService } from '../../../services/media/media.service';
 
 @Component({
   selector: 'app-project-edit',
@@ -27,6 +31,7 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
   private drawerService = inject(DrawerService);
   private workspace = inject(ProjectWorkspaceService);
   private notificationService = inject(NotificationService);
+  private mediaService = inject(MediaService);
   private translateService = inject(TranslateService);
   
   public project: any;
@@ -213,6 +218,27 @@ export class ProjectEditComponent implements OnInit, OnDestroy {
           ': ' + invalidFades.map(o => o.name).join(', ')
         );
         return;
+      }
+
+      // Same media gate as the sequence page's save (869fej07m): never send
+      // a media cue without a usable block or with a deleted file; warn on
+      // a trashed one.
+      const mediaCheck = findMediaCueProblems(
+        updatedProject.CuemsScript?.CueList?.contents,
+        this.mediaService.fileList(), this.mediaService.fileTrashList()
+      );
+      if (mediaCheck.blocking.length > 0) {
+        this.notificationService.showError(
+          this.translateService.instant('media.missing.save') +
+          ': ' + mediaCheck.blocking.map(o => o.name).join(', ')
+        );
+        return;
+      }
+      if (mediaCheck.trashed.length > 0) {
+        this.notificationService.showWarning(
+          this.translateService.instant('media.trashed.save.warning') +
+          ': ' + mediaCheck.trashed.map(o => o.name).join(', ')
+        );
       }
 
       this.projectsService.updateProject(updatedProject);

@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 /**
  * Generate a slug from a string using hyphens instead of underscores
  * @param text The text to convert to a slug
@@ -175,4 +178,147 @@ export function normalizeFadeCurveType(
     return value as FadeCurveType;
   }
   return LEGACY_FADE_CURVES[value] ?? 'linear';
+}
+
+// ─── Media cues and the save payload (869fej07m) ────────────────────────
+
+export type MediaCueProblem = {
+  name: string;
+  id: string;
+  fileName: string | null;
+  reason: 'no-media' | 'deleted';
+};
+
+export type MediaCueCheck = {
+  /** Cues the save must not send: no usable media block, or a file the
+   *  library no longer knows (trash-deleted). */
+  blocking: MediaCueProblem[];
+  /** Cues whose file sits in the media trash: saved as is, worth a warning. */
+  trashed: { name: string; id: string; fileName: string }[];
+};
+
+/** unix_names present in a `file_list` / `file_trash_list` payload
+ *  (arrays of `{ <uuid>: { unix_name, … } }`). */
+export function libraryUnixNames(list: any[] | null | undefined): Set<string> {
+  const names = new Set<string>();
+  if (!Array.isArray(list)) return names;
+  for (const entry of list) {
+    if (!entry || typeof entry !== 'object') continue;
+    for (const file of Object.values(entry) as any[]) {
+      if (file && typeof file.unix_name === 'string') names.add(file.unix_name);
+    }
+  }
+  return names;
+}
+
+export type MediaResolution = 'ok' | 'trashed' | 'missing' | 'none';
+
+/** Where a cue's media file stands relative to the library lists. */
+export function mediaResolution(
+  fileName: string | null | undefined,
+  fileList: any[] | null | undefined,
+  trashList: any[] | null | undefined
+): MediaResolution {
+  if (!fileName) return 'none';
+  if (libraryUnixNames(fileList).has(fileName)) return 'ok';
+  if (libraryUnixNames(trashList).has(fileName)) return 'trashed';
+  return 'missing';
+}
+
+/**
+ * Walk a server-format cue tree and classify every AudioCue/VideoCue's media.
+ * Recurses nested CueLists. The save paths block on `blocking` and warn on
+ * `trashed`; the editor refuses the same shapes server-side.
+ */
+export function findMediaCueProblems(
+  contents: any[] | null | undefined,
+  fileList: any[] | null | undefined,
+  trashList: any[] | null | undefined
+): MediaCueCheck {
+  const known = libraryUnixNames(fileList);
+  const trashed = libraryUnixNames(trashList);
+  const result: MediaCueCheck = { blocking: [], trashed: [] };
+  const walk = (items: any[] | null | undefined) => {
+    if (!Array.isArray(items)) return;
+    for (const item of items) {
+      if (!item || typeof item !== 'object') continue;
+      if (item.CueList) walk(item.CueList.contents);
+      for (const key of ['AudioCue', 'VideoCue']) {
+        const cue = item[key];
+        if (!cue || typeof cue !== 'object') continue;
+        const name = cue.name || 'unnamed';
+        const id = cue.id || 'unknown';
+        const media = cue.Media;
+        if (!media || typeof media !== 'object' || !media.file_name || !('id' in media)) {
+          result.blocking.push({ name, id, fileName: null, reason: 'no-media' });
+        } else if (known.has(media.file_name)) {
+          continue;
+        } else if (trashed.has(media.file_name)) {
+          result.trashed.push({ name, id, fileName: media.file_name });
+        } else {
+          result.blocking.push({ name, id, fileName: media.file_name, reason: 'deleted' });
+        }
+      }
+    }
+  };
+  walk(contents);
+  return result;
+}
+
+/**
+ * The `Media` block the edit page sends for an audio/video cue.
+ *
+ * A file picked in the library (`selectedMediaFile`) wins. Otherwise the
+ * cue's ORIGINAL block is kept untouched: the page could not match the file
+ * in its library list (trashed, deleted, list not loaded yet), and dropping
+ * the block here used to erase the cue's media on save. `undefined` only
+ * when the cue never had media.
+ */
+export function mediaBlockToSave(
+  originalMedia: any,
+  selectedMediaFile: { uuid: string; file: any } | null | undefined
+): any | undefined {
+  if (selectedMediaFile?.file?.unix_name) {
+    return {
+      file_name: selectedMediaFile.file.unix_name,
+      id: selectedMediaFile.uuid,
+      // Real duration from the file_list metadata; the `||` covers legacy
+      // rows with a NULL duration (the editor's safety net corrects it).
+      duration: selectedMediaFile.file.duration || '00:00:00.000',
+      regions: [
+        {
+          Region: {
+            id: 0,
+            loop: 1,
+            in_time: { CTimecode: '00:00:00.000' },
+            out_time: { CTimecode: '00:00:00.000' }
+          }
+        }
+      ]
+    };
+  }
+  if (originalMedia && typeof originalMedia === 'object' && originalMedia.file_name) {
+    return JSON.parse(JSON.stringify(originalMedia));
+  }
+  return undefined;
+}
+
+/**
+ * `ui_properties.warning` as a number, or null when unset.
+ *
+ * The XML type is `anyType`, so an absent value comes back as the string
+ * "None" (every saved media cue carries it) and digits come back as strings;
+ * comparing against `null`/`2` never matched and the warning icon never
+ * rendered for a saved cue.
+ */
+export function normalizeUiWarning(value: unknown): number | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === '' || trimmed === 'None' || trimmed === 'null') return null;
+    const n = Number(trimmed);
+    return Number.isNaN(n) ? null : n;
+  }
+  if (typeof value === 'number') return value;
+  return null;
 }

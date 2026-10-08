@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component, OnInit, OnDestroy, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +24,7 @@ import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/confirmation-dialog.component';
 import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
 import { NotificationService } from '../../../../services/ui/notification.service';
-import { findInvalidFadeCuesInContents, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType } from '../../../../core/utils';
+import { findInvalidFadeCuesInContents, findMediaCueProblems, mediaBlockToSave, mediaResolution, MediaResolution, normalizeUiWarning, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType } from '../../../../core/utils';
 
 interface CueData {
   id: string | number;
@@ -153,6 +156,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     );
 
     this.mediaService.getFileList();
+    // The trash list too: a cue whose file is in the trash must say so, not
+    // "not in the library" (869fej07m).
+    this.mediaService.getFileTrashList();
 
     this.subscription.add(
       this.mediaService.fileListLoaded.subscribe(() => {
@@ -986,9 +992,36 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           return;
         }
 
+        if (!this.mediaGateAllowsSave(updatedProject.CuemsScript?.CueList?.contents)) {
+          return;
+        }
+
         this.projectsService.updateProject(updatedProject);
       }
     }
+  }
+
+  /**
+   * Media gate on the final payload: block on cues without a usable media
+   * block or whose file the library no longer knows; warn (and go on) when
+   * the file is in the trash. The editor refuses the same shapes server-side.
+   */
+  private mediaGateAllowsSave(contents: any[] | undefined): boolean {
+    const check = findMediaCueProblems(contents, this.mediaService.fileList(), this.mediaService.fileTrashList());
+    if (check.blocking.length > 0) {
+      this.notificationService.showError(
+        this.translateService.instant('media.missing.save') +
+        ': ' + check.blocking.map(o => o.name).join(', ')
+      );
+      return false;
+    }
+    if (check.trashed.length > 0) {
+      this.notificationService.showWarning(
+        this.translateService.instant('media.trashed.save.warning') +
+        ': ' + check.trashed.map(o => o.name).join(', ')
+      );
+    }
+    return true;
   }
 
   private transformCueToServerFormat(cue: CueData): any {
@@ -1081,32 +1114,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }    
 
     if (cue.type === 'audio' || cue.type === 'video') {
-      if (newCue.Media) {
-        if (cue.selectedMediaFile && cue.selectedMediaFile.file.unix_name) {
-          newCue.Media = {
-            file_name: cue.selectedMediaFile.file.unix_name,
-            id: cue.selectedMediaFile.uuid,
-            // Send the real media duration from the file_list metadata. The `||`
-            // fallback covers legacy media rows with a NULL duration and older
-            // editors whose file_list payload doesn't yet carry the field; in
-            // those cases the backend safety net (_fix_media_durations) still
-            // corrects it from the DB on save.
-            duration: cue.selectedMediaFile.file.duration || '00:00:00.000',
-            regions: [
-              {
-                Region: {
-                  id: 0,
-                  loop: 1,
-                  in_time: { CTimecode: "00:00:00.000" },
-                  out_time: { CTimecode: "00:00:00.000" }
-                }
-              }
-            ]
-          };
-        } else {
-          delete newCue.Media;
-        }
-      }
+      // A file picked in the library wins; otherwise the cue's ORIGINAL media
+      // block is kept. Dropping it when the file could not be matched in the
+      // library list (trashed, deleted, list not loaded yet) used to erase the
+      // cue's media on save (869fej07m).
+      const block = mediaBlockToSave(this.getCueData(cue.originalData)?.Media, cue.selectedMediaFile);
+      if (block) newCue.Media = block;
+      else delete newCue.Media;
 
       if (cue.type === 'audio') {
         let selectedOutputs: string[] = [];
@@ -1231,18 +1245,39 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     // Only for audio/video, no action, no dmx
     if ((cue.type === 'action') || (cue.type === 'dmx') || (cue.type === 'fade')) return false;
 
-    // If there is a media file selected, no show warning
-    if (cue.selectedMediaFile) return false;
+    // Resolved against the CURRENT library list: a file trashed elsewhere
+    // leaves a stale selectedMediaFile behind, so the list decides.
+    if (this.mediaResolutionOf(cue) === 'ok') return false;
 
-    let warning = null;
-    if (cue.originalData?.AudioCue?.ui_properties?.warning !== undefined) {
-      warning = cue.originalData.AudioCue.ui_properties.warning;
-    } else if (cue.originalData?.VideoCue?.ui_properties?.warning !== undefined) {
-      warning = cue.originalData.VideoCue.ui_properties.warning;
-    }
-
-    // Show if it is null or 2
+    // The XML type is anyType: an unset warning arrives as the string "None"
+    // and digits as strings. 0 and 1 hide the icon; anything else shows it.
+    const warning = normalizeUiWarning(this.getCueData(cue.originalData)?.ui_properties?.warning);
     return warning === null || warning === 2;
+  }
+
+  /** Where this cue's media file stands: in the library, in the trash,
+   *  nowhere (deleted), or the cue has no media at all. */
+  public mediaResolutionOf(cue: CueData): MediaResolution {
+    const fileName = cue.selectedMediaFile?.file?.unix_name
+      || this.getCueData(cue.originalData)?.Media?.file_name;
+    return mediaResolution(fileName, this.mediaService.fileList(), this.mediaService.fileTrashList());
+  }
+
+  /** Tooltip for the warning icon. */
+  public mediaWarningText(cue: CueData): string {
+    switch (this.mediaResolutionOf(cue)) {
+      case 'trashed': return this.translateService.instant('media.in.trash');
+      case 'missing': return this.translateService.instant('media.not.in.library');
+      default: return '';
+    }
+  }
+
+  /** The file the cue keeps pointing at while it cannot be picked from the
+   *  library list (trashed or deleted): shown in the select instead of the
+   *  placeholder, so the operator sees what will be saved. */
+  public keptMediaName(cue: CueData): string | null {
+    if (cue.selectedMediaFile) return null;
+    return this.getCueData(cue.originalData)?.Media?.file_name || null;
   }
 
   public getCueTypeKey(originalData: any): string | null {
