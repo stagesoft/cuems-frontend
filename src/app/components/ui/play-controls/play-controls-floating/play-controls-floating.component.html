@@ -1,3 +1,4 @@
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
 <!-- wrapper always in DOM, CDK maintains state -->
 <div
   #dragRef="cdkDrag"
@@ -26,7 +27,10 @@
 
 <!-- collapsed: fixed bottom-right, always independent -->
 @if (collapsed()) {
-  <div class="fixed bottom-4 right-4 z-[9998] flex items-center justify-between gap-2 bg-dark-200 lg:min-w-[540px] rounded-lg border border-gray-300 p-1">
+  <div class="fixed bottom-4 right-4 z-[9998] flex items-center justify-between gap-2 bg-dark-200 lg:min-w-[540px] rounded-lg border p-1"
+       [class.border-yellow-500]="workspace.loadedElsewhere()"
+       [class.border-secondary]="oscService.armed() && !workspace.loadedElsewhere()"
+       [class.border-gray-300]="!oscService.armed() && !workspace.loadedElsewhere()">
     <app-play-controls-bar />
     <button type="button" class="flex items-center justify-center w-8 h-8 cursor-pointer hover:text-white" (click)="toggle()">
       <app-icon icon="chevronUp" class="w-[16px] h-[16px]" />
