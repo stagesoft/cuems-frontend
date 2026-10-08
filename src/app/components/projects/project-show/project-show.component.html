@@ -1,3 +1,4 @@
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
 <div class="wrapper">
   <app-page-header icon="radio" [title]="project?.name">
     <div class="flex flex-col md:flex-row items-center gap-4" actions>
@@ -31,6 +32,7 @@
       [runningProject]="runningProject">
     </app-engine-status>
   </div>
+
   
   <div class="mt-6 border-b border-dark-300">
     <div class="flex justify-between">
@@ -61,7 +63,7 @@
     </div>
   </div>
   
-  <div class="mt-4">
+  <div class="mt-4 transition-opacity" [class.opacity-40]="otherLoadedProject()">
     <router-outlet></router-outlet>
   </div>
 </div>

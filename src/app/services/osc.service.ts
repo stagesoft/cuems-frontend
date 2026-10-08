@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
@@ -54,7 +57,18 @@ export class OscService {
   /** Map of cue UUID -> status (0=unplayed, 1-99=playing %, 100=played, -1=error) */
   public cueStatuses = signal<Record<string, number>>({});
 
+  /** Names fed by the show sequence page for the project ON SCREEN. Fallback
+   *  only: duplicated projects share cue uuids, so these may name a cue after
+   *  the wrong project when the page and the engine disagree. */
   public cueNames = signal<Record<string, string>>({});
+
+  /** Names of the cues of the project the ENGINE holds, from
+   *  /engine/status/cue_name/<uuid>. Authoritative: GO plays that project.
+   *  The engine sends them after /engine/status/load, so the table is cleared
+   *  on every change of the load status and refilled by the burst that follows;
+   *  cleared on disconnect too (the late-join dump re-sends them). Empty against
+   *  an engine that predates the broadcast (cuems-engine 869fedahu). */
+  public engineCueNames = signal<Record<string, string>>({});
 
   /** Map of cue UUID -> enabled state */
   public cueEnabledStatuses = signal<Record<string, boolean>>({});
@@ -124,6 +138,7 @@ export class OscService {
   private onDisconnect(): void {
     this.isConnected.set(false);
     this.mixerStatus.set({});
+    this.engineCueNames.set({});
   }  
 
   reconnect(): void {
@@ -188,6 +203,13 @@ export class OscService {
       return;
     }
 
+    if (msg.address.startsWith('/engine/status/cue_name/')) {
+      const uuid = msg.address.split('/engine/status/cue_name/')[1];
+      const name = String(msg.args[0] ?? '');
+      this.engineCueNames.update(names => ({ ...names, [uuid]: name }));
+      return;
+    }
+
     if (msg.address.startsWith('/engine/status/cue_enabled/')) {
       const uuid = msg.address.split('/engine/status/cue_enabled/')[1];
       const enabled = Number(msg.args[0]) === 1;
@@ -231,9 +253,14 @@ export class OscService {
         this.timecodeMs.set(Number(msg.args[0]));
         break;
 
-      case '/engine/status/load':
-        this.loadedProject.set(String(msg.args[0] ?? ''));
+      case '/engine/status/load': {
+        // A new load (or none) means a new name table; the engine's cue_name
+        // burst follows this message and refills it.
+        const loaded = String(msg.args[0] ?? '');
+        if (loaded !== this.loadedProject()) this.engineCueNames.set({});
+        this.loadedProject.set(loaded);
         break;
+      }
 
       case '/engine/status/running':
         this.running.set(msg.args[0] === 'yes');

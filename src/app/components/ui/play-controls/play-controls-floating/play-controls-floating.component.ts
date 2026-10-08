@@ -1,9 +1,14 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component, signal, OnInit, AfterViewInit, OnDestroy, PLATFORM_ID, inject, ViewChild } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { CdkDrag, CdkDragHandle, CdkDragEnd } from '@angular/cdk/drag-drop';
 import { PlayControlsPanelComponent } from '../play-controls-panel/play-controls-panel.component';
 import { PlayControlsBarComponent } from '../play-controls-bar/play-controls-bar.component';
 import { IconComponent } from '../../icon/icon.component';
+import { ProjectWorkspaceService } from '../../../../services/project-workspace.service';
+import { OscService } from '../../../../services/osc.service';
 
 const STORAGE_KEY = 'play-controls-floating';
 const PANEL_W = 340;
@@ -17,6 +22,8 @@ const PANEL_H = 300;
 })
 export class PlayControlsFloatingComponent implements OnInit, AfterViewInit, OnDestroy {
   private platformId = inject(PLATFORM_ID);
+  workspace = inject(ProjectWorkspaceService);
+  oscService = inject(OscService);
   @ViewChild('dragRef') dragRef!: CdkDrag;
 
   collapsed = signal(false);

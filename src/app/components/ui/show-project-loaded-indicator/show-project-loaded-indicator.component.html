@@ -1,8 +1,13 @@
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
 <div class="flex items-center gap-2 text-xs font-mono">
-    <div class="w-2 h-2 rounded-full"
-         [class.bg-secondary]="workspace.showProject()"
-         [class.bg-muted]="!workspace.showProject()">
-    </div>
+    @if (workspace.showProject() && oscService.running()) {
+      <svg class="w-2.5 h-2.5 text-secondary shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5,3 19,12 5,21"/></svg>
+    } @else {
+      <div class="w-2 h-2 rounded-full"
+           [class.bg-secondary]="workspace.showProject()"
+           [class.bg-muted]="!workspace.showProject()">
+      </div>
+    }
     @if (workspace.showProject()) {
       <a (click)="navigateToProject(workspace.showProject()!.uuid)" class="text-white truncate max-w-[140px] cursor-pointer">
         {{ workspace.showProject()!.name }}

@@ -1,4 +1,8 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import { TranslateModule } from '@ngx-translate/core';
 import { PlayControlsBase } from '../play-controls-base.component';
 import { IconComponent } from '../../icon/icon.component';
@@ -8,9 +12,10 @@ import { IconComponent } from '../../icon/icon.component';
   imports: [TranslateModule],
   template: `
     <span class="flex gap-2 shrink-0 px-4">
+      <!-- Always the engine's project, the one playing. -->
       <span>
         <span class="font-medium">{{ 'playControls.project' | translate }}:</span>
-        <span class="text-primary ml-1">{{ oscService.loadedProject() || '—' }}</span>
+        <span class="text-primary ml-1">{{ loadedProjectName || '—' }}</span>
       </span>
       <span>·</span>
       <span>
@@ -29,7 +34,7 @@ import { IconComponent } from '../../icon/icon.component';
       <span>·</span>
       <span>
         <span class="font-medium">{{ 'playControls.nextCue' | translate }}:</span>
-        <span class="ml-1 text-primary">{{ oscService.cueNames()[oscService.nextCue() ?? ''] || oscService.nextCue() || '—' }}</span>
+        <span class="ml-1 text-primary">{{ nextCueName }}</span>
       </span>
     </span>
   `
@@ -38,7 +43,7 @@ export class PlayControlsBarInfoComponent extends PlayControlsBase {}
 
 @Component({
   selector: 'app-play-controls-bar',
-  imports: [TranslateModule, IconComponent, PlayControlsBarInfoComponent],
+  imports: [TranslateModule, RouterLink, IconComponent, PlayControlsBarInfoComponent],
   templateUrl: './play-controls-bar.component.html'
 })
 export class PlayControlsBarComponent extends PlayControlsBase {}

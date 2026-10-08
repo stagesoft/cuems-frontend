@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable, signal, computed, inject } from '@angular/core';
 import { RouteReuseStrategy } from '@angular/router';
 import { Router } from '@angular/router';
@@ -25,6 +28,10 @@ export class ProjectWorkspaceService {
 
   showConfirmClose = signal(false);
   pendingCloseUuid = signal<string | null>(null);
+
+  /** Set by the show page while the engine holds a project other than the one
+   *  on screen, so the transport can warn that GO will not play what is shown. */
+  loadedElsewhere = signal<{ loadedUuid: string | null; loadedName: string } | null>(null);
 
   isInShow(uuid: string): boolean {
     return this.showProject()?.uuid === uuid;

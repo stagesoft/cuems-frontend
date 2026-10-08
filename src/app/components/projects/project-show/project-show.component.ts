@@ -1,4 +1,7 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
+import { Component, OnInit, OnDestroy, inject, effect, untracked, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { ActivatedRoute, RouterModule } from '@angular/router';
@@ -37,14 +40,68 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
   private projectLoadedSubscription?: Subscription;
   private websocketSubscription?: Subscription;
   private websocketErrorSubscription?: Subscription;
-  private isWaitingForProjectReady: boolean = false;
+  // A signal underneath so otherLoadedProject can stay quiet during our own load.
+  private loadInFlight = signal(false);
+  private get isWaitingForProjectReady(): boolean { return this.loadInFlight(); }
+  private set isWaitingForProjectReady(value: boolean) { this.loadInFlight.set(value); }
+  private routeUuid = signal<string | null>(null);
+
+  /**
+   * The project the engine holds when it is not the one on screen, else null.
+   *
+   * GO always plays what the engine holds. After another tab loads a different
+   * project, this page still lists its own cues — say so loudly, or an
+   * operator reads the cue list on screen as what GO will play. Quiet while
+   * our own project_ready is in flight: the engine still reports the previous
+   * project for a moment.
+   */
+  readonly otherLoadedProject = computed(() => {
+    const loadedName = this.oscService.loadedProject();
+    const projects = this.projectsService.projects();
+    const viewed = projects.find(p => p.uuid === this.routeUuid());
+    if (!loadedName || !viewed?.unix_name || this.loadInFlight()) return null;
+    if (loadedName.toLowerCase() === viewed.unix_name.toLowerCase()) return null;
+    const loaded = projects.find(p => p.unix_name?.toLowerCase() === loadedName.toLowerCase()) ?? null;
+    return { viewed, loaded, loadedName };
+  });
+
+  private publishLoadedElsewhere = effect(() => {
+    const other = this.otherLoadedProject();
+    this.workspace.loadedElsewhere.set(
+      other ? { loadedUuid: other.loaded?.uuid ?? null, loadedName: other.loaded?.name ?? '' } : null
+    );
+  });
   private pendingUnloadAction: 'projects' | 'edit' | null = null;
+  /** Set on every navigation; cleared once this page has decided whether to load. */
+  private showDecisionPending = false;
   private router = inject(Router);
   public isUnloading = false;
+
+  /**
+   * Keep "ready" in step with the show slot once the engine has answered.
+   *
+   * The slot follows the engine (AppComponent), so when this project is
+   * closed or replaced from another tab the page must stop claiming the
+   * engine is ready with it — and claim it again if it comes back. Left alone
+   * while our own project_ready is in flight: that answer decides, and the
+   * slot is briefly emptied by the engine's reload in the meantime.
+   */
+  private followShowSlot = effect(() => {
+    const shownUuid = this.workspace.showProject()?.uuid ?? null;
+    untracked(() => {
+      if (!this.projectUuid || !this.project || this.showDecisionPending || this.isWaitingForProjectReady || this.oscService.running()) return;
+      this.isProjectReady = shownUuid === this.projectUuid;
+    });
+  });
 
   ngOnInit(): void {
     this.route.params.subscribe(params => {
       this.projectUuid = params['uuid'];
+      // The component is reused when only the uuid changes: start clean.
+      this.showDecisionPending = true;
+      this.routeUuid.set(this.projectUuid);
+      this.isProjectReady = false;
+      this.engineError = null;
 
       if (this.projectsService.projects().length === 0) {
         this.projectsService.getProjectList();
@@ -68,8 +125,15 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
         
         this.project = projectData;
 
-        if (this.projectUuid && this.project.name) {
-          if (!this.oscService.running() && !this.workspace.showProject()) {
+        // Decide once per navigation. projectLoaded is shared: the mixers,
+        // the show sequence and detached edit pages fire it too, and acting on
+        // those would reload this project over one loaded from another tab.
+        if (this.projectUuid && this.project.name && this.showDecisionPending) {
+          this.showDecisionPending = false;
+          // Opening a project in show loads it unless it is already the show
+          // project — also when another one sits loaded and stopped. Never
+          // while playing: that stays the "different project" state.
+          if (!this.oscService.running() && this.workspace.showProject()?.uuid !== this.projectUuid) {
             this.workspace.openInShow(this.projectUuid, this.project.name);
             this.checkProjectReady();
           } else {
@@ -86,6 +150,7 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.workspace.loadedElsewhere.set(null);
     if (this.projectLoadedSubscription) {
       this.projectLoadedSubscription.unsubscribe();
     }
@@ -219,6 +284,7 @@ export class ProjectShowComponent implements OnInit, OnDestroy {
     if (this.isDifferentProjectRunning) return 'different-project';
     if (this.isEngineRunning) return 'running';
     if (this.engineError) return 'error';
+    if (this.otherLoadedProject()) return 'different-loaded';
     if (this.isProjectReady) return 'ready';
     return 'idle';
   }
