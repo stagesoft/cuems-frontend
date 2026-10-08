@@ -20,6 +20,10 @@ The sequence view maps the engine's `post_go` field to labels in `sequence.compo
 
 The editor broadcasts `{"type": "list_update", "value": "project_list" | "project_trash_list" | "file_list" | "file_trash_list"}` to every *other* session when a list changes (create, save, duplicate, upload, trash, restore, delete). `ProjectsService` and `MediaService` refetch the named list on it; nothing else may decide when a list is stale. A list refresh re-runs the edit page's media rematch, which only fills empty `selectedMediaFile` slots and records that resolution per cue in the unsaved-changes baseline — never a whole-array snapshot (869fej3kv).
 
+## A cue's media on save
+
+The edit page never drops a cue's `Media` block. A file picked from the library replaces it; otherwise the ORIGINAL block is kept as is, even when the file is in the media trash or the list has not loaded yet (dropping it used to erase the cue's media on save — ClickUp 869fej07m). Both save paths run `findMediaCueProblems`: a cue with no usable block or a trash-deleted file blocks the save; a trashed file only warns. The warning icon in the sequence table is decided against the *current* library list (`ui_properties.warning` arrives as the string "None" when unset — see `normalizeUiWarning`).
+
 ## Deploy / "Updating the UI"
 
 When asked to "update the UI", run in order:

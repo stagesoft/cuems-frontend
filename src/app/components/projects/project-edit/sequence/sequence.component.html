@@ -1,3 +1,4 @@
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
 @if (workspace.isInShow(projectUuid!)) {
   <div class="flex items-center gap-3 mt-6 p-4 bg-dark-300 rounded-lg">
     <app-icon icon="exclamationTriangle" class="w-5 h-5 text-tertiary shrink-0" />
@@ -98,7 +99,8 @@
                       <app-icon 
                       *ngIf="shouldShowWarningIcon(cue)" 
                       icon="warning" 
-                      class="text-red-500">
+                      class="text-red-500"
+                      [title]="mediaWarningText(cue)">
                     </app-icon>
                     </td>
                     <!-- Drag Handle -->
@@ -356,7 +358,8 @@
                                 class="input"
                                 [value]="cue.selectedMediaFile?.uuid || ''"
                                 (change)="onMediaFileSelectFromEvent(cue, $event)">
-                                <option value="">{{ 'media.select.file.placeholder' | translate }}</option>
+                                <option *ngIf="keptMediaName(cue)" value="" selected disabled>{{ keptMediaName(cue) }} — {{ mediaWarningText(cue) }}</option>
+                                <option *ngIf="!keptMediaName(cue)" value="">{{ 'media.select.file.placeholder' | translate }}</option>
                                 <option 
                                   *ngFor="let mediaFile of getMediaFilesByType(cue.type)"
                                   [value]="mediaFile.uuid"

@@ -1,6 +1,10 @@
 import {
   FADE_CURVE_TYPES,
   findInvalidFadeCuesInContents,
+  findMediaCueProblems,
+  mediaBlockToSave,
+  mediaResolution,
+  normalizeUiWarning,
   isValidFadeDurationTc,
   normalizeFadeCurveType,
   normalizeFadeDurationTc,
@@ -142,5 +146,86 @@ describe('normalizeFadeCurveType', () => {
     for (const i of inputs) {
       expect(FADE_CURVE_TYPES).toContain(normalizeFadeCurveType(i));
     }
+  });
+});
+
+// ─── Media cues and the save payload (869fej07m) ────────────────────────
+
+const LIB = [{ 'u-1': { unix_name: 'a.wav', name: 'A', duration: '00:00:01.000' } }];
+const TRASH = [{ 'u-2': { unix_name: 'old.wav', name: 'Old' } }];
+const media = (file_name: string, extra: any = {}) => ({ file_name, id: 'm-1', duration: '00:00:01.000', regions: [], ...extra });
+const audio = (name: string, Media?: any) => ({ AudioCue: { name, id: `id-${name}`, ...(Media === undefined ? {} : { Media }) } });
+
+describe('mediaResolution', () => {
+  it('classifies against both lists', () => {
+    expect(mediaResolution('a.wav', LIB, TRASH)).toBe('ok');
+    expect(mediaResolution('old.wav', LIB, TRASH)).toBe('trashed');
+    expect(mediaResolution('gone.wav', LIB, TRASH)).toBe('missing');
+    expect(mediaResolution(undefined, LIB, TRASH)).toBe('none');
+    expect(mediaResolution('a.wav', null, undefined)).toBe('missing');
+  });
+});
+
+describe('findMediaCueProblems', () => {
+  it('blocks every shape without a usable media block, naming the cue', () => {
+    const r = findMediaCueProblems([
+      audio('absent'),
+      audio('null', null),
+      audio('empty', {}),
+      audio('noname', { id: 'm' }),
+      audio('blank', media('')),
+      audio('noid', { file_name: 'a.wav' }),
+      audio('fine', media('a.wav')),
+    ], LIB, TRASH);
+    expect(r.blocking.map(b => b.name)).toEqual(['absent', 'null', 'empty', 'noname', 'blank', 'noid']);
+    expect(r.blocking.every(b => b.reason === 'no-media')).toBeTrue();
+    expect(r.trashed).toEqual([]);
+  });
+
+  it('blocks a deleted file and only warns on a trashed one', () => {
+    const r = findMediaCueProblems([audio('t', media('old.wav')), audio('d', media('gone.wav'))], LIB, TRASH);
+    expect(r.trashed).toEqual([{ name: 't', id: 'id-t', fileName: 'old.wav' }]);
+    expect(r.blocking).toEqual([{ name: 'd', id: 'id-d', fileName: 'gone.wav', reason: 'deleted' }]);
+  });
+
+  it('walks nested CueLists and ignores non-media cues', () => {
+    const nested = { CueList: { id: 'l', contents: [{ VideoCue: { name: 'deep', id: 'v', Media: null } }] } };
+    const r = findMediaCueProblems([{ ActionCue: { name: 'go', id: 'x' } }, nested], LIB, TRASH);
+    expect(r.blocking.map(b => b.name)).toEqual(['deep']);
+  });
+});
+
+describe('mediaBlockToSave', () => {
+  const original = media('old.wav', { id: 'orig', regions: [{ Region: { id: 0, loop: 3 } }] });
+
+  it('builds the block from the picked library file', () => {
+    const block = mediaBlockToSave(original, { uuid: 'u-1', file: { unix_name: 'a.wav', duration: '00:00:02.000' } });
+    expect(block.file_name).toBe('a.wav');
+    expect(block.id).toBe('u-1');
+    expect(block.duration).toBe('00:00:02.000');
+  });
+
+  it('keeps the original block untouched when nothing could be picked', () => {
+    const block = mediaBlockToSave(original, undefined);
+    expect(block).toEqual(original);
+    expect(block).not.toBe(original);  // a copy, not the live object
+  });
+
+  it('returns undefined only when the cue never had media', () => {
+    expect(mediaBlockToSave(undefined, undefined)).toBeUndefined();
+    expect(mediaBlockToSave({}, null)).toBeUndefined();
+    expect(mediaBlockToSave({ file_name: '' }, null)).toBeUndefined();
+  });
+});
+
+describe('normalizeUiWarning', () => {
+  it('treats the XML "None" and empties as unset', () => {
+    for (const v of [null, undefined, '', 'None', 'null', '  ']) expect(normalizeUiWarning(v)).toBeNull();
+  });
+  it('reads digits, as strings or numbers', () => {
+    expect(normalizeUiWarning('0')).toBe(0);
+    expect(normalizeUiWarning('2')).toBe(2);
+    expect(normalizeUiWarning(1)).toBe(1);
+    expect(normalizeUiWarning('abc')).toBeNull();
   });
 });
