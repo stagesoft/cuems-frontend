@@ -34,7 +34,7 @@ import { IconComponent } from '../../icon/icon.component';
       <span>·</span>
       <span>
         <span class="font-medium">{{ 'playControls.nextCue' | translate }}:</span>
-        <span class="ml-1 text-primary">{{ oscService.cueNames()[oscService.nextCue() ?? ''] || oscService.nextCue() || '—' }}</span>
+        <span class="ml-1 text-primary">{{ nextCueName }}</span>
       </span>
     </span>
   `

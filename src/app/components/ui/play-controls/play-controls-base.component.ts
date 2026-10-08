@@ -21,6 +21,14 @@ export abstract class PlayControlsBase {
     return project?.name || '';
   }
 
+  /** The engine's next cue by name: engine-fed table first (what GO plays),
+   *  the page-fed table as a fallback, the uuid when neither knows it. */
+  get nextCueName(): string {
+    const id = this.oscService.nextCue();
+    if (!id) return '—';
+    return this.oscService.engineCueNames()[id] || this.oscService.cueNames()[id] || id;
+  }
+
   get timecodeDisplay(): string {
     const ms = this.oscService.timecodeMs();
     return ms != null ? this.oscService.timecodeToHHMMSS(ms) : '--:--:--';

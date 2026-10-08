@@ -12,6 +12,10 @@ Local dev needs an untracked config `src/app/core/config/app-config.json` (copy 
 
 The sequence view maps the engine's `post_go` field to labels in `sequence.component.ts:107-109` (`pause`→Auto pause, `go`→Auto continue, `go_at_end`→Auto follow). Full semantics in the cuems-engine CLAUDE.md. Node labels fall back to `Node ${index + 1}` when both `alias` and `role_id` are absent in `network_map.xml` — so partial node-identity migrations are safe.
 
+## Next-cue names in the transport
+
+`OscService.engineCueNames` is fed by `/engine/status/cue_name/<uuid>` (cuems-engine branch `fix/869fedahu-cue-names-broadcast` or later; the engine sends it after `/engine/status/load`, so the table is cleared on every load change and on disconnect) and is **authoritative** for "Siguiente cue". The page-fed `cueNames` (show sequence page) is only the fallback for older engines. Never merge the two: duplicated projects share cue uuids, so a page-fed name can belong to the wrong project.
+
 ## Deploy / "Updating the UI"
 
 When asked to "update the UI", run in order:
@@ -22,3 +26,5 @@ When asked to "update the UI", run in order:
 5. `sudo cp -r dist/formitgo-tw/browser/* /var/www/` — `/var/www` is root-owned.
 
 **Deploy gotcha — never `rsync --delete` into `/var/www`.** `/var/www` holds a hand-placed `.htaccess` (Angular SPA routing fallback: `FallbackResource /index.html` + rewrite rules) that is **NOT** part of `ng build` output. `rsync --delete` wipes it → every deep-linked/refreshed route 404s. Use plain `cp -r` (additive, the procedure above). To prune stale hashed bundles instead, `rsync --delete --exclude='.htaccess'` or restore `.htaccess` afterward; always `tar czf` a backup of `/var/www` first. On boxes where the SSH alias logs in as `cuems-admin` (sudo needs a password) but `stagelab` owns the repo/node_modules/`/var/www`, deploy as `stagelab` (no sudo).
+
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
