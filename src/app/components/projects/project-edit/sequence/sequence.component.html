@@ -111,7 +111,15 @@
                     </td>
                     
                     <td class="px-4 py-1">
-                      <app-icon [icon]="cue.type" class="w-[16px] h-[16px]"></app-icon>
+                      <div class="flex items-center gap-2">
+                        <app-icon [icon]="cue.type" class="w-[16px] h-[16px]"></app-icon>
+                        <button type="button"
+                                class="text-gray-500 hover:text-gray-200 transition-colors"
+                                [title]="'cue.copyId' | translate"
+                                (click)="copyCueId(cue.id, $event)">
+                          <app-icon icon="copy" class="w-[12px] h-[12px]"></app-icon>
+                        </button>
+                      </div>
                     </td>
                     
                 <td class="px-4 py-1 text-sm" 

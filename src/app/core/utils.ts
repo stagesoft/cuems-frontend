@@ -322,3 +322,38 @@ export function normalizeUiWarning(value: unknown): number | null {
   if (typeof value === 'number') return value;
   return null;
 }
+
+/**
+ * Copy `text` to the system clipboard; resolves to whether it worked.
+ *
+ * The UI is served over plain http on the cluster LAN (`http://<host>/`),
+ * which is not a secure context, so `navigator.clipboard` is undefined there.
+ * Fall back to the legacy hidden-textarea + `execCommand('copy')` path, which
+ * still works from a click handler.
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  if (navigator.clipboard && window.isSecureContext) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // permission denied / document not focused: try the legacy path
+    }
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  textarea.style.opacity = '0';
+  document.body.appendChild(textarea);
+  textarea.select();
+  try {
+    return document.execCommand('copy');
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textarea);
+  }
+}
