@@ -24,7 +24,7 @@ import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/confirmation-dialog.component';
 import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
 import { NotificationService } from '../../../../services/ui/notification.service';
-import { findInvalidFadeCuesInContents, findMediaCueProblems, mediaBlockToSave, mediaResolution, MediaResolution, normalizeUiWarning, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType } from '../../../../core/utils';
+import { findInvalidFadeCuesInContents, findMediaCueProblems, mediaBlockToSave, mediaResolution, MediaResolution, normalizeUiWarning, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType, copyToClipboard } from '../../../../core/utils';
 
 interface CueData {
   id: string | number;
@@ -1220,6 +1220,15 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
   private generateUUID(): string {
     return uuidv4();
+  }
+
+  async copyCueId(id: string | number, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (await copyToClipboard(String(id))) {
+      this.notificationService.showSuccess(`${this.translateService.instant('cue.idCopied')}: ${id}`);
+    } else {
+      this.notificationService.showError(this.translateService.instant('cue.idCopyFailed'));
+    }
   }
 
   /**

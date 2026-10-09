@@ -1,3 +1,4 @@
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
 <div class="py-4">
   <div class="flex items-center justify-between p-4 border-b">
     <h2 class="text-lg font-semibold">Sequence</h2>
@@ -32,7 +33,16 @@
                 (click)="onClickSetNextCue(cueItem)">
               <!-- Type Icon -->
               <td class="px-4 py-1 relative translate-y-[3px]">
-                <app-icon [icon]="getCueTypeIcon(cueItem)" class="w-[16px] h-[16px]"></app-icon>
+                <div class="flex items-center gap-2">
+                  <app-icon [icon]="getCueTypeIcon(cueItem)" class="w-[16px] h-[16px]"></app-icon>
+                  <!-- pointer-events-auto: disabled rows are pointer-events-none, the uuid is still copyable -->
+                  <button type="button"
+                          class="text-gray-500 hover:text-gray-200 transition-colors pointer-events-auto"
+                          [title]="'cue.copyId' | translate"
+                          (click)="copyCueId(cueItem, $event)">
+                    <app-icon icon="copy" class="w-[12px] h-[12px]"></app-icon>
+                  </button>
+                </div>
               </td>
               <!-- Order with zero padding -->
               <td class="px-4 py-1 text-sm font-medium">

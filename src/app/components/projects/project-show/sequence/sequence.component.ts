@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component, OnInit, OnDestroy, inject, effect, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';
@@ -7,7 +10,9 @@ import { ActivityDrawerComponent } from '../../../ui/activity-drawer/activity-dr
 import { DrawerService } from '../../../../services/ui/drawer.service';
 import { Subscription } from 'rxjs';
 import { OscService } from '../../../../services/osc.service';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { NotificationService } from '../../../../services/ui/notification.service';
+import { copyToClipboard } from '../../../../core/utils';
 
 @Component({
   selector: 'app-project-show-sequence',
@@ -20,6 +25,8 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   private projectsService = inject(ProjectsService);
   public drawerService = inject(DrawerService);
   private oscService = inject(OscService);
+  private translateService = inject(TranslateService);
+  private notificationService = inject(NotificationService);
 
   readonly DRAWER_WIDTH = 500; // px
   
@@ -237,5 +244,16 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     const uuid = this.getCueId(cueItem);
     const newEnabled = !this.oscService.isCueEnabled(uuid);
     this.oscService.setCueEnabled(uuid, newEnabled);
+  }
+
+  async copyCueId(cueItem: any, event: Event): Promise<void> {
+    // the row's click sets the next cue — copying must not
+    event.stopPropagation();
+    const id = this.getCueId(cueItem);
+    if (await copyToClipboard(id)) {
+      this.notificationService.showSuccess(`${this.translateService.instant('cue.idCopied')}: ${id}`);
+    } else {
+      this.notificationService.showError(this.translateService.instant('cue.idCopyFailed'));
+    }
   }
 }
