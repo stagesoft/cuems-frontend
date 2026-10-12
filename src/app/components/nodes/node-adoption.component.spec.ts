@@ -18,9 +18,10 @@
  *
  * PORTED (Phase 7): input swapped to the recorded tip `node_list` (JSON
  * booleans, `node_role`, no `node_type`). Moved expectations, marked `moved:`:
- * the string "True" now reads as online, so canAdopt flips (sanctioned,
- * FR-057, through the dual read findings F6 requires), and an absent
- * nodeconf_available now disables adoption (T078).
+ * an absent nodeconf_available now disables adoption (T078). The dual read of
+ * "True" (findings F6, F23) is retired by cuems-editor 002, which restates
+ * version 1 with JSON booleans; the two tests that had moved to it are back on
+ * the characterization's own expectation — a string is not `online`.
  */
 import { TestBed } from '@angular/core/testing';
 import { NodeAdoptionComponent } from './node-adoption.component';
@@ -103,11 +104,8 @@ describe('NodeAdoptionComponent (characterization)', () => {
       expect(component.isSeenByDiscovery(newNode())).toBeFalse();
     });
 
-    it('isSeenByDiscovery reads the string "True" as seen too', () => {
+    it('isSeenByDiscovery is false for the string "True"', () => {
       setUp(v => { v.nodes[0].node.online = 'True'; });
-      // moved: false -> true, the boolean change sanctioned for canAdopt (FR-057); dual read (F6)
-      expect(component.isSeenByDiscovery(controller())).toBeTrue();
-      setUp(v => { v.nodes[0].node.online = 'False'; });
       expect(component.isSeenByDiscovery(controller())).toBeFalse();
     });
 
@@ -128,14 +126,13 @@ describe('NodeAdoptionComponent (characterization)', () => {
       expect(component.canAdopt(controller())).toBeTrue();   // recorded online
     });
 
-    it('canAdopt works when online is the string "True"', () => {
+    it('canAdopt is false for every node when online is the string "True"', () => {
       setUp(v => {
         v.nodes[0].node.online = 'True';
         v.new_nodes[0].node.online = 'True';
       });
-      // moved: false -> true for both, sanctioned (FR-057)
-      expect(component.canAdopt(controller())).toBeTrue();
-      expect(component.canAdopt(newNode())).toBeTrue();
+      expect(component.canAdopt(controller())).toBeFalse();
+      expect(component.canAdopt(newNode())).toBeFalse();
     });
 
     it('canUnadopt: refused for the controller, offered otherwise', () => {

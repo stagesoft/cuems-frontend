@@ -47,6 +47,16 @@ export class WebsocketService {
 
   private connectionCount = 0;
 
+  /**
+   * The editor's id for this browser session (its `session_id` frame). A
+   * reconnect presents it again, so the editor resumes the same session: its
+   * repair-gate acknowledgments survive a dropped socket (cuems-editor 002
+   * FR-006). Apache maps `/ws?uri=<id>` to the editor's `/?session=<id>`
+   * (cuems-common `cuems-ui.conf`). In memory only: a page reload is a new
+   * session, as it should be.
+   */
+  private sessionId: string | null = null;
+
   constructor() {
     this.connect();
   }
@@ -59,7 +69,7 @@ export class WebsocketService {
    */
   private connect(): void {
     this.ws = this.createSocket({
-      url: this.host,
+      url: this.sessionId ? `${this.host}?uri=${encodeURIComponent(this.sessionId)}` : this.host,
       openObserver: {
         next: () => {
           this.isConnected.set(true);
@@ -82,6 +92,9 @@ export class WebsocketService {
   }
 
   private handleServerMessage(response: any): void {
+    if (response?.type === 'session_id' && typeof response.value === 'string') {
+      this.sessionId = response.value;
+    }
 
     if (response && response.type === 'error') {
       const experimentalActions = ['file_load_thumbnail', 'file_load_waveform'];

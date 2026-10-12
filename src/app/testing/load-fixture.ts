@@ -15,6 +15,8 @@ import templateAsScript013 from '../../../specs/001-schema-descriptor-migration/
 import projectSaveRefusals from '../../../specs/001-schema-descriptor-migration/fixtures/project-save-refusals.json';
 import loadRepaired from '../../../specs/001-schema-descriptor-migration/fixtures/load-repaired.frame.json';
 import loadFailed from '../../../specs/001-schema-descriptor-migration/fixtures/load-failed.frame.json';
+import configLoad from '../../../specs/001-schema-descriptor-migration/fixtures/config-load.frames.json';
+import repairGateMediaOnly from '../../../specs/001-schema-descriptor-migration/fixtures/repair-gate-media-only.frames.json';
 import project013LoadReport from '../../../specs/001-schema-descriptor-migration/fixtures/project-013.load-report.frame.json';
 import initialTemplatePre001 from '../../../specs/001-schema-descriptor-migration/fixtures/initial-template-pre001.json';
 import initialMappingsPre001 from '../../../specs/001-schema-descriptor-migration/fixtures/initial-mappings-pre001.frame.json';
@@ -36,6 +38,9 @@ const FIXTURES = {
   /** the editor tip (payload version 1) */
   'project-013': project013,
   'project-013-load-report': project013LoadReport,
+  /** after cuems-editor 002: config_load replies (keyed by case) and a media-only repair gate run (steps) */
+  'config-load': configLoad,
+  'repair-gate-media-only': repairGateMediaOnly,
   /** document_load_report, outcome repaired; and document_load_failed */
   'load-repaired': loadRepaired,
   'load-failed': loadFailed,

@@ -14,6 +14,24 @@ export interface LoadReport {
   file_differs_from_loaded: boolean;
   conversions: Array<{ from_version: number; to_version: number; description: string; dropped_elements: string[] }>;
   repairs: Array<{ field_path: string; previous_value: unknown; substituted_value: unknown; rule_name: string }>;
+  /**
+   * Stored media values that disagree with the library row (cuems-editor
+   * 002 FR-044). `current: null` means the save removes the value.
+   */
+  media_repairs?: Array<{ cue_id: string; file_name: string; field: 'duration' | 'pixel_size' | 'file_size' | 'file_md5' | string;
+                          stored: unknown; current: unknown }>;
+  /** A save waits for an acknowledgment: outcome not clean, or media repairs (002 FR-044). */
+  acknowledgment_required?: boolean;
+}
+
+/**
+ * Whether the operator must acknowledge this report before a save goes
+ * through. The editor says so (002 FR-044) — a clean outcome with media
+ * repairs needs it too; an editor that does not send the key is read by the
+ * outcome alone.
+ */
+export function acknowledgmentRequired(report: Pick<LoadReport, 'outcome' | 'acknowledgment_required'>): boolean {
+  return report.acknowledgment_required ?? report.outcome !== 'clean';
 }
 
 /** `document_load_failed` — sent instead of `project`; the project stays listed. */
@@ -47,13 +65,15 @@ export type SaveRefusal =
  * the operator's: it is only ever sent for a report this tab has shown
  * them. Its echo is the go-ahead to retry the save that was refused.
  *
- * A reconnect is a new editor session, which forgets acknowledgements — and,
- * against today's editor, the whole repair state. A project whose last report
- * was not clean is therefore reloaded on reconnect (owner's decision, F22).
- * Should a refusal still name a report the operator already acknowledged
- * here, the acknowledgement is re-sent and the save retried — at most once,
- * and the operator is told. Anything else is put in front of them, never
- * retried.
+ * The editor keeps the gate per project and an acknowledgment per session,
+ * and a reconnect resumes the session (WebsocketService presents the editor's
+ * session id again), so an acknowledgment survives a dropped socket
+ * (cuems-editor 002 FR-006). When a session cannot be resumed — a page reload,
+ * an editor restart — a refusal names the report again; if the operator
+ * already acknowledged it here, the acknowledgement is re-sent (the editor
+ * accepts it from a new session, 002 FR-008) and the save retried — at most
+ * once, and the operator is told. Anything else is put in front of them,
+ * never retried.
  */
 @Injectable({ providedIn: 'root' })
 export class LoadReportService {
@@ -78,18 +98,12 @@ export class LoadReportService {
 
   constructor() {
     this.ws.messages.subscribe(frame => this.onFrame(frame));
-    // A new editor session holds no repair state at all (findings F22): it
-    // would save a repaired document unacknowledged and without preserving
-    // the original. Reloading a project whose last report was not clean makes
-    // the editor rebuild that state; its new report is shown and must be
-    // acknowledged again. Unsaved cue edits survive as temporary cues.
+    // What the editor holds for this session after a reconnect is not known
+    // here (resumed or not); a refusal will say. The reload this used to send
+    // (findings F22) is retired by cuems-editor 002's per-project gate.
     this.gate.sessionRestarted.subscribe(() => {
       const current = this.report();
-      if (!current) return;
-      this.report.set({ ...current, acknowledged: false });
-      if (current.outcome !== 'clean') {
-        this.ws.wsEmit({ action: 'project_load', value: current.project_uuid });
-      }
+      if (current) this.report.set({ ...current, acknowledged: false });
     });
   }
 

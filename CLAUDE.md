@@ -33,12 +33,13 @@ Spec, findings and fixtures: `specs/001-schema-descriptor-migration/`. The shape
 - **Mappings** — `core/mapping-wire.ts`: `devices[].device` by class (outputs are a list of lists),
   `defaults[]` by class+direction. Node identity and adoption state come from `node_list`, not
   `initial_mappings`.
-- **Repair gate** — `services/projects/load-report.service.ts`; a not-clean project is reloaded on
-  reconnect because the editor drops its repair state (findings F22).
-- **Config views** (`/config/*`) are read-only and descriptor-only until the editor can read a config
-  document (UR-2).
-- Booleans arrive as JSON `true`/`false` **or** `"True"`/`"False"` at the same payload version
-  (findings F6): read both.
+- **Repair gate** — `services/projects/load-report.service.ts`, keyed on the report's
+  `acknowledgment_required`. The socket resumes the editor session on reconnect (`/ws?uri=<id>`), so
+  an acknowledgment survives it (cuems-editor 002).
+- **Config views** (`/config/*`) read values through `config_load` (`services/config/`); read-only —
+  nothing sends `config_save`. Sibling gates G1–G5: `specs/001-schema-descriptor-migration/upstream-gates.md`.
+- Booleans are JSON `true`/`false` (payload version 1 as restated by `cuems-editor` 002); the
+  string form is not read.
 
 ## Deploy / "Updating the UI"
 

@@ -323,6 +323,22 @@ match the documents on disk.
 
 ---
 
+## Follow-up: adopting `cuems-editor` 002 (2026-10-12)
+
+Added after the editor's feature 002 answered findings F6, F22 and `cuems-frontend` UR-2. Scope set
+by the owner: retire the workarounds, adopt the changed frames, show config values read-only.
+
+- [X] T123 Record 002's frames from its own handlers (`fixtures/capture/capture_002.py`): `config_load` per document, `config_load_failed`, a media-only repair gate run across a reconnect
+- [X] T124 Resume the editor session on reconnect in `src/app/services/websocket.service.ts` (`session_id` → `/ws?uri=<id>`), with its spec
+- [X] T125 Retire the reload-on-reconnect in `src/app/services/projects/load-report.service.ts` (002 FR-006–011)
+- [X] T126 Gate the report and its acknowledgment on `acknowledgment_required` and render `media_repairs` in `project-load-report` (002 FR-044), keys in en/es/ca
+- [X] T127 Retire the string-boolean reads (`enabled`, `online`, the node type's string arm) and guard against them in `tools/wire-guards.mjs` (002 FR-001–004)
+- [X] T128 `src/app/services/config/config-documents.service.ts` and the config views: values and revision from `config_load`, a project picker for the project documents, `config_changed` re-reads, refusals shown; still no `config_save`
+- [X] T129 Render one-value enumerations as text (002 FR-031)
+- [X] T130 Update `upstream-gates.md`, `not-performed.md`, `findings.md` (F29–F33), release notes and `CLAUDE.md`
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

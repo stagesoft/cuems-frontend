@@ -51,7 +51,7 @@
 <!-- The outcome, discoverable when clean; the file needs saving when it differs. -->
 @if (report(); as rep) {
   <div class="mt-4 flex items-center gap-3 text-xs text-gray-400" data-test="report-note">
-    <span>{{ ('load.report.outcome.' + rep.outcome) | translate }}</span>
+    <span>{{ outcomeKey(rep) | translate }}</span>
     @if (rep.file_differs_from_loaded) {
       <span class="rounded bg-yellow-600/30 px-2 py-0.5 text-yellow-300" data-test="needs-saving">{{ 'load.report.file-differs' | translate }}</span>
     }
@@ -61,7 +61,7 @@
   <app-modal [isOpen]="reportOpen()" size="lg" (close)="closeReport()">
     <div class="text-gray-900 text-sm" data-test="report">
       <h2 class="text-lg font-semibold">{{ 'load.report.title' | translate }}</h2>
-      <p class="mt-1">{{ ('load.report.outcome.' + rep.outcome) | translate }}</p>
+      <p class="mt-1">{{ outcomeKey(rep) | translate }}</p>
       @if (rep.file_differs_from_loaded) {
         <p class="mt-2 font-semibold">{{ 'load.report.file-differs.explain' | translate }}</p>
       }
@@ -106,12 +106,39 @@
         </table>
       }
 
-      @if (rep.outcome !== 'clean') {
+      @if (rep.media_repairs?.length) {
+        <h3 class="mt-4 font-semibold">{{ 'load.report.media' | translate }}</h3>
+        <p class="mt-1 text-gray-600">{{ 'load.report.media.explain' | translate }}</p>
+        <table class="mt-2 w-full text-left">
+          <thead>
+            <tr>
+              <th>{{ 'load.report.repair.cue' | translate }}</th>
+              <th>{{ 'load.report.media.file' | translate }}</th>
+              <th>{{ 'load.report.repair.field' | translate }}</th>
+              <th>{{ 'load.report.media.stored' | translate }}</th>
+              <th>{{ 'load.report.media.current' | translate }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of rep.media_repairs; track $index) {
+              <tr data-test="media-repair">
+                <td class="font-mono">{{ m.cue_id }}</td>
+                <td class="font-mono">{{ m.file_name }}</td>
+                <td>{{ ('load.report.media.field.' + m.field) | translate }}</td>
+                <td>{{ display(m.stored) }}</td>
+                <td>{{ m.current === null ? ('load.report.media.removed' | translate) : display(m.current) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+
+      @if (acknowledgmentRequired(rep)) {
         <p class="mt-4">{{ 'load.report.ack.explain' | translate }}</p>
       }
 
       <div class="mt-6 flex justify-end gap-2">
-        @if (rep.outcome !== 'clean' && !rep.acknowledged) {
+        @if (acknowledgmentRequired(rep) && !rep.acknowledged) {
           <button type="button" class="btn btn-small btn-tertiary" data-test="acknowledge" (click)="acknowledge()">
             {{ 'load.report.acknowledge' | translate }}
           </button>
@@ -128,7 +155,7 @@
 <!-- A duplicate made from a document that was not clean: the copy is the repaired one. -->
 @if (duplicateReport(); as dup) {
   <div class="mt-4 rounded border border-dark-100 bg-dark-300 p-4 text-sm" data-test="duplicate-report">
-    <p>{{ 'load.duplicate.title' | translate }} — {{ ('load.report.outcome.' + dup.outcome) | translate }}</p>
+    <p>{{ 'load.duplicate.title' | translate }} — {{ outcomeKey(dup) | translate }}</p>
     <ul class="mt-2 list-disc pl-6">
       @for (r of dup.repairs; track $index) {
         <li>{{ r.field_path }}: {{ display(r.previous_value) }} → {{ display(r.substituted_value) }}</li>

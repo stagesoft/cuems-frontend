@@ -62,9 +62,8 @@ export interface InitialMappingsResponse {
 /**
  * A node as `node_list` carries it: network-map identity and status, plus the
  * mapping node's keys (`devices`) when it has one. A `new_nodes` entry has no
- * `devices`. `adopted` / `online` are JSON booleans from cuems-utils 014 and
- * "True" / "False" before it, at the same payload version (findings F6):
- * read both. `online` is discovery (~30 s), NOT liveness.
+ * `devices`. `adopted` / `online` are JSON booleans (payload version 1 as
+ * restated by cuems-editor 002). `online` is discovery (~30 s), NOT liveness.
  */
 export interface NodeListNode {
   uuid: string;
@@ -72,8 +71,8 @@ export interface NodeListNode {
   name?: string;
   ip?: string;
   node_role?: string;
-  adopted?: boolean | 'True' | 'False';
-  online?: boolean | 'True' | 'False';
+  adopted?: boolean;
+  online?: boolean;
   role_id?: string;
   alias?: string;
   hostname?: string;

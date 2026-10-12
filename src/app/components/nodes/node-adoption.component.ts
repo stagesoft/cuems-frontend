@@ -193,12 +193,10 @@ export class NodeAdoptionComponent implements OnInit, OnDestroy {
 
   /**
    * nodeconf's discovery view. A different question from isAlive().
-   * JSON true from cuems-utils 014 on, "True" before it — both arrive at
-   * payload version 1 (findings F6), so both are read.
+   * A JSON boolean: payload version 1 as restated by cuems-editor 002.
    */
   isSeenByDiscovery(nodeWrapper: any): boolean {
-    const online = nodeWrapper?.node?.online;
-    return online === true || online === 'True';
+    return nodeWrapper?.node?.online === true;
   }
 
   /** The controller cannot be un-adopted — nodeconf refuses it. */

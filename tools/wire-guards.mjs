@@ -77,6 +77,13 @@ check('no read of the retired wire beside the new one (T119)',
   files.filter(f => !isTest(f) && rel(f) !== 'src/app/core/payload-cache.ts').flatMap(lines)
     .filter(l => RETIRED.test(l.text) && !/^\s*(\*|\/\/|\/\*)/.test(l.text)));
 
+// cuems-editor 002 FR-001–004: payload version 1 carries JSON booleans and a
+// client needs no string-boolean handling. A comparison with "True"/"False"
+// is a read of a wire that no longer exists.
+check('no string-boolean reads in src/app (cuems-editor 002 FR-001–004)',
+  files.filter(f => !isTest(f)).flatMap(lines)
+    .filter(l => /[=!]==?\s*['"](True|False)['"]|['"](True|False)['"]\s*[=!]==?/.test(l.text)));
+
 if (failures.length) {
   for (const { name, offending } of failures) {
     console.error(`\n✗ ${name}`);

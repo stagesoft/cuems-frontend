@@ -217,28 +217,57 @@ describe('ProjectLoadReport', () => {
     expect(q('acknowledge')).toBeNull();
   });
 
-  describe('reconnect (findings F22, owner\'s decision)', () => {
-    it('reloads a project whose last report was not clean, and the new report must be acknowledged again', () => {
+  describe('after cuems-editor 002 (FR-006, FR-008, FR-044)', () => {
+    const steps = () => loadFixture('repair-gate-media-only') as Array<{ step: string; frames: any[] }>;
+    const frames = (i: number) => steps()[i].frames;
+    const reportFrame = () => frames(0).find(f => f.type === 'document_load_report');
+
+    it('no longer reloads a project on reconnect (the F22 workaround is retired)', () => {
       ws.receive(repaired());
       render();
       reports.acknowledge();
       ws.receive(echo(repaired()));
       ws.connect();
-      expect(ws.sent.filter(m => m.action === 'project_load'))
-        .toEqual([{ action: 'project_load', value: repaired().value.project_uuid }]);
-      const reloaded = repaired();
-      reloaded.value.report_id = '00000000-0000-4000-8000-0000000000r3';
-      ws.receive(reloaded);
-      expect(reports.report()?.acknowledged).toBeFalse();
-      expect(reports.report()?.shown).toBeFalse();
+      expect(ws.sent.filter(m => m.action === 'project_load')).toEqual([]);
     });
 
-    it('does not reload after a clean load', () => {
+    it('a clean outcome with stale media values still needs acknowledging, and says why', () => {
+      ws.receive(reportFrame());
+      render();
+      expect(q('report')).not.toBeNull();
+      expect(q('report')!.textContent).toContain('load.report.outcome.clean-media');
+      const row = qa('media-repair')[0].textContent!;
+      expect(row).toContain('file.ext');
+      expect(row).toContain('load.report.media.field.duration');
+      expect(row).toContain('00:00:00.000');
+      expect(row).toContain('00:01:00.000');
+      expect(q('acknowledge')).not.toBeNull();
+    });
+
+    it('recorded run: a reconnect with a new session id is refused on the same report; the operator\'s acknowledgment is re-sent and the save retried once', () => {
+      ws.receive(reportFrame());
+      render();
+      reports.acknowledge();
+      ws.receive(frames(3)[0]);                               // the editor's echo (step 4, FR-008)
+      projects.updateProject({ CuemsScript: {} });
+      ws.connect();                                           // a session the editor could not resume
+      projects.updateProject({ CuemsScript: {} });
+      ws.receive(frames(2)[0]);                               // refused, same report_id (step 3)
+      expect(acks().length).toBe(2);
+      expect(notifications.showInfo).toHaveBeenCalledWith('load.report.reacknowledged');
+      ws.receive(frames(3)[0]);                               // echo
+      expect(saves().length).toBe(3);
+      ws.receive(frames(4)[0]);                               // project_save accepted (step 5)
+      expect(reports.refusal()).toBeNull();
+    });
+
+    it('an editor that does not send acknowledgment_required is read by outcome alone', () => {
       const clean = loadFixture('project-013-load-report');
       clean.value.outcome = 'clean';
+      delete clean.value.acknowledgment_required;
       ws.receive(clean);
-      ws.connect();
-      expect(ws.sent.filter(m => m.action === 'project_load')).toEqual([]);
+      render();
+      expect(q('report')).toBeNull();
     });
   });
 });

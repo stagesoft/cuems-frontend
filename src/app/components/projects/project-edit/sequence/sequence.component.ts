@@ -476,7 +476,8 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         loop: this.determineLoopType(cueData.loop),
         loop_times: this.determineLoopTimes(cueData.loop),
         notes: cueData.description || '',
-        enabled: cueData.enabled === true || cueData.enabled === 'True',
+        // JSON boolean: payload version 1 as restated by cuems-editor 002 (FR-001–004).
+        enabled: cueData.enabled === true,
         expanded: false,
         activeTab: 'notes' as 'notes' | 'edit' | 'media',
         selectedMediaFile,

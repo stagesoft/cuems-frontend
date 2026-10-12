@@ -257,9 +257,52 @@ warning was 47.8 kB over after Phase 3 and is 75.4 kB over at the end of the fea
 report, gate, node and config screens and their locale strings. Worth a lazy-loaded route for the
 config views if the budget is to hold.
 
+## After `cuems-editor` 002 (re-measured 2026-10-12)
+
+`cuems-editor` feature 002 took up `FROM-cuems-frontend-001.md` items 1–6 and was merged into
+`feat/xml-refactor` at `1144a1d`. New fixtures recorded from its own handlers
+(`fixtures/capture/capture_002.py`, in an environment reproducing its recorded final suite run).
+
+**F29 — F6 answered: version 1 restated, string reads retired.** The editor did not bump: it
+declared that version 1 never shipped and that its booleans are JSON (FR-001–004). The dual reads
+F23 introduced are deleted; the two adoption tests that had moved to them are back on the
+characterization's own expectation (a string is not `online`), so that pair of moves is undone,
+not compounded.
+
+**F30 — F22 answered: the gate outlives the socket, if the session does.** The gate is per project
+and an acknowledgment per session (FR-006). Measured with the recorded run: after a reconnect with
+a *new* `session_id`, a save is refused naming the same report, and an acknowledgment from that
+session is echoed (FR-008). So the reload is retired, and the frontend now resumes the session it
+had: `WebsocketService` keeps the `session_id` frame's value and reconnects to `/ws?uri=<id>`, the
+form the deployed Apache rule (`cuems-common` `etc/apache2/sites-available/cuems-ui.conf`) rewrites
+to the editor's `/?session=<id>`. Where the session cannot be resumed (a page reload, an editor
+restart), the existing re-acknowledge-and-retry path covers it — now exercised by recorded frames.
+
+**F31 — the save gate keys on `acknowledgment_required`, not on `outcome`.** 002 FR-044 makes a
+clean document with stale media values need an acknowledgment; the recorded run shows `outcome:
+clean`, `acknowledgment_required: true`. The report UI and the gate read that flag (defaulting to
+`outcome !== 'clean'` if a peer omits it) and render `media_repairs[]` field by field; a clean
+outcome with media repairs is no longer labelled "nothing was changed".
+
+**F32 — UR-2 answered: the config views show values.** `config_load` returns the file's values
+and revision; `exists: false` returns the schema's `instance`, which the view does **not** show as
+values. A settings document arrives as the root's child content (`Settings`'s fields), which the
+view maps onto the descriptor's root. `project_settings` is refused with the plain error frame
+naming `cuems-editor` UR-7 (gate G2), not `config_load_failed`; the view shows it. One-value
+enumerations (the NOT PROVISIONED uuid, `auto`) render as text (002 FR-031).
+
+**F33 — the offline round trip still holds.** The F18 payload re-run through the merged editor's
+library save path: saved, reloaded, outcome clean.
+
 ## Upstream reports
 
 Items for other repositories, raised from what this feature measured. Each names its consumer here.
+
+**Status 2026-10-12** (the current index is [`upstream-gates.md`](upstream-gates.md)): every item
+addressed to `cuems-editor` below — the boolean bump, the reconnect gate, `capture_load.py`, UR-2 —
+was filed as `cuems-editor` `specs/planning/xml-refactor/FROM-cuems-frontend-001.md` and answered by
+its feature 002 (F29–F32). The UR-1 addendum to `cuems-utils` is indexed there as tag gate **G3**,
+still open. The "not yet filed" notes below are kept as written.
 
 **To `cuems-utils` — UR-1 addendum: required fields with no default.** Beyond UR-1's three shape
 differences (wrapper, `channels` nesting, null scalars), filling scalars from per-field `default`

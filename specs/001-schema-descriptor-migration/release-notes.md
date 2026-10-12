@@ -38,6 +38,10 @@ under the coordinated tag; this interface refuses an editor of a different paylo
   editor's reason, and the three ways forward. The project stays in the list.
 - If a save is refused because the original file could not be kept in the trash, you are told
   plainly that nothing was written.
+- A project whose media values differ from the media library is shown the same way (which file,
+  which value, project versus library) and must be confirmed before saving.
+- After a dropped connection your confirmation still counts: the interface resumes its session
+  with the editor instead of reopening the project.
 
 ## Nodes
 
@@ -68,8 +72,9 @@ under the coordinated tag; this interface refuses an editor of a different paylo
 
 ## Configuration
 
-- New read-only pages under **Configuration** (`/config`) describe the controller settings, the
-  project settings and the project output mappings: every field, its type, the allowed values and
-  the schema's default. They cannot show the controller's current values or edit them yet — the
-  editor offers no way to read them — and they say so.
+- New read-only pages under **Configuration** (`/config`) show the controller settings and, for a
+  chosen project, its output mappings: every field with the value in its file, its type, the
+  allowed values and the schema's default. A file that does not exist yet is said to be absent
+  rather than shown as defaults. Project settings cannot be read yet (the editor says why).
+  Editing is not offered here.
 

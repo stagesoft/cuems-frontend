@@ -2,14 +2,16 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { TranslateModule } from '@ngx-translate/core';
 import { ModalComponent } from '../../ui/modal/modal.component';
-import { LoadReportService } from '../../../services/projects/load-report.service';
+import { LoadReportService, acknowledgmentRequired } from '../../../services/projects/load-report.service';
 
 /**
  * What the editor did to a document on load, and what that means for saving
  * (User Story 4).
  *
- * A converted or repaired outcome is put in front of the operator before they
- * edit, field by field; a clean one stays discoverable without interrupting.
+ * A report that needs acknowledgment — a converted or repaired outcome, or
+ * stale media values (cuems-editor 002) — is put in front of the operator
+ * before they edit, field by field; one that does not stays discoverable
+ * without interrupting.
  * A refused save is explained in terms of the report, with the
  * acknowledgement on offer. A document that could not be loaded is shown with
  * the library's message and all three ways forward, while the session — and
@@ -37,7 +39,7 @@ export class ProjectLoadReportComponent {
     const report = this.report();
     if (!report) return false;
     if (this.openedOnDemand()) return true;
-    return report.outcome !== 'clean' && this.closedReportId() !== report.report_id;
+    return acknowledgmentRequired(report) && this.closedReportId() !== report.report_id;
   });
 
   constructor() {
@@ -70,6 +72,15 @@ export class ProjectLoadReportComponent {
   repairTarget(fieldPath: string): { cue: string; field: string } {
     const slash = fieldPath.lastIndexOf('/');
     return slash < 0 ? { cue: '', field: fieldPath } : { cue: fieldPath.slice(0, slash), field: fieldPath.slice(slash + 1) };
+  }
+
+  readonly acknowledgmentRequired = acknowledgmentRequired;
+
+  /** The outcome's label; a clean document whose media values are stale is not "nothing changed". */
+  outcomeKey(report: { outcome: string; media_repairs?: unknown[] }): string {
+    return report.outcome === 'clean' && report.media_repairs?.length
+      ? 'load.report.outcome.clean-media'
+      : `load.report.outcome.${report.outcome}`;
   }
 
   display(value: unknown): string {

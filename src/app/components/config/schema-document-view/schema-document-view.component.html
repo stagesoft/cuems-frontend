@@ -1,21 +1,57 @@
 <div class="rounded-lg bg-dark-300 p-4 text-sm" data-test="read-only-note">
-  <p>{{ 'config.values.unavailable' | translate }}</p>
-  <p class="mt-1 text-gray-400">{{ 'config.editing.unavailable' | translate }}</p>
+  <p>{{ 'config.read-only' | translate }}</p>
 </div>
+
+@if (projectScoped()) {
+  <label class="mt-6 block text-sm">
+    <span class="mr-2">{{ 'config.project' | translate }}</span>
+    <select class="input inline-block w-auto" data-test="project-select"
+            (change)="selectProject($any($event.target).value)">
+      <option value="">{{ 'config.project.choose' | translate }}</option>
+      @for (project of projects(); track project.uuid) {
+        <option [value]="project.uuid">{{ project.name }}</option>
+      }
+    </select>
+  </label>
+}
+
+@if (state(); as s) {
+  <div class="mt-4 text-sm" data-test="document-state">
+    @switch (s.status) {
+      @case ('loading') { <p class="text-gray-400">{{ 'config.document.loading' | translate }}</p> }
+      @case ('failed') {
+        <p class="text-red-400" data-test="document-failed">{{ 'config.document.failed' | translate }}</p>
+        <p class="mt-1 font-mono">{{ s.message }}</p>
+      }
+      @case ('loaded') {
+        @if (s.exists) {
+          <p class="text-gray-400" data-test="document-revision">{{ 'config.document.revision' | translate }} <span class="font-mono">{{ s.revision }}</span></p>
+        } @else {
+          <p class="text-gray-300" data-test="document-missing">{{ 'config.document.missing' | translate }}</p>
+        }
+      }
+    }
+    <button type="button" class="mt-2 text-xs underline" (click)="reload()">{{ 'config.document.reload' | translate }}</button>
+  </div>
+}
 
 @if (!descriptor()) {
   <p class="mt-6 text-gray-400" data-test="loading">{{ 'config.loading' | translate }}</p>
 } @else {
   <ul class="mt-6 space-y-1" data-test="outline">
     @for (field of outline(); track field.name) {
-      <ng-container [ngTemplateOutlet]="fieldRow" [ngTemplateOutletContext]="{ $implicit: field, depth: 0 }" />
+      <ng-container [ngTemplateOutlet]="fieldRow"
+                    [ngTemplateOutletContext]="{ $implicit: field, value: fieldValue(values(), field), depth: 0 }" />
     }
   </ul>
 }
 
-<ng-template #fieldRow let-field let-depth="depth">
+<ng-template #fieldRow let-field let-value="value" let-depth="depth" let-index="index">
   <li [style.padding-left.rem]="depth * 1.25" data-test="field">
-    <span class="font-mono">{{ field.name }}</span>
+    <span class="font-mono">{{ field.name }}@if (index !== undefined) {[{{ index }}]}</span>
+    @if (!field.children.length && value !== undefined) {
+      <span class="ml-2 font-mono text-white" data-test="value">= {{ isList(value) ? value.join(', ') : display(value) }}</span>
+    }
     @if (field.type) { <span class="ml-2 text-xs text-gray-400">{{ field.type }}</span> }
     @if (field.repeated) { <span class="ml-2 text-xs text-gray-400">{{ 'config.field.repeated' | translate }}</span> }
     @if (!field.required) { <span class="ml-2 text-xs text-gray-400">{{ 'config.field.optional' | translate }}</span> }
@@ -29,7 +65,20 @@
       <span class="ml-2 text-xs text-yellow-300" data-test="undescribed">{{ 'config.field.undescribed' | translate }}</span>
     }
   </li>
-  @for (child of field.children; track child.name) {
-    <ng-container [ngTemplateOutlet]="fieldRow" [ngTemplateOutletContext]="{ $implicit: child, depth: depth + 1 }" />
+  @if (field.children.length) {
+    @if (field.repeated && isList(value)) {
+      @for (item of value; track $index) {
+        <li [style.padding-left.rem]="(depth + 1) * 1.25" class="text-xs text-gray-400" data-test="item">{{ field.name }} [{{ $index }}]</li>
+        @for (child of field.children; track child.name) {
+          <ng-container [ngTemplateOutlet]="fieldRow"
+                        [ngTemplateOutletContext]="{ $implicit: child, value: fieldValue(item, child), depth: depth + 2 }" />
+        }
+      }
+    } @else {
+      @for (child of field.children; track child.name) {
+        <ng-container [ngTemplateOutlet]="fieldRow"
+                      [ngTemplateOutletContext]="{ $implicit: child, value: fieldValue(value, child), depth: depth + 1 }" />
+      }
+    }
   }
 </ng-template>

@@ -117,7 +117,7 @@ describe('ProjectEditSequenceComponent (characterization)', () => {
       expect(component.cues.map(c => c.order)).toEqual([1, 2, 3, 4]);
     });
 
-    it('reads enabled as true for the string "True" (and for JSON true)', () => {
+    it('reads enabled as the JSON boolean it is (a string is not true)', () => {
       setUp();
       const frame = loadProject();
       expect(component.cues.every(c => c.enabled === true)).toBeTrue();

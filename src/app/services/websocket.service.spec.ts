@@ -121,4 +121,25 @@ describe('WebsocketService', () => {
       "FadeCue duration must be greater than zero: 'empty' (id 00000000-0000-4000-8000-0000000000a5: must be greater than zero)",
     ]);
   });
+
+  describe('session resume (cuems-editor 002 FR-006)', () => {
+    it('connects without a session at first', () => {
+      expect(sockets[0].config.url).toMatch(/\/ws$/);
+    });
+
+    it('reconnects with the session id the editor sent, so it resumes the same session', () => {
+      current().open();
+      current().serverSends({ type: 'session_id', value: '11111111-1111-4111-8111-111111111111' });
+      current().fail();
+      jasmine.clock().tick(10000);
+      expect(current().config.url).toMatch(/\/ws\?uri=11111111-1111-4111-8111-111111111111$/);
+    });
+
+    it('still delivers the session_id frame to listeners', () => {
+      const messages: any[] = [];
+      service.messages.subscribe(m => messages.push(m));
+      current().serverSends({ type: 'session_id', value: 'abc' });
+      expect(messages).toEqual([{ type: 'session_id', value: 'abc' }]);
+    });
+  });
 });
