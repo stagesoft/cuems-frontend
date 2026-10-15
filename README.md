@@ -1,3 +1,11 @@
+<!--
+***
+SPDX-FileCopyrightText: 2025 Stagelab Coop SCCL
+SPDX-License-Identifier: GPL-3.0-or-later
+SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
+***
+-->
+
 # FormitgoTw
 
 This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 19.2.7.
@@ -73,3 +81,9 @@ Angular CLI does not come with an end-to-end testing framework by default. You c
 ## Additional Resources
 
 For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+
+## License
+
+This project is licensed under the terms of the **GNU General Public License v3.0 or later (GPL-3.0-or-later)**.
+
+See the [LICENSE](LICENSE) file for the full license text.
