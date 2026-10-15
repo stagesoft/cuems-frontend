@@ -113,6 +113,11 @@
                     <td class="px-4 py-1">
                       <div class="flex items-center gap-2">
                         <app-icon [icon]="cue.type" class="w-[16px] h-[16px]"></app-icon>
+                        <span *ngIf="isStopProjectCue(cue)"
+                              class="text-xs py-0.5 px-1.5 border border-red-500 text-red-400 rounded whitespace-nowrap"
+                              [title]="'action.stop_project.description' | translate">
+                          {{ 'action.stop_project.badge' | translate }}
+                        </span>
                         <button type="button"
                                 class="text-gray-500 hover:text-gray-200 transition-colors"
                                 [title]="'cue.copyId' | translate"
@@ -581,19 +586,28 @@
                           <div *ngIf="cue.type === 'action'" class="space-y-4">
                             <div class="field">
                               <label class="label">{{ 'action.type' | translate }}</label>
+                              <!-- Cue-level actions act on ONE target cue. Project-level
+                                   actions (stop_project) act on the whole loaded project and
+                                   have no target: they sit in their own group so nobody
+                                   mistakes "Stop project" for the cue action "Stop". -->
                               <select 
                                 class="input"
                                 [(ngModel)]="cue.action_type"
-                                (ngModelChange)="checkForChanges()">
-                                <option value="play">{{ 'action.type.play' | translate }}</option>
-                                <option value="stop">{{ 'action.type.stop' | translate }}</option>
-                                <option value="enable">{{ 'action.type.enable' | translate }}</option>
-                                <option value="disable">{{ 'action.type.disable' | translate }}</option>
-                                <option value="go_to">{{ 'action.type.go_to' | translate }}</option>
+                                (ngModelChange)="onActionTypeChange(cue)">
+                                <optgroup [label]="'action.type.group.cue' | translate">
+                                  <option value="play">{{ 'action.type.play' | translate }}</option>
+                                  <option value="stop">{{ 'action.type.stop' | translate }}</option>
+                                  <option value="enable">{{ 'action.type.enable' | translate }}</option>
+                                  <option value="disable">{{ 'action.type.disable' | translate }}</option>
+                                  <option value="go_to">{{ 'action.type.go_to' | translate }}</option>
+                                </optgroup>
+                                <optgroup [label]="'action.type.group.project' | translate">
+                                  <option value="stop_project">{{ 'action.type.stop_project' | translate }}</option>
+                                </optgroup>
                               </select>
                             </div>
 
-                            <div class="field">
+                            <div class="field" *ngIf="!isStopProjectCue(cue)">
                               <label class="label">{{ 'action.target.cue' | translate }}</label>
                               <app-multiselect
                                 [options]="getCueOptionsForAction(cue)"
@@ -602,6 +616,16 @@
                                 [ngModel]="cue.action_target"
                                 (selectionChange)="onActionTargetChange($event, cue)">
                               </app-multiselect>
+                            </div>
+
+                            <!-- stop_project: no target. Always say what it does, and that it
+                                 is not the cue-level stop; warn when cues would be left unplayed. -->
+                            <div class="field" *ngIf="isStopProjectCue(cue)">
+                              <p class="text-sm text-gray-300">{{ 'action.stop_project.description' | translate }}</p>
+                              <p *ngIf="isStopProjectNotTerminal(cue)" class="text-xs text-yellow-400 mt-2 flex items-center gap-1">
+                                <app-icon icon="warning" class="w-[14px] h-[14px]"></app-icon>
+                                {{ 'action.stop_project.non_terminal' | translate }}
+                              </p>
                             </div>
                           </div>
                           
