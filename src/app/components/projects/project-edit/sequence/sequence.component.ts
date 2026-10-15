@@ -1482,6 +1482,33 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     return options;
   }
   
+  /** stop_project is a project-scope action: it stops the whole show like the
+   *  STOP button and has no target (saved as null, parsed as None by the
+   *  engine). It must never be confused with the cue action "stop". */
+  isStopProjectCue(cue: CueData): boolean {
+    return cue.type === 'action' && cue.action_type === 'stop_project';
+  }
+
+  /** A stop_project cue that is not the last thing in its run: it continues
+   *  into another cue, or cues follow it in the list. Those will not play in
+   *  this run (the engine breaks the chain at the stop and the next GO starts
+   *  from the top), so the editor says so. */
+  isStopProjectNotTerminal(cue: CueData): boolean {
+    if (!this.isStopProjectCue(cue)) return false;
+    if (cue.actionType !== 'noContinue') return true;
+    const index = this.cues.indexOf(cue);
+    return index >= 0 && index < this.cues.length - 1;
+  }
+
+  onActionTypeChange(cue: CueData): void {
+    if (this.isStopProjectCue(cue)) {
+      // Project scope: no target. null serialises to an empty element, which
+      // the schema allows for this action.
+      cue.action_target = null;
+    }
+    this.checkForChanges();
+  }
+
   onActionTargetChange(selectedValue: string | string[], cue: CueData): void {
     if (Array.isArray(selectedValue)) {
       cue.action_target = selectedValue.length > 0 ? selectedValue[0] : null;
