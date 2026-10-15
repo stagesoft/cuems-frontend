@@ -23,10 +23,14 @@ import initialMappingsPre001 from '../../../specs/001-schema-descriptor-migratio
 import initialMappings013 from '../../../specs/001-schema-descriptor-migration/fixtures/initial-mappings-013.json';
 import initialMappingsTip from '../../../specs/001-schema-descriptor-migration/fixtures/initial-mappings-tip.frame.json';
 import nodeList from '../../../specs/001-schema-descriptor-migration/fixtures/node-list.frame.json';
-import descriptorScript from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-script.json';
-import descriptorSettings from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-settings.json';
-import descriptorProjectSettings from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-project_settings.json';
-import descriptorProjectMappings from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-project_mappings.json';
+import descriptorScriptPre015 from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-script.json';
+import descriptorSettingsPre015 from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-settings.json';
+import descriptorProjectSettingsPre015 from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-project_settings.json';
+import descriptorProjectMappingsPre015 from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-project_mappings.json';
+import descriptorScript from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-script-015.json';
+import descriptorSettings from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-settings-015.json';
+import descriptorProjectSettings from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-project_settings-015.json';
+import descriptorProjectMappings from '../../../specs/001-schema-descriptor-migration/fixtures/schema-descriptor-project_mappings-015.json';
 
 const FIXTURES = {
   /** today's wire: cuems-editor before 001, cuemsutils 0.1.0rc14 */
@@ -50,10 +54,20 @@ const FIXTURES = {
   'template-as-script-013': templateAsScript013,
   'initial-mappings-tip': initialMappingsTip,
   'node-list': nodeList,
+  /**
+   * The descriptors on the tip wire: cuems-utils 015 (gate G3) and its seeding
+   * rule 0, so every instance is in to_wire() shape and seeded. Recorded with
+   * capture/capture_tip.py; provenance in capture-meta-015.json.
+   */
   'schema-descriptor-script': descriptorScript,
   'schema-descriptor-settings': descriptorSettings,
   'schema-descriptor-project_settings': descriptorProjectSettings,
   'schema-descriptor-project_mappings': descriptorProjectMappings,
+  /** the same four before 015 (cuemsutils 69acaef): null leaves, not wire-shaped. Superseded, kept as recorded */
+  'schema-descriptor-script-pre015': descriptorScriptPre015,
+  'schema-descriptor-settings-pre015': descriptorSettingsPre015,
+  'schema-descriptor-project_settings-pre015': descriptorProjectSettingsPre015,
+  'schema-descriptor-project_mappings-pre015': descriptorProjectMappingsPre015,
 } as const;
 
 export type FixtureName = keyof typeof FIXTURES;

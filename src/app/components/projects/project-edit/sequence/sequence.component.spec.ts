@@ -322,20 +322,23 @@ describe('ProjectEditSequenceComponent (characterization)', () => {
       setUp();
       const structure = any().getTemplateOutputStructure('audio');
       expect(structure).toEqual({
-        // moved: the retired template's example name -> none (T056/T060); set by each call site
-        output_name: null,
+        // moved: the retired template's example name -> none (T056/T060); set by each call site.
+        // Moved again with G3: the library seeds a placeholder ("x"); still set by each call site.
+        // The other values are the library's since UR1_UI_STARTING_VALUES went, and are unchanged.
+        output_name: 'x',
         output_vol: 80,
         channels: [{ channel: { channel_num: 0, channel_vol: 80 } }],
       });
       structure.output_name = 'mutated';
-      expect(any().getTemplateOutputStructure('audio').output_name).toBeNull();
+      expect(any().getTemplateOutputStructure('audio').output_name).toBe('x');
     });
 
     it('video: a fresh wire-shaped video output, from the descriptor', () => {
       setUp();
       expect(any().getTemplateOutputStructure('video')).toEqual({
-        // moved: the retired template's example name -> none (T056/T060)
-        output_name: null,
+        // moved: the retired template's example name -> none (T056/T060); with G3, a placeholder.
+        // No canvas_region: the instance carries one and the template drops it (an alias has none).
+        output_name: 'x',
         output_geometry: {
           x_scale: 1, y_scale: 1,
           corners: {
@@ -350,6 +353,28 @@ describe('ProjectEditSequenceComponent (characterization)', () => {
       setUp({ template: false });
       expect(any().getTemplateOutputStructure('audio')).toBeNull();
       expect(any().getTemplateOutputStructure('video')).toBeNull();
+    });
+  });
+
+  describe('newCueBody after G3', () => {
+    it('a media cue leaves the four media values to cuems-editor', () => {
+      setUp();
+      for (const type of ['audio', 'video'] as const) {
+        const media = any().newCueBody(type).Media;
+        // the descriptor seeds them with placeholders; the editor writes them from the library row
+        for (const key of ['pixel_width', 'pixel_height', 'file_size', 'file_md5']) {
+          expect(key in media).withContext(`${type}.Media.${key}`).toBeFalse();
+        }
+        expect('regions' in media).toBeTrue();
+      }
+    });
+
+    it('starts a hardware cue with no outputs and without its class', () => {
+      setUp();
+      const body = any().newCueBody('audio');
+      expect(body.outputs).toEqual([]);
+      expect('class' in body).toBeFalse();
+      expect(body.master_vol).toBe(100);
     });
   });
 

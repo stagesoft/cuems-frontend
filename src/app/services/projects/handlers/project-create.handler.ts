@@ -1,7 +1,7 @@
 import { generateSlug } from '../../../core/utils';
 import { v4 as uuidv4 } from 'uuid';
 import { InitialMapping } from '../projects.service';
-import { SCRIPT_TYPES, SchemaDescriptor, toWireShape } from './schema-descriptor.handler';
+import { SCRIPT_TYPES, SchemaDescriptor, descriptorInstance } from './schema-descriptor.handler';
 
 export interface CreateProjectParams {
   name: string;
@@ -16,7 +16,7 @@ const ZERO_TC = '00:00:00.000';
  * descriptor's CTimecode has no default.
  */
 export function newCueListFromDescriptor(descriptor: SchemaDescriptor): any {
-  const cueList = toWireShape(descriptor, SCRIPT_TYPES.cueList);
+  const cueList = descriptorInstance(descriptor, SCRIPT_TYPES.cueList);
   cueList.id = uuidv4();
   cueList.offset = { CTimecode: ZERO_TC };
   cueList.prewait = { CTimecode: ZERO_TC };
@@ -34,7 +34,7 @@ export function newScriptFromDescriptor(
   descriptor: SchemaDescriptor,
   projectData: CreateProjectParams
 ): { CuemsScript: any } {
-  const script = toWireShape(descriptor, SCRIPT_TYPES.script);
+  const script = descriptorInstance(descriptor, SCRIPT_TYPES.script);
   script.CueList = newCueListFromDescriptor(descriptor);
   script.name = projectData.name;
   script.description = projectData.description;

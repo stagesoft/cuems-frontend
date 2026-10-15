@@ -20,13 +20,14 @@ measured 2026-10-06/07 at `22093fd` / `69acaef`.
 
 The ecosystem now numbers them in one list (`cuems-editor` `specs/002-config-round-trip/tag-readiness.md`,
 `cuems-utils` `specs/planning/upcoming-feature-requirements-2026-10-02.md` §0a). Each stands as a
-strict xfail in the editor; none is closed.
+strict xfail in the editor. **All five are closed as of 2026-10-15** (the editor's record reads READY;
+the *Effect* column below is kept as it was written, with the closure after it).
 
 | Gate | Report | Owner | Effect on this repository |
 |---|---|---|---|
 | **G1** | `cuems-editor` UR-6 — `conf_path`/`project_path` refuse a file not yet created | `cuems-utils`, then the editor | none while the config views are read-only: a project's *first* `config_save` fails until it lands |
 | **G2** | `cuems-editor` UR-7 — `project_settings` has no public read projection | `cuems-utils`, then the editor | the project-settings view shows the editor's refusal instead of values (`config_load` answers the error frame naming UR-7) |
-| **G3** | **`cuems-frontend` UR-1** (+ addendum) — the descriptor `instance` is not in `to_wire()` shape; required fields have null defaults. Now also the config roots (`settings`, `project_mappings`, `project_settings` instances unsaveable) | `cuems-utils` | `toWireShape` + `UR1_UI_STARTING_VALUES` in `src/app/services/projects/handlers/schema-descriptor.handler.ts` — delete both when it closes |
+| **G3** | **`cuems-frontend` UR-1** (+ addendum) — the descriptor `instance` is not in `to_wire()` shape; required fields have null defaults. Now also the config roots (`settings`, `project_mappings`, `project_settings` instances unsaveable) | `cuems-utils` | `toWireShape` + `UR1_UI_STARTING_VALUES` in `src/app/services/projects/handlers/schema-descriptor.handler.ts` — delete both when it closes. **Closed 2026-10-15: both deleted in one edit**, with no value authored here; the descriptor fixtures re-recorded beside the old ones (`schema-descriptor-*-015.json`) |
 | **G4** | `cuems-editor` UR-8 — no `node_set` in cuems-nodeconf | `cuems-utils` (`NodeIndex.set_alias`), then `cuems-nodeconf` | none yet: alias editing (`node_set`) is not built here (owner's decision 2026-10-12) |
 | **G5** | 013's reshape defeats F3's `settings` 1 → 2 conversion | `cuems-utils` | none directly |
 
@@ -50,7 +51,7 @@ stale media values is shown and acknowledged.
 Nothing releases from `feat/xml-refactor` alone (D27). The candidate tag is re-cut when:
 
 1. G1–G5 are closed (the editor's tag-readiness record lists the tests that flip);
-2. G3 closes — then `toWireShape` and `UR1_UI_STARTING_VALUES` are deleted here in one edit;
+2. G3 closes — then `toWireShape` and `UR1_UI_STARTING_VALUES` are deleted here in one edit (**done 2026-10-15**);
 3. the live quickstart §4 run against a controller on the coordinated tag ([not-performed.md](not-performed.md)).
 
 `feat/node-adoption-ui` (`13d93b7`) is already contained in this branch.

@@ -27,9 +27,13 @@ Spec, findings and fixtures: `specs/001-schema-descriptor-migration/`. The shape
 - **Cues** — `core/cue-wire.ts`: hardware cues are `{"Cue": {…, "class"}}`, outputs
   `{"CueOutput": {…, "class"}}`; unknown class = kind `other`, written back as it arrived. Saves send
   `{"CuemsScript": …}` alone — the library refuses any sibling key. `enabled` is a native boolean.
-- **New cues/outputs/projects** — built from the descriptor via `toWireShape` (UR-1 transform) in
-  `services/projects/handlers/schema-descriptor.handler.ts`; `UR1_UI_STARTING_VALUES` fills required
-  fields the descriptor leaves null. Delete both when UR-1 is answered.
+- **New cues/outputs/projects** — the descriptor's instance as served, through `descriptorInstance`
+  (`services/projects/handlers/schema-descriptor.handler.ts`): a copy with the one wire wrapper
+  peeled. Since cuems-utils 015 (G3, UR-1 closed) it is wire-shaped and seeded, starting values
+  included (`output_vol`/`channel_vol` 80, scales 1, from `script.xsd`), so **this UI authors no
+  value**; `toWireShape` and `UR1_UI_STARTING_VALUES` are gone. Callers drop only what is not theirs
+  to send: `class` (the wrapper adds it), `canvas_region` on an alias output, and a media cue's four
+  media values (cuems-editor writes them from the library row).
 - **Mappings** — `core/mapping-wire.ts`: `devices[].device` by class (outputs are a list of lists),
   `defaults[]` by class+direction. Node identity and adoption state come from `node_list`, not
   `initial_mappings`.

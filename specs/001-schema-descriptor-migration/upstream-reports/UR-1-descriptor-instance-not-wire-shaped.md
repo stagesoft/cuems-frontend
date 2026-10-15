@@ -5,6 +5,12 @@ SPDX-License-Identifier: GPL-3.0-or-later
 
 # UR-1 — The schema descriptor's per-type `instance` is not in `to_wire()` shape
 
+**Status: CLOSED 2026-10-15.** cuems-utils 015 (gate G3) serves every instance in `to_wire()` shape
+with every required leaf seeded, and its seeding rule 0 takes the starting values a new output needs
+from `script.xsd` (`output_vol`/`channel_vol` 80, `x_scale`/`y_scale` 1, cuems-utils `0b3690e`). The
+local stand-in, `toWireShape` and `UR1_UI_STARTING_VALUES`, is deleted in one edit with no value
+authored on this side; a new output starts exactly as before (`sequence.component.spec.ts` T016).
+
 **To** `cuems-utils`. **From** `cuems-frontend` 001 (schema-descriptor migration), 2026-10-03.
 **Measured** against `cuemsutils` `0.1.0rc16` @ `6213b16` (feature 013 complete), as served by
 `cuems-editor` `feat/xml-refactor` @ `8247e9b` via the `schema_descriptor` frame.

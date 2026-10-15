@@ -23,7 +23,7 @@ import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visua
 import { NotificationService } from '../../../../services/ui/notification.service';
 import { findInvalidFadeCuesInContents, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType } from '../../../../core/utils';
 import { cueClassOf, cueDataOf, cueKeyOf, cueKindOf, cueOutputsOf, timecodeText, wrapCueOutput, wrapHardwareCue } from '../../../../core/cue-wire';
-import { DescriptorGapError, SCRIPT_TYPES, SchemaDescriptorService, descriptorDefault, toWireShape } from '../../../../services/projects/handlers/schema-descriptor.handler';
+import { DescriptorGapError, SCRIPT_TYPES, SchemaDescriptorService, descriptorDefault, descriptorInstance } from '../../../../services/projects/handlers/schema-descriptor.handler';
 import { newCueListFromDescriptor } from '../../../../services/projects/handlers/project-create.handler';
 
 interface CueData {
@@ -1097,17 +1097,26 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * A new cue's body, wire-shaped from the script descriptor (UR-1
-   * transform), without its `class` — the wrapper adds that. A hardware cue
-   * starts with no outputs: the descriptor's example output has no class
-   * and the library refuses it; outputs are assigned from the selection.
+   * A new cue's body: the script descriptor's instance as served (already in
+   * `to_wire()` shape since cuems-utils 015), without its `class` — the
+   * wrapper adds that. A hardware cue starts with no outputs: they are
+   * assigned from the selection, not taken from the descriptor's exemplar.
+   * A media cue's `Media` leaves out the four optional media values
+   * (`pixel_width`, `pixel_height`, `file_size`, `file_md5`): the descriptor
+   * seeds them with placeholders, and they are cuems-editor's, written from
+   * the media library row on save (its 002 US6). A placeholder md5 would
+   * disagree with that row, and an audio cue never carries a pixel size.
    */
   private newCueBody(type: 'action' | 'audio' | 'video' | 'dmx' | 'fade'): any | null {
     const descriptor = this.schemaDescriptors.script();
     try {
       if (!descriptor) throw new DescriptorGapError(SCRIPT_TYPES[type], '(descriptor)');
-      const { class: _class, ...body } = toWireShape(descriptor, SCRIPT_TYPES[type]);
+      const { class: _class, ...body } = descriptorInstance(descriptor, SCRIPT_TYPES[type]);
       if (type === 'audio' || type === 'video' || type === 'dmx') body['outputs'] = [];
+      if (body['Media']) {
+        const { pixel_width: _w, pixel_height: _h, file_size: _s, file_md5: _m, ...media } = body['Media'];
+        body['Media'] = media;
+      }
       return body;
     } catch (error) {
       this.reportDescriptorGap(error);
@@ -1626,17 +1635,20 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * A new output's body, wire-shaped from the script descriptor (UR-1
-   * transform) and without its `class` — wrapCueOutput adds that. Never
-   * undefined: a descriptor that cannot provide it is reported (FR-034) and
-   * the result is null.
+   * A new output's body: the script descriptor's instance as served, without
+   * its `class` (wrapCueOutput adds that) and without `canvas_region`. Every
+   * caller builds an alias output from it, and the library refuses a
+   * `canvas_region` on an alias; the one custom-output site sets its own
+   * region. Starting values (volumes 80, scales 1) are the library's, seeded
+   * from `script.xsd`. Never undefined: a descriptor that cannot provide it is
+   * reported (FR-034) and the result is null.
    */
   private getTemplateOutputStructure(cueType: 'audio' | 'video'): any | null {
     const descriptor = this.schemaDescriptors.script();
     const typeKey = cueType === 'audio' ? SCRIPT_TYPES.audioOutput : SCRIPT_TYPES.videoOutput;
     try {
       if (!descriptor) throw new DescriptorGapError(typeKey, '(descriptor)');
-      const { class: _class, ...body } = toWireShape(descriptor, typeKey);
+      const { class: _class, canvas_region: _aliasHasNone, ...body } = descriptorInstance(descriptor, typeKey);
       return body;
     } catch (error) {
       this.reportDescriptorGap(error);

@@ -1,0 +1,25 @@
+{
+  "captured_with": "capture_tip.py (this directory), mirroring cuems-editor CuemsDBProject.open + CuemsWsUser.send_project / schema_descriptor; only the four schema-descriptor-*.json outputs were kept, as schema-descriptor-<name>-015.json",
+  "fixture": "script_minimal_013.xml",
+  "fixture_sha256_before": "df367383d80d0c844aef6ff1f603b19c7f7f5646f5c98d2ce4fc9e88e6e5ed0b",
+  "fixture_sha256_after": "df367383d80d0c844aef6ff1f603b19c7f7f5646f5c98d2ce4fc9e88e6e5ed0b",
+  "cuemsutils": {
+    "version": "0.1.0rc16",
+    "sha": "0b3690e417ee3838b06b17835eb2290662afddaf",
+    "subject": "feat(descriptor): seeding rule 0 \u2014 an element's XSD default is its starting value",
+    "dirty": false
+  },
+  "cuems_editor": {
+    "sha": "e5e6ac196587745a71dae4845d8b93300f79c1a1",
+    "subject": "docs(002): tag readiness is READY \u2014 every gate closed, G5 verified",
+    "dirty": false
+  },
+  "load_report_ids": "report_id/project_uuid are fixed placeholders; the editor mints a fresh uuid per load",
+  "supersedes": [
+    "schema-descriptor-script.json",
+    "schema-descriptor-settings.json",
+    "schema-descriptor-project_settings.json",
+    "schema-descriptor-project_mappings.json"
+  ],
+  "conf": "CUEMS_CONF_PATH = cuems-editor tests/fixtures/conf"
+}

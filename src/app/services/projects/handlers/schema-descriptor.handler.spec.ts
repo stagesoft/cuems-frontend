@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import {
-  DESCRIPTOR_TIMEOUT_MS, DescriptorGapError, SCRIPT_TYPES, SchemaDescriptorService, UR1_UI_STARTING_VALUES,
-  descriptorDefault, parseSchemaDescriptor, requestSchemaDescriptor, scriptDescriptorGaps, toWireShape,
+  DESCRIPTOR_TIMEOUT_MS, DescriptorGapError, SCRIPT_TYPES, SchemaDescriptorService,
+  descriptorDefault, descriptorInstance, parseSchemaDescriptor, requestSchemaDescriptor, scriptDescriptorGaps,
 } from './schema-descriptor.handler';
 import { PayloadVersionService } from '../../../core/payload-version.service';
 import { FakeWebsocketService, setUpCharacterization } from '../../../testing/characterization-harness';
@@ -43,64 +43,55 @@ describe('schema descriptor', () => {
     });
   });
 
-  describe('toWireShape — the UR-1 transform', () => {
-    it('step 1: inverts {"channel": [...]} into [{"channel": {...}}]', () => {
-      const instance = script().types.find(t => t.key === SCRIPT_TYPES.audioOutput)!.instance;
-      expect(instance.channels).toEqual({ channel: [{ channel_num: null, channel_vol: null }] });
-      expect(toWireShape(script(), SCRIPT_TYPES.audioOutput).channels)
-        .toEqual([{ channel: { channel_num: 0, channel_vol: 80 } }]);
-    });
+  describe('descriptorInstance — the library\'s instance as served (G3; UR-1 closed)', () => {
+    const pre015 = () => parseSchemaDescriptor(loadFixture('schema-descriptor-script-pre015').value)!;
 
-    it('step 1: inverts every repeated container the same way (regions, dmx_channels, outputs)', () => {
-      const audio = toWireShape(script(), SCRIPT_TYPES.audio);
-      expect(Array.isArray(audio.Media.regions)).toBeTrue();
+    it('repeated containers arrive as the wire carries them, where they used to need inverting', () => {
+      const before = pre015().types.find(t => t.key === SCRIPT_TYPES.audioOutput)!.instance;
+      expect(before.channels).toEqual({ channel: [{ channel_num: null, channel_vol: null }] });
+      expect(descriptorInstance(script(), SCRIPT_TYPES.audioOutput).channels)
+        .toEqual([{ channel: { channel_num: 0, channel_vol: 80 } }]);
+
+      const audio = descriptorInstance(script(), SCRIPT_TYPES.audio);
       expect(Object.keys(audio.Media.regions[0])).toEqual(['Region']);
       expect(Object.keys(audio.outputs[0])).toEqual(['CueOutput']);
-      const dmx = toWireShape(script(), SCRIPT_TYPES.dmx);
-      expect(dmx.DmxScene.DmxUniverse.dmx_channels).toEqual([{ DmxChannel: { channel: 0, value: 0 } }]);
+      expect(descriptorInstance(script(), SCRIPT_TYPES.dmx).DmxScene.DmxUniverse.dmx_channels)
+        .toEqual([{ DmxChannel: { channel: 0, value: 0 } }]);
     });
 
-    it('step 2: fills a null with the field\'s descriptor default', () => {
-      expect(toWireShape(script(), SCRIPT_TYPES.audio).master_vol).toBe(100);
-      expect(toWireShape(script(), SCRIPT_TYPES.audioOutput).class).toBe('audio');
-    });
-
-    it('step 3: UI starting values only where a required default is null', () => {
-      const audio = toWireShape(script(), SCRIPT_TYPES.audioOutput);
-      expect(audio.output_vol).toBe(UR1_UI_STARTING_VALUES['script:AudioCueOutputsType.output_vol']);
-      const video = toWireShape(script(), SCRIPT_TYPES.videoOutput);
-      expect(video.output_geometry).toEqual({
+    it('the starting values a new output needs are the library\'s, so this UI authors none', () => {
+      const audio = descriptorInstance(script(), SCRIPT_TYPES.audioOutput);
+      expect(audio.output_vol).toBe(80);
+      expect(descriptorInstance(script(), SCRIPT_TYPES.videoOutput).output_geometry).toEqual({
         x_scale: 1, y_scale: 1,
         corners: {
           top_left: { x: 0, y: 0 }, top_right: { x: 0, y: 0 },
           bottom_left: { x: 0, y: 0 }, bottom_right: { x: 0, y: 0 },
         },
       });
-      // a required field with no default and no starting value stays null for the caller
-      expect(audio.output_name).toBeNull();
+      expect(descriptorInstance(script(), SCRIPT_TYPES.audio).master_vol).toBe(100);
+      expect(descriptorInstance(script(), SCRIPT_TYPES.action).action_type).toBe('play');
+      expect(descriptorInstance(script(), SCRIPT_TYPES.fade).curve_type).toBe('linear');
     });
 
-    it('step 4: omits an optional field that is still empty (no canvas_region on an alias)', () => {
-      expect('canvas_region' in toWireShape(script(), SCRIPT_TYPES.videoOutput)).toBeFalse();
-      const media = toWireShape(script(), SCRIPT_TYPES.audio).Media;
-      expect('pixel_width' in media).toBeFalse();
+    it('peels the one wire wrapper a contained type carries, and only that', () => {
+      const output = script().types.find(t => t.key === SCRIPT_TYPES.audioOutput)!.instance;
+      expect(Object.keys(output)).toEqual(['CueOutput']);
+      expect(descriptorInstance(script(), SCRIPT_TYPES.audioOutput).class).toBe('audio');
+      // a document body is served unwrapped: its single-looking first key is a field
+      expect('CueList' in descriptorInstance(script(), SCRIPT_TYPES.script)).toBeTrue();
+      expect('name' in descriptorInstance(script(), SCRIPT_TYPES.script)).toBeTrue();
     });
 
-    it('authors nothing else: every scalar is the instance\'s, the default, or a UR-1 starting value', () => {
-      expect(Object.keys(UR1_UI_STARTING_VALUES).every(k => k.startsWith('script:'))).toBeTrue();
-      expect(toWireShape(script(), SCRIPT_TYPES.action).action_type).toBe('play');
-      expect(toWireShape(script(), SCRIPT_TYPES.fade).curve_type).toBe('linear');
-    });
-
-    it('does not mutate the descriptor', () => {
+    it('returns a copy: neither the result nor the descriptor leaks into the other', () => {
       const descriptor = script();
       const before = JSON.stringify(descriptor);
-      toWireShape(descriptor, SCRIPT_TYPES.audio);
+      descriptorInstance(descriptor, SCRIPT_TYPES.audio).master_vol = 0;
       expect(JSON.stringify(descriptor)).toBe(before);
     });
 
     it('throws a gap for a type the descriptor does not have', () => {
-      expect(() => toWireShape(script(), 'script:NoSuchType')).toThrowError(DescriptorGapError);
+      expect(() => descriptorInstance(script(), 'script:NoSuchType')).toThrowError(DescriptorGapError);
     });
   });
 

@@ -71,27 +71,6 @@ export function descriptorType(descriptor: SchemaDescriptor, key: string): Descr
 }
 
 /**
- * UR-1 — UI starting values for REQUIRED fields whose descriptor default is
- * null (measured against the script descriptor, cuems-utils 69acaef).
- *
- * The library refuses a save with null in any of these, and the descriptor
- * has no value to give, so a new output could not be saved at all from the
- * descriptor alone. These are this UI's starting values, not the schema's
- * answer — the same standing as the one-channel DMX seed — and they are the
- * values the retired `initial_template` gave operators, so a new output looks
- * exactly as it did before. Delete with `toWireShape` when UR-1 is answered.
- */
-export const UR1_UI_STARTING_VALUES: Readonly<Record<string, unknown>> = {
-  'script:AudioCueOutputsType.output_vol': 80,
-  'script:AudioChannelType.channel_num': 0,
-  'script:AudioChannelType.channel_vol': 80,
-  'script:VideoOutputGeometryType.x_scale': 1,
-  'script:VideoOutputGeometryType.y_scale': 1,
-  'script:Coordinates.x': 0,
-  'script:Coordinates.y': 0,
-};
-
-/**
  * A field's descriptor default. Throws DescriptorGapError when the type or
  * field is missing, or the default is null — for a call site that needs a
  * value, a null default is a gap to report, not a value to use (FR-034).
@@ -110,98 +89,41 @@ export class DescriptorGapError extends Error {
   }
 }
 
-function isContainer(type: DescriptorType | null): boolean {
-  return !!type && type.fields.length > 0
-    && type.fields.every(f => f.repeated && f.kind === 'element');
-}
-
-function isEmpty(value: unknown): boolean {
-  if (value === null || value === undefined) return true;
-  if (Array.isArray(value)) return false;
-  if (typeof value === 'object') {
-    const values = Object.values(value as object);
-    return values.length > 0 && values.every(isEmpty);
-  }
-  return false;
-}
-
 /**
- * UR-1: lift a descriptor type's `instance` into the shape `to_wire()` uses.
+ * A type's `instance`, as the library serves it, ready to fill in: a fresh
+ * deep copy, with the one wire wrapper a type reached through a container
+ * carries (`{"CueOutput": …}`, `{"CueList": …}`) peeled off. Nothing else is
+ * done to it.
  *
- * The instance is not wire-shaped (UR-1-descriptor-instance-not-wire-shaped.md):
- * a repeated child is rendered `{"Child": [item, …]}` where the wire has
- * `[{"Child": item}, …]` (outputs, regions, channels, dmx_channels), and every
- * scalar is null. This, and nothing more, in descriptor terms:
+ * Since cuems-utils 015 (gate G3, which closed UR-1) the instance is already in
+ * `to_wire()` shape and every required leaf carries a value its type accepts,
+ * including the starting values a new output needs (`output_vol` 80,
+ * `channel_vol` 80, `x_scale`/`y_scale` 1, declared in `script.xsd` and seeded
+ * by the library). So this UI hand-authors no value: what used to be
+ * `toWireShape` and `UR1_UI_STARTING_VALUES` is gone.
  *
- *   1. invert each repeated-element container (a type whose fields are all
- *      repeated elements) into a list of single-key wrappers;
- *   2. replace each null with that field's descriptor `default`;
- *   3. where a REQUIRED field's default is null too, use UR1_UI_STARTING_VALUES;
- *      a required field still empty is a descriptor gap, thrown;
- *   4. omit an OPTIONAL field that is still empty (an alias video output
- *      must carry no `canvas_region`, and the library refuses one).
- *
- * The output wrapper (`{"CueOutput": …}`) and `class` placement are the
- * caller's (cue-wire.ts): they depend on where the value is put.
- *
- * Delete in one edit when UR-1 is answered, with UR1_UI_STARTING_VALUES.
+ * The peel is by shape, not by name: a single key that is not one of the
+ * type's own fields is a wrapper. A document-body type (`CuemsScript`) is
+ * served unwrapped, its keys are its fields, and is returned as it is.
  */
-export function toWireShape(descriptor: SchemaDescriptor, typeKey: string): any {
+export function descriptorInstance(descriptor: SchemaDescriptor, typeKey: string): any {
   const type = descriptorType(descriptor, typeKey);
   if (!type) throw new DescriptorGapError(typeKey, '(type)');
-  return shapeValue(descriptor, type, JSON.parse(JSON.stringify(type.instance)));
-}
-
-function shapeValue(descriptor: SchemaDescriptor, type: DescriptorType, value: any): any {
-  const out: Record<string, any> = {};
-  for (const [name, raw] of Object.entries(value ?? {})) {
-    const field = type.fields.find(f => f.name === name);
-    const fieldType = field?.xsd_type
-      ? descriptorType(descriptor, `${descriptor.schema}:${field.xsd_type}`)
-      : null;
-    let shaped: any;
-
-    if (fieldType && raw && typeof raw === 'object' && !Array.isArray(raw) && isContainer(fieldType)) {
-      shaped = [];
-      for (const child of fieldType.fields) {
-        const childType = child.xsd_type
-          ? descriptorType(descriptor, `${descriptor.schema}:${child.xsd_type}`)
-          : null;
-        for (const item of (raw as any)[child.name] ?? []) {
-          shaped.push({
-            [child.name]: childType && item && typeof item === 'object'
-              ? shapeValue(descriptor, childType, item)
-              : item,
-          });
-        }
-      }
-    } else if (fieldType && raw && typeof raw === 'object' && !Array.isArray(raw)) {
-      shaped = shapeValue(descriptor, fieldType, raw);
-    } else if (raw === null && field) {
-      shaped = field.default;
-      const startKey = `${type.key}.${name}`;
-      if (shaped === null && field.required && startKey in UR1_UI_STARTING_VALUES) {
-        shaped = UR1_UI_STARTING_VALUES[startKey];
-      }
-    } else {
-      shaped = raw;
-    }
-
-    if (field && !field.required && isEmpty(shaped)) continue;
-    out[name] = shaped;
-  }
-  return out;
+  const instance = JSON.parse(JSON.stringify(type.instance));
+  const keys = instance && typeof instance === 'object' && !Array.isArray(instance) ? Object.keys(instance) : [];
+  if (keys.length === 1 && !type.fields.some(f => f.name === keys[0])) return instance[keys[0]];
+  return instance;
 }
 
 /**
- * Required fields that stay empty in `toWireShape(typeKey)` and that a call
- * site does not fill itself. A non-empty answer is a descriptor gap the UI
- * must report rather than absorb (FR-034).
+ * Required fields that stay empty in `descriptorInstance(typeKey)` and that a
+ * call site does not fill itself. A non-empty answer is a descriptor gap the
+ * UI must report rather than absorb (FR-034).
  */
 export function unfilledRequired(descriptor: SchemaDescriptor, typeKey: string, filledByCaller: string[]): string[] {
   const type = descriptorType(descriptor, typeKey);
   if (!type) return ['(type)'];
-  const shaped = toWireShape(descriptor, typeKey);
+  const shaped = descriptorInstance(descriptor, typeKey);
   return type.fields
     .filter(f => f.required && !filledByCaller.includes(f.name))
     .filter(f => !(f.name in shaped) || containsNull(shaped[f.name]))
