@@ -144,6 +144,13 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     return 'Unknown Cue';
   }
 
+  /** A stop_project ActionCue: it stops the whole project like the STOP
+   *  button (not the cue action "stop"). Shown with the same chip as in the
+   *  edit view so the operator recognises it during the show. */
+  isStopProjectCue(cueItem: any): boolean {
+    return cueItem?.ActionCue?.action_type === 'stop_project';
+  }
+
   getCueTypeIcon(cueItem: any): string {
     if (cueItem.AudioCue) return 'audio';
     if (cueItem.VideoCue) return 'video';
