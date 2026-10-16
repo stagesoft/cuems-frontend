@@ -113,17 +113,17 @@
                     <td class="px-4 py-1">
                       <div class="flex items-center gap-2">
                         <app-icon [icon]="cue.type" class="w-[16px] h-[16px]"></app-icon>
-                        <span *ngIf="isStopProjectCue(cue)"
-                              class="text-xs py-0.5 px-1.5 border border-red-500 text-red-400 rounded whitespace-nowrap"
-                              [title]="'action.stop_project.description' | translate">
-                          {{ 'action.stop_project.badge' | translate }}
-                        </span>
                         <button type="button"
                                 class="text-gray-500 hover:text-gray-200 transition-colors"
                                 [title]="'cue.copyId' | translate"
                                 (click)="copyCueId(cue.id, $event)">
                           <app-icon icon="copy" class="w-[12px] h-[12px]"></app-icon>
                         </button>
+                        <span *ngIf="isStopProjectCue(cue)"
+                              class="text-xs py-0.5 px-1.5 border border-red-500 text-red-400 rounded whitespace-nowrap"
+                              [title]="'action.stop_project.description' | translate">
+                          {{ 'action.stop_project.badge' | translate }}
+                        </span>
                       </div>
                     </td>
                     
