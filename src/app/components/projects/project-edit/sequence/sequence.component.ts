@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component, OnInit, OnDestroy, inject, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -21,7 +24,7 @@ import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/confirmation-dialog.component';
 import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
 import { NotificationService } from '../../../../services/ui/notification.service';
-import { findInvalidFadeCuesInContents, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType } from '../../../../core/utils';
+import { findInvalidFadeCuesInContents, findMediaCueProblems, mediaBlockToSave, mediaResolution, MediaResolution, normalizeUiWarning, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType, copyToClipboard } from '../../../../core/utils';
 
 interface CueData {
   id: string | number;
@@ -153,6 +156,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     );
 
     this.mediaService.getFileList();
+    // The trash list too: a cue whose file is in the trash must say so, not
+    // "not in the library" (869fej07m).
+    this.mediaService.getFileTrashList();
 
     this.subscription.add(
       this.mediaService.fileListLoaded.subscribe(() => {
@@ -253,8 +259,18 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       }
     }
 
+    // Reflect each resolution in the unsaved-changes baseline for THAT cue
+    // only (matched by id, never by index). Snapshotting the whole array
+    // here used to erase every unsaved edit's baseline whenever another tab
+    // uploaded or restored a file and this list refreshed (869fej3kv).
     if (changed) {
-      this.originalCues = JSON.parse(JSON.stringify(this.cues));
+      for (const cue of this.cues) {
+        if (!cue.selectedMediaFile) continue;
+        const original = this.originalCues.find(o => o.id === cue.id);
+        if (original && !original.selectedMediaFile) {
+          original.selectedMediaFile = JSON.parse(JSON.stringify(cue.selectedMediaFile));
+        }
+      }
     }
   }
 
@@ -343,6 +359,31 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       let canvasRegion = { x: 0, y: 0, width: 1, height: 1 };
 
       
+      if (cueType === 'dmx') {
+        // DmxCueOutput carries only output_name — the bare node uuid — so
+        // parseOutputString() (which demands a `uuid_name` shape) would
+        // return null here. Match against the dmx options directly instead,
+        // and keep an unknown value rather than silently dropping it: that
+        // is what makes a project mapped to a node this cluster does not
+        // have visible to the operator instead of disappearing.
+        const dmxOutputs: string[] = [];
+        if (cueData.outputs && Array.isArray(cueData.outputs)) {
+          for (const output of cueData.outputs) {
+            if (output.DmxCueOutput?.output_name) {
+              dmxOutputs.push(output.DmxCueOutput.output_name);
+            }
+          }
+        } else if (cueData.DmxCueOutput?.output_name) {
+          dmxOutputs.push(cueData.DmxCueOutput.output_name);
+        }
+
+        if (dmxOutputs.length > 0) {
+          selectedOutputs = dmxOutputs;
+        } else if (this.dmxMappingOptions.length > 0) {
+          selectedOutputs = [this.dmxMappingOptions[0].value];
+        }
+      }
+
       if (cueType === 'audio') {         
         let audioOutputs: string[] = [];
         
@@ -752,6 +793,19 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       
       newCue.dmx_channels = initialChannels;
       newCue.fade_in_time = 0;
+
+      // Same courtesy audio and video already get: start on a real target
+      // instead of on nothing. Without this a new DmxCue saves with no
+      // output_name and never arms on any node.
+      const mappingsResponse = this.projectsService.initialMappings();
+      const defaultDmxOutput = mappingsResponse?.value?.default_dmx_output;
+      if (defaultDmxOutput && this.dmxMappingOptions.some(o => o.value === defaultDmxOutput)) {
+        newCue.selectedOutputs = [defaultDmxOutput];
+      } else if (this.dmxMappingOptions.length > 0) {
+        newCue.selectedOutputs = [this.dmxMappingOptions[0].value];
+      } else {
+        newCue.selectedOutputs = [];
+      }
     }
 
     if (type === 'action') {
@@ -938,9 +992,36 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
           return;
         }
 
+        if (!this.mediaGateAllowsSave(updatedProject.CuemsScript?.CueList?.contents)) {
+          return;
+        }
+
         this.projectsService.updateProject(updatedProject);
       }
     }
+  }
+
+  /**
+   * Media gate on the final payload: block on cues without a usable media
+   * block or whose file the library no longer knows; warn (and go on) when
+   * the file is in the trash. The editor refuses the same shapes server-side.
+   */
+  private mediaGateAllowsSave(contents: any[] | undefined): boolean {
+    const check = findMediaCueProblems(contents, this.mediaService.fileList(), this.mediaService.fileTrashList());
+    if (check.blocking.length > 0) {
+      this.notificationService.showError(
+        this.translateService.instant('media.missing.save') +
+        ': ' + check.blocking.map(o => o.name).join(', ')
+      );
+      return false;
+    }
+    if (check.trashed.length > 0) {
+      this.notificationService.showWarning(
+        this.translateService.instant('media.trashed.save.warning') +
+        ': ' + check.trashed.map(o => o.name).join(', ')
+      );
+    }
+    return true;
   }
 
   private transformCueToServerFormat(cue: CueData): any {
@@ -1033,32 +1114,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     }    
 
     if (cue.type === 'audio' || cue.type === 'video') {
-      if (newCue.Media) {
-        if (cue.selectedMediaFile && cue.selectedMediaFile.file.unix_name) {
-          newCue.Media = {
-            file_name: cue.selectedMediaFile.file.unix_name,
-            id: cue.selectedMediaFile.uuid,
-            // Send the real media duration from the file_list metadata. The `||`
-            // fallback covers legacy media rows with a NULL duration and older
-            // editors whose file_list payload doesn't yet carry the field; in
-            // those cases the backend safety net (_fix_media_durations) still
-            // corrects it from the DB on save.
-            duration: cue.selectedMediaFile.file.duration || '00:00:00.000',
-            regions: [
-              {
-                Region: {
-                  id: 0,
-                  loop: 1,
-                  in_time: { CTimecode: "00:00:00.000" },
-                  out_time: { CTimecode: "00:00:00.000" }
-                }
-              }
-            ]
-          };
-        } else {
-          delete newCue.Media;
-        }
-      }
+      // A file picked in the library wins; otherwise the cue's ORIGINAL media
+      // block is kept. Dropping it when the file could not be matched in the
+      // library list (trashed, deleted, list not loaded yet) used to erase the
+      // cue's media on save (869fej07m).
+      const block = mediaBlockToSave(this.getCueData(cue.originalData)?.Media, cue.selectedMediaFile);
+      if (block) newCue.Media = block;
+      else delete newCue.Media;
 
       if (cue.type === 'audio') {
         let selectedOutputs: string[] = [];
@@ -1136,6 +1198,18 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         }
       }
       newCue.fadein_time = Math.round((cue.fade_in_time ?? 0) * 1000);
+
+      // DmxCueOutputsType is a single repeatable output_name and nothing
+      // else, so the structure is built here rather than cloned from the
+      // project template the way audio and video outputs are.
+      const dmxSelected = (cue.selectedOutputs && Array.isArray(cue.selectedOutputs))
+        ? cue.selectedOutputs.filter(value => !!value)
+        : [];
+      if (dmxSelected.length > 0) {
+        newCue.outputs = dmxSelected.map(outputName => ({
+          DmxCueOutput: { output_name: outputName }
+        }));
+      }
     }
 
     const result = { [cueTypeKey]: newCue };
@@ -1146,6 +1220,15 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
   private generateUUID(): string {
     return uuidv4();
+  }
+
+  async copyCueId(id: string | number, event: Event): Promise<void> {
+    event.stopPropagation();
+    if (await copyToClipboard(String(id))) {
+      this.notificationService.showSuccess(`${this.translateService.instant('cue.idCopied')}: ${id}`);
+    } else {
+      this.notificationService.showError(this.translateService.instant('cue.idCopyFailed'));
+    }
   }
 
   /**
@@ -1171,18 +1254,39 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     // Only for audio/video, no action, no dmx
     if ((cue.type === 'action') || (cue.type === 'dmx') || (cue.type === 'fade')) return false;
 
-    // If there is a media file selected, no show warning
-    if (cue.selectedMediaFile) return false;
+    // Resolved against the CURRENT library list: a file trashed elsewhere
+    // leaves a stale selectedMediaFile behind, so the list decides.
+    if (this.mediaResolutionOf(cue) === 'ok') return false;
 
-    let warning = null;
-    if (cue.originalData?.AudioCue?.ui_properties?.warning !== undefined) {
-      warning = cue.originalData.AudioCue.ui_properties.warning;
-    } else if (cue.originalData?.VideoCue?.ui_properties?.warning !== undefined) {
-      warning = cue.originalData.VideoCue.ui_properties.warning;
-    }
-
-    // Show if it is null or 2
+    // The XML type is anyType: an unset warning arrives as the string "None"
+    // and digits as strings. 0 and 1 hide the icon; anything else shows it.
+    const warning = normalizeUiWarning(this.getCueData(cue.originalData)?.ui_properties?.warning);
     return warning === null || warning === 2;
+  }
+
+  /** Where this cue's media file stands: in the library, in the trash,
+   *  nowhere (deleted), or the cue has no media at all. */
+  public mediaResolutionOf(cue: CueData): MediaResolution {
+    const fileName = cue.selectedMediaFile?.file?.unix_name
+      || this.getCueData(cue.originalData)?.Media?.file_name;
+    return mediaResolution(fileName, this.mediaService.fileList(), this.mediaService.fileTrashList());
+  }
+
+  /** Tooltip for the warning icon. */
+  public mediaWarningText(cue: CueData): string {
+    switch (this.mediaResolutionOf(cue)) {
+      case 'trashed': return this.translateService.instant('media.in.trash');
+      case 'missing': return this.translateService.instant('media.not.in.library');
+      default: return '';
+    }
+  }
+
+  /** The file the cue keeps pointing at while it cannot be picked from the
+   *  library list (trashed or deleted): shown in the select instead of the
+   *  placeholder, so the operator sees what will be saved. */
+  public keptMediaName(cue: CueData): string | null {
+    if (cue.selectedMediaFile) return null;
+    return this.getCueData(cue.originalData)?.Media?.file_name || null;
   }
 
   public getCueTypeKey(originalData: any): string | null {
@@ -1297,6 +1401,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   }
 
   mappingOptions: { value: string, label: string }[] = [];
+  /** DMX targets. One entry per node that declares a <dmx> output; the value
+   *  is the bare node uuid (see InitialMapping in projects.service). */
+  dmxMappingOptions: { value: string, label: string }[] = [];
   audioMappingOptions: { value: string, label: string }[] = [];
   videoMappingOptions: { value: string, label: string }[] = [];
 
@@ -1310,7 +1417,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     if (cue.type === 'video') {
       options = this.videoMappingOptions;
     }
-    
+
+    if (cue.type === 'dmx') {
+      options = this.dmxMappingOptions;
+    }
+
     return options;
   }
 
@@ -1371,6 +1482,33 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     return options;
   }
   
+  /** stop_project is a project-scope action: it stops the whole show like the
+   *  STOP button and has no target (saved as null, parsed as None by the
+   *  engine). It must never be confused with the cue action "stop". */
+  isStopProjectCue(cue: CueData): boolean {
+    return cue.type === 'action' && cue.action_type === 'stop_project';
+  }
+
+  /** A stop_project cue that is not the last thing in its run: it continues
+   *  into another cue, or cues follow it in the list. Those will not play in
+   *  this run (the engine breaks the chain at the stop and the next GO starts
+   *  from the top), so the editor says so. */
+  isStopProjectNotTerminal(cue: CueData): boolean {
+    if (!this.isStopProjectCue(cue)) return false;
+    if (cue.actionType !== 'noContinue') return true;
+    const index = this.cues.indexOf(cue);
+    return index >= 0 && index < this.cues.length - 1;
+  }
+
+  onActionTypeChange(cue: CueData): void {
+    if (this.isStopProjectCue(cue)) {
+      // Project scope: no target. null serialises to an empty element, which
+      // the schema allows for this action.
+      cue.action_target = null;
+    }
+    this.checkForChanges();
+  }
+
   onActionTargetChange(selectedValue: string | string[], cue: CueData): void {
     if (Array.isArray(selectedValue)) {
       cue.action_target = selectedValue.length > 0 ? selectedValue[0] : null;
@@ -1399,6 +1537,13 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         label: mapping.name
       }));
       
+      this.dmxMappingOptions = mappings.filter(mapping =>
+        mapping.type === 'dmx'
+      ).map(mapping => ({
+        value: mapping.uuid,
+        label: mapping.name
+      }));
+
       this.mappingOptions = [...this.audioMappingOptions, ...this.videoMappingOptions];
     }
   }

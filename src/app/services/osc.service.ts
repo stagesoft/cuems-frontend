@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
@@ -7,6 +10,16 @@ import OSC from 'osc-js';
 
 /** Fixed frame rate for SMPTE display (25 fps = 40 ms per frame). */
 const SMPTE_FRAMES_PER_SECOND = 25;
+
+/** Payload of /engine/status/cluster_warning, sent at every project load. */
+export interface ClusterWarning {
+  loadId: number;
+  project: string;
+  /** UUIDs the project uses that are not in the cluster at all. */
+  missing: string[];
+  /** UUIDs that are adopted and used, but did not answer the ping. */
+  unreachable: string[];
+}
 
 @Injectable({
   providedIn: 'root'
@@ -44,14 +57,42 @@ export class OscService {
   /** Map of cue UUID -> status (0=unplayed, 1-99=playing %, 100=played, -1=error) */
   public cueStatuses = signal<Record<string, number>>({});
 
+  /** Names fed by the show sequence page for the project ON SCREEN. Fallback
+   *  only: duplicated projects share cue uuids, so these may name a cue after
+   *  the wrong project when the page and the engine disagree. */
   public cueNames = signal<Record<string, string>>({});
+
+  /** Names of the cues of the project the ENGINE holds, from
+   *  /engine/status/cue_name/<uuid>. Authoritative: GO plays that project.
+   *  The engine sends them after /engine/status/load, so the table is cleared
+   *  on every change of the load status and refilled by the burst that follows;
+   *  cleared on disconnect too (the late-join dump re-sends them). Empty against
+   *  an engine that predates the broadcast (cuems-engine 869fedahu). */
+  public engineCueNames = signal<Record<string, string>>({});
 
   /** Map of cue UUID -> enabled state */
   public cueEnabledStatuses = signal<Record<string, boolean>>({});
 
   /** Map of "{nodeUuid}/{outputIndex}/{channel}" → volume 0.0-1.0.
    *  channel is "master" or a stringified channel index. */
-  public mixerStatus = signal<Record<string, number>>({});  
+  public mixerStatus = signal<Record<string, number>>({});
+
+  /** What the last project load found wrong with the cluster
+   *  (from /engine/status/cluster_warning).
+   *
+   *  `missing`     — the project uses these nodes and they are not in the
+   *                  cluster at all (un-adopted, or never adopted).
+   *  `unreachable` — adopted and used by the project, but they did not answer
+   *                  the engine's ping.
+   *
+   *  Cues on those nodes will not play, and GO is deliberately NOT blocked:
+   *  the engine warns and lets the show start. Empty lists mean a clean load
+   *  and are sent on purpose, to erase a previous warning.
+   *
+   *  `loadId` increases with every load. It exists so a UI can tell an
+   *  operator retrying a load they have not fixed (new id, same lists) from
+   *  the engine replaying the state to a reconnecting client (same id). */
+  public clusterWarning = signal<ClusterWarning | null>(null);
 
   constructor() {
     console.log('OscService initialized');
@@ -97,6 +138,7 @@ export class OscService {
   private onDisconnect(): void {
     this.isConnected.set(false);
     this.mixerStatus.set({});
+    this.engineCueNames.set({});
   }  
 
   reconnect(): void {
@@ -161,6 +203,13 @@ export class OscService {
       return;
     }
 
+    if (msg.address.startsWith('/engine/status/cue_name/')) {
+      const uuid = msg.address.split('/engine/status/cue_name/')[1];
+      const name = String(msg.args[0] ?? '');
+      this.engineCueNames.update(names => ({ ...names, [uuid]: name }));
+      return;
+    }
+
     if (msg.address.startsWith('/engine/status/cue_enabled/')) {
       const uuid = msg.address.split('/engine/status/cue_enabled/')[1];
       const enabled = Number(msg.args[0]) === 1;
@@ -204,13 +253,48 @@ export class OscService {
         this.timecodeMs.set(Number(msg.args[0]));
         break;
 
-      case '/engine/status/load':
-        this.loadedProject.set(String(msg.args[0] ?? ''));
+      case '/engine/status/load': {
+        // A new load (or none) means a new name table; the engine's cue_name
+        // burst follows this message and refills it.
+        const loaded = String(msg.args[0] ?? '');
+        if (loaded !== this.loadedProject()) this.engineCueNames.set({});
+        this.loadedProject.set(loaded);
         break;
+      }
 
       case '/engine/status/running':
         this.running.set(msg.args[0] === 'yes');
         break;
+
+      case '/engine/status/cluster_warning':
+        this.clusterWarning.set(this.parseClusterWarning(msg.args[0]));
+        break;
+    }
+  }
+
+  /**
+   * OSC cannot carry lists, so the diagnosis arrives as a JSON string.
+   * Parsed defensively: this runs inside the socket handler, and a malformed
+   * payload must not throw there and take the rest of the status stream with
+   * it. Anything unparseable is treated as "no warning".
+   */
+  private parseClusterWarning(arg: unknown): ClusterWarning | null {
+    try {
+      const raw = JSON.parse(String(arg ?? ''));
+      if (!raw || typeof raw !== 'object') {
+        return null;
+      }
+      const list = (v: unknown): string[] =>
+        Array.isArray(v) ? v.map(String) : [];
+      return {
+        loadId: Number(raw.load_id ?? 0),
+        project: String(raw.project ?? ''),
+        missing: list(raw.missing),
+        unreachable: list(raw.unreachable)
+      };
+    } catch {
+      console.warn('Unparseable cluster_warning payload ignored', arg);
+      return null;
     }
   }
 

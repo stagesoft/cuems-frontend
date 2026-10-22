@@ -1,3 +1,4 @@
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
 @if (workspace.isInShow(projectUuid!)) {
   <div class="flex items-center gap-3 mt-6 p-4 bg-dark-300 rounded-lg">
     <app-icon icon="exclamationTriangle" class="w-5 h-5 text-tertiary shrink-0" />
@@ -98,7 +99,8 @@
                       <app-icon 
                       *ngIf="shouldShowWarningIcon(cue)" 
                       icon="warning" 
-                      class="text-red-500">
+                      class="text-red-500"
+                      [title]="mediaWarningText(cue)">
                     </app-icon>
                     </td>
                     <!-- Drag Handle -->
@@ -109,7 +111,20 @@
                     </td>
                     
                     <td class="px-4 py-1">
-                      <app-icon [icon]="cue.type" class="w-[16px] h-[16px]"></app-icon>
+                      <div class="flex items-center gap-2">
+                        <app-icon [icon]="cue.type" class="w-[16px] h-[16px]"></app-icon>
+                        <button type="button"
+                                class="text-gray-500 hover:text-gray-200 transition-colors"
+                                [title]="'cue.copyId' | translate"
+                                (click)="copyCueId(cue.id, $event)">
+                          <app-icon icon="copy" class="w-[12px] h-[12px]"></app-icon>
+                        </button>
+                        <span *ngIf="isStopProjectCue(cue)"
+                              class="text-xs py-0.5 px-1.5 border border-red-500 text-red-400 rounded whitespace-nowrap"
+                              [title]="'action.stop_project.description' | translate">
+                          {{ 'action.stop_project.badge' | translate }}
+                        </span>
+                      </div>
                     </td>
                     
                 <td class="px-4 py-1 text-sm" 
@@ -356,7 +371,8 @@
                                 class="input"
                                 [value]="cue.selectedMediaFile?.uuid || ''"
                                 (change)="onMediaFileSelectFromEvent(cue, $event)">
-                                <option value="">{{ 'media.select.file.placeholder' | translate }}</option>
+                                <option *ngIf="keptMediaName(cue)" value="" selected disabled>{{ keptMediaName(cue) }} — {{ mediaWarningText(cue) }}</option>
+                                <option *ngIf="!keptMediaName(cue)" value="">{{ 'media.select.file.placeholder' | translate }}</option>
                                 <option 
                                   *ngFor="let mediaFile of getMediaFilesByType(cue.type)"
                                   [value]="mediaFile.uuid"
@@ -389,6 +405,24 @@
                               [(ngModel)]="cue.selectedOutputs"
                               (selectionChange)="onOutputSelectionChange($event, cue)">
                             </app-multiselect>                            
+                            </div>
+                          </div>
+
+                          <!-- DMX: sólo el destino. Nada de fichero ni volumen,
+                               por eso va en su propio bloque y no ampliando el
+                               de audio/vídeo. El valor es el uuid del nodo a
+                               secas: es lo que el motor espera en output_name
+                               para DMX, y el universo viaja dentro de la cue. -->
+                          <div *ngIf="cue.type === 'dmx'" class="space-y-4">
+                            <div class="field">
+                              <label class="label">{{ 'media.select.outputs.label' | translate }}</label>
+                              <app-multiselect
+                              [options]="getMappingOptionsForCue(cue)"
+                              [multiple]="true"
+                              [placeholder]="getPlaceholderForCue(cue)"
+                              [(ngModel)]="cue.selectedOutputs"
+                              (selectionChange)="onOutputSelectionChange($event, cue)">
+                            </app-multiselect>
                             </div>
                           </div>
 
@@ -552,19 +586,28 @@
                           <div *ngIf="cue.type === 'action'" class="space-y-4">
                             <div class="field">
                               <label class="label">{{ 'action.type' | translate }}</label>
+                              <!-- Cue-level actions act on ONE target cue. Project-level
+                                   actions (stop_project) act on the whole loaded project and
+                                   have no target: they sit in their own group so nobody
+                                   mistakes "Stop project" for the cue action "Stop". -->
                               <select 
                                 class="input"
                                 [(ngModel)]="cue.action_type"
-                                (ngModelChange)="checkForChanges()">
-                                <option value="play">{{ 'action.type.play' | translate }}</option>
-                                <option value="stop">{{ 'action.type.stop' | translate }}</option>
-                                <option value="enable">{{ 'action.type.enable' | translate }}</option>
-                                <option value="disable">{{ 'action.type.disable' | translate }}</option>
-                                <option value="go_to">{{ 'action.type.go_to' | translate }}</option>
+                                (ngModelChange)="onActionTypeChange(cue)">
+                                <optgroup [label]="'action.type.group.cue' | translate">
+                                  <option value="play">{{ 'action.type.play' | translate }}</option>
+                                  <option value="stop">{{ 'action.type.stop' | translate }}</option>
+                                  <option value="enable">{{ 'action.type.enable' | translate }}</option>
+                                  <option value="disable">{{ 'action.type.disable' | translate }}</option>
+                                  <option value="go_to">{{ 'action.type.go_to' | translate }}</option>
+                                </optgroup>
+                                <optgroup [label]="'action.type.group.project' | translate">
+                                  <option value="stop_project">{{ 'action.type.stop_project' | translate }}</option>
+                                </optgroup>
                               </select>
                             </div>
 
-                            <div class="field">
+                            <div class="field" *ngIf="!isStopProjectCue(cue)">
                               <label class="label">{{ 'action.target.cue' | translate }}</label>
                               <app-multiselect
                                 [options]="getCueOptionsForAction(cue)"
@@ -573,6 +616,16 @@
                                 [ngModel]="cue.action_target"
                                 (selectionChange)="onActionTargetChange($event, cue)">
                               </app-multiselect>
+                            </div>
+
+                            <!-- stop_project: no target. Always say what it does, and that it
+                                 is not the cue-level stop; warn when cues would be left unplayed. -->
+                            <div class="field" *ngIf="isStopProjectCue(cue)">
+                              <p class="text-sm text-gray-300">{{ 'action.stop_project.description' | translate }}</p>
+                              <p *ngIf="isStopProjectNotTerminal(cue)" class="text-xs text-yellow-400 mt-2 flex items-center gap-1">
+                                <app-icon icon="warning" class="w-[14px] h-[14px]"></app-icon>
+                                {{ 'action.stop_project.non_terminal' | translate }}
+                              </p>
                             </div>
                           </div>
                           

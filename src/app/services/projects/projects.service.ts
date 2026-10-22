@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable, DestroyRef, EventEmitter, inject, signal, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WebsocketService, WebSocketError } from '../websocket.service';
@@ -26,9 +29,18 @@ export interface ProjectList {
 export type ProjectTemplate = Record<string, any>;
 
 export interface InitialMapping {
+  /**
+   * What gets written into a cue's `output_name`.
+   *
+   * Audio and video use `<node uuid>_<output id>`. DMX uses the **bare node
+   * uuid, with no suffix** — that is the engine's documented contract
+   * (`ControllerEngine._collect_project_nodes`), and a DMX cue has no output
+   * index to carry anyway: the universe travels inside the cue, in
+   * `DmxScene.DmxUniverse.universe_num`.
+   */
   uuid: string;
   name: string;
-  type: 'audio' | 'video';
+  type: 'audio' | 'video' | 'dmx';
 }
 
 export interface InitialMappingsResponse {
@@ -45,6 +57,23 @@ export interface InitialMappingsResponse {
       node: {
         uuid: string;
         mac: string;
+        /**
+         * Identity and state, all optional: a partially migrated
+         * network_map.xml legitimately omits role_id/alias/hostname, and the
+         * frontend must degrade to the "Node NN" label rather than break.
+         * See cuems-common/docs/node-identity-contract.md — uuid is the only
+         * stable key; the rest are mutable projections.
+         */
+        name?: string;
+        ip?: string;
+        node_type?: string;
+        adopted?: boolean;
+        /** cuems-nodeconf's discovery view, refreshed within ~30 s. NOT
+         *  runtime liveness — that is the engine's ping/pong. */
+        online?: boolean;
+        role_id?: string;
+        alias?: string;
+        hostname?: string;
         audio: Array<{
           outputs: Array<{
             output: {
@@ -83,6 +112,15 @@ export interface InitialMappingsResponse {
       node: {
         uuid: string;
         mac: string;
+        /** Same identity fields as an adopted node — see `nodes` above. */
+        name?: string;
+        ip?: string;
+        node_type?: string;
+        adopted?: boolean;
+        online?: boolean;
+        role_id?: string;
+        alias?: string;
+        hostname?: string;
         audio: Array<{
           outputs: Array<{
             output: {
@@ -118,6 +156,12 @@ export interface InitialMappingsResponse {
       };
     }>;
     schemaLocation: string;
+    /**
+     * False when cuems-nodeconf is not reachable on the controller, i.e. every
+     * adopt/un-adopt would fail. Absent on an editor that predates the flag —
+     * treat only an explicit false as unavailable.
+     */
+    nodeconf_available?: boolean;
   };
 }
 
@@ -155,7 +199,43 @@ export class ProjectsService {
 
   public runningProjectUuid = signal<string | null>(null);
 
-  constructor() {    
+  /**
+   * UUID of the project the engine currently holds, playing or not.
+   *
+   * `runningProjectUuid` only covers the playing case; a stopped project used
+   * to be indistinguishable from no project at all, because the engine
+   * collapsed both into `status: 'none'`. It now answers `'loaded'` too.
+   *
+   * ⚠️ Fresh on connect, and it can go stale: `project_status` is queried once
+   * per WebSocket connection, so a load performed elsewhere (another tab, the
+   * power-bridge's boot auto-load) is not reflected here until this client
+   * reconnects. Anything that must be live reads `oscService.loadedProject()`
+   * instead, which the engine broadcasts on every change — that is why this
+   * signal is an addition and not a replacement for the existing unix_name
+   * matching. It stays `null` against an engine that predates the `'loaded'`
+   * state.
+   */
+  public loadedProjectUuid = signal<string | null>(null);
+
+  /**
+   * A node UUID as the operator knows it.
+   *
+   * Names are resolved here, in the browser, and deliberately never sent by
+   * the engine: `alias`/`role_id`/`hostname` are mutable projections of the
+   * UUID (the node-identity contract), and a second source of truth for them
+   * is what that contract forbids. Same fallback chain as the settings panel,
+   * ending in a short UUID so even an unknown node prints as something a
+   * person can match against the map.
+   */
+  public nodeLabel(uuid: string): string {
+    const value = this.initialMappings()?.value;
+    const all = [...(value?.nodes ?? []), ...(value?.new_nodes ?? [])];
+    const node = all.find(entry => entry?.node?.uuid === uuid)?.node;
+    return node?.alias || node?.role_id || node?.hostname ||
+           `${uuid.slice(0, 8)}…`;
+  }
+
+  constructor() {
     const savedTemplate = localStorage.getItem('initial_template');
     if (savedTemplate) {
       try {
@@ -237,6 +317,15 @@ export class ProjectsService {
   }
 
   public handleWebsocketResponse(response: any): void {
+    // The editor tells the OTHER sessions when a list changed (project
+    // created, saved, duplicated, trashed, restored…). Without this, a tab's
+    // list stayed as it was when the tab opened (869fej3kv).
+    if (response && response.type === 'list_update') {
+      if (response.value === 'project_list') this.getProjectList();
+      else if (response.value === 'project_trash_list') this.getProjectTrashList();
+      return;
+    }
+
     if (response && response.type === 'initial_template' && response.value) {
       try {
         this.projectTemplate.set(response.value);
@@ -351,16 +440,29 @@ export class ProjectsService {
       const projectUuid = response.value?.project_uuid;
       if (status === 'running' && projectUuid) {
         this.runningProjectUuid.set(projectUuid);
+        this.loadedProjectUuid.set(projectUuid);
+        if (this.projects().length === 0) {
+          this.getProjectList();
+        }
+      } else if (status === 'loaded' && projectUuid) {
+        // Loaded but stopped. An engine without this state never sends it,
+        // so loadedProjectUuid simply stays null there.
+        this.runningProjectUuid.set(null);
+        this.loadedProjectUuid.set(projectUuid);
         if (this.projects().length === 0) {
           this.getProjectList();
         }
       } else {
         this.runningProjectUuid.set(null);
+        this.loadedProjectUuid.set(null);
       }
     }
 
     if (response && response.type === 'project_unload' && response.value === 'OK') {
+      // Both, or the uuid outlives the project it names: project_status is
+      // only queried on connect, so nothing else would clear it in this tab.
       this.runningProjectUuid.set(null);
+      this.loadedProjectUuid.set(null);
     }
 
     if (response && response.type === 'error') {
@@ -505,13 +607,13 @@ export class ProjectsService {
     if (mappingsData.nodes && Array.isArray(mappingsData.nodes)) {
       mappingsData.nodes.forEach((nodeData: any, index: number) => {
         const nodeUuid = nodeData.node.uuid;
-        const nodeNumber = index + 1;
+        const nodeLabel = this.getNodeLabel(nodeData.node, index);
 
         if (nodeData.node.audio && Array.isArray(nodeData.node.audio)) {
           nodeData.node.audio.forEach((audioGroup: any) => {
             if (audioGroup.outputs && Array.isArray(audioGroup.outputs)) {
               audioGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
                 const mapping: InitialMapping = {
                   uuid: `${nodeUuid}_${outputData.output.id}`,
                   name: displayName,
@@ -527,7 +629,7 @@ export class ProjectsService {
           nodeData.node.video.forEach((videoGroup: any) => {
             if (videoGroup.outputs && Array.isArray(videoGroup.outputs)) {
               videoGroup.outputs.forEach((outputData: any) => {
-                const displayName = this.getOutputDisplayName(outputData, nodeNumber);
+                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
                 const mapping: InitialMapping = {
                   uuid: `${nodeUuid}_${outputData.output.id}`,
                   name: displayName,
@@ -538,14 +640,51 @@ export class ProjectsService {
             }
           });
         }
+
+        // DMX. Note the uuid has no `_id` suffix, unlike audio and video —
+        // see InitialMapping. A node with no DMX hardware declares an empty
+        // <dmx> section and simply contributes nothing here.
+        if (nodeData.node.dmx && Array.isArray(nodeData.node.dmx)) {
+          nodeData.node.dmx.forEach((dmxGroup: any) => {
+            if (dmxGroup.outputs && Array.isArray(dmxGroup.outputs)) {
+              dmxGroup.outputs.forEach((outputData: any) => {
+                const displayName = this.getOutputDisplayName(outputData, nodeLabel);
+                const mapping: InitialMapping = {
+                  uuid: nodeUuid,
+                  name: displayName,
+                  type: 'dmx'
+                };
+                // One entry per node: every DMX output of a node resolves to
+                // the same bare uuid, so more than one would be a duplicate
+                // the operator cannot tell apart.
+                if (!mappingOptions.some(m => m.type === 'dmx' && m.uuid === nodeUuid)) {
+                  mappingOptions.push(mapping);
+                }
+              });
+            }
+          });
+        }
       });
     }
     
     this.mappingOptions.set(mappingOptions);
   }
 
-  private getOutputDisplayName(outputData: any, nodeNumber: number): string {
-    return `node${nodeNumber}:${outputData.output?.name || 'unknown'}`;
+  /**
+   * Human-readable node label: the operator-facing identity from
+   * network_map.xml (alias, then role_id), falling back to the positional
+   * number. Mirrors SettingsComponent.getNodeName so both screens name a node
+   * the same way -- the number alone is misleading, since it counts positions
+   * in the mappings array and the controller, being first, reads as 'node1'.
+   * cuems-editor merges those identity fields into the mappings it serves
+   * (CuemsWsServer.merge_node_data), so they are available here.
+   */
+  private getNodeLabel(node: any, index: number): string {
+    return node?.alias || node?.role_id || `node${index + 1}`;
+  }
+
+  private getOutputDisplayName(outputData: any, nodeLabel: string): string {
+    return `${nodeLabel}:${outputData.output?.name || 'unknown'}`;
   }
 
   /**
@@ -585,7 +724,7 @@ export class ProjectsService {
   }
 
   /**
-   * Convert a complete output_name to a readable format (node1:output_name)
+   * Convert a complete output_name to a readable format (Controller:output_name)
    */
   public formatOutputNameForDisplay(outputString: string): string {
     const parsedOutput = this.parseOutputString(outputString);
@@ -593,9 +732,10 @@ export class ProjectsService {
       return outputString; // Fallback to the original string
     }
     
-    const nodeNumber = this.getNodeNumberByUuid(parsedOutput.uuid);
-    if (nodeNumber) {
-      return `node${nodeNumber}:${parsedOutput.name}`;
+    const nodes = this.initialMappings()?.value?.nodes;
+    const nodeIndex = nodes?.findIndex((nodeData: any) => nodeData.node.uuid === parsedOutput.uuid) ?? -1;
+    if (nodes && nodeIndex !== -1) {
+      return `${this.getNodeLabel(nodes[nodeIndex].node, nodeIndex)}:${parsedOutput.name}`;
     }
     
     return outputString; // Fallback to the original string

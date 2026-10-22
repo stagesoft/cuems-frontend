@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable, DestroyRef, EventEmitter, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WebsocketService, WebSocketError } from '../websocket.service';
@@ -54,6 +57,14 @@ export class MediaService {
   public waveformLoaded = new EventEmitter<{uuid: string, data: ArrayBuffer}>();
 
   private handleWebsocketResponse(response: any): void {
+    // Lists changed by another session (upload, trash, restore, delete):
+    // refetch ours. See ProjectsService for the project lists (869fej3kv).
+    if (response && response.type === 'list_update') {
+      if (response.value === 'file_list') this.getFileList();
+      else if (response.value === 'file_trash_list') this.getFileTrashList();
+      return;
+    }
+
     if (response && response.type === 'file_list' && response.value) {
       try {
         this.fileList.set(response.value);

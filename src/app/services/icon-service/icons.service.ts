@@ -1,3 +1,4 @@
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { dashboardIcon } from './icons/dashboard';
@@ -47,6 +48,7 @@ import { RadioIcon } from './icons/radio';
 import { StopIcon } from './icons/stop';
 import { ChevronUpIcon } from './icons/chevron-up';
 import { ChevronDownIcon } from './icons/chevron-down';
+import { CopyIcon } from './icons/copy';
 
 @Injectable({
   providedIn: 'root'
@@ -112,7 +114,8 @@ export class IconService {
     'pause': PauseIcon,
     'stop': StopIcon,
     'pencil': PencilIcon,
-    'radio': RadioIcon
+    'radio': RadioIcon,
+    'copy': CopyIcon
   };
 
   private cache = new Map<string, SafeHtml>();

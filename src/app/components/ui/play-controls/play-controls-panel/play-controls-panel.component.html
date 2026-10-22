@@ -1,14 +1,25 @@
-<div class="bg-dark-200 border border-gray-300 rounded-xl p-5 min-w-[300px]"
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
+<div class="bg-dark-200 border rounded-xl p-5 min-w-[300px]"
+     [class.border-yellow-500]="workspace.loadedElsewhere()"
+     [class.border-secondary]="oscService.armed() && !workspace.loadedElsewhere()"
+     [class.border-gray-300]="!oscService.armed() && !workspace.loadedElsewhere()"
      style="box-shadow: 0 0 0 1px #2C343A, 0 8px 32px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.03)">
 
   <!-- Header label -->
   <div class="text-[10px] font-mono tracking-[0.2em] uppercase text-muted-light mb-4">
     <div class="flex items-center gap-2">
       <span class="font-mono text-[11px] tracking-widest uppercase text-gray-200">
-        {{ oscService.loadedProject() || '—' }}
+        {{ loadedProjectName || '—' }}
       </span>
     </div>
   </div>
+
+  @if (workspace.loadedElsewhere(); as elsewhere) {
+    <div class="mb-4 -mt-2 text-xs text-yellow-500" role="status">
+      ⚠ {{ 'playControls.loadedProject' | translate }}:
+      @if (elsewhere.loadedUuid) {<a [routerLink]="['/projects', elsewhere.loadedUuid, 'sequence']" class="underline ml-1">{{ elsewhere.loadedName }}</a>} @else {<span class="ml-1">{{ elsewhere.loadedName }}</span>}
+    </div>
+  }
 
   <!-- Timecode display -->
   <div class="bg-black border border-gray-300 rounded-sm px-4 py-2 mb-4 text-center relative"
@@ -39,10 +50,10 @@
   <!-- Status row -->
   <div class="mb-5">
       <div class="font-mono text-[11px] uppercase text-gray-200 truncate max-w-[246px] block"
-          [appTooltip]="oscService.cueNames()[oscService.nextCue() ?? ''] || oscService.nextCue() || '—'" 
+          [appTooltip]="nextCueName" 
           tooltipPosition="bottom-left"
       >
-        {{ 'playControls.nextCue' | translate }}: {{ oscService.cueNames()[oscService.nextCue() ?? ''] || oscService.nextCue() || '—' }}
+        {{ 'playControls.nextCue' | translate }}: {{ nextCueName }}
       </div>
   </div>
 
