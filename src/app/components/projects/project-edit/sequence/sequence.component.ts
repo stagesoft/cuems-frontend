@@ -538,7 +538,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         notes: cueData.description || '',
         enabled: cueData.enabled === true || cueData.enabled === 'True',
         expanded: false,
-        activeTab: 'notes' as 'notes' | 'edit' | 'media',
+        activeTab: 'edit' as 'notes' | 'edit' | 'media',
         selectedMediaFile,
         selectedAudioOutput,
         selectedVideoOutput,
@@ -678,14 +678,9 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     };
   }
 
-  toggleTab(index: number, tab: 'notes' | 'edit' | 'media') {
+  toggleExpand(index: number) {
     const cue = this.cues[index];
-    if (cue.expanded && cue.activeTab === tab) {
-      cue.expanded = false;
-    } else {
-      cue.expanded = true;
-      cue.activeTab = tab;
-    }
+    cue.expanded = !cue.expanded;
   }
 
   setActiveTab(index: number, tab: 'notes' | 'edit' | 'media') {
