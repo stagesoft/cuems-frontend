@@ -183,25 +183,3 @@
   color: #3b82f6;
 }
 
-/* === SHY CUES === */
-tr.shy-row > td {
-  box-shadow: inset 0 -3px 0 var(--color-secondary);
-}
-
-tr.shy-row {
-  opacity: 0.6;
-}
-
-/* Shy mode off: one thin line per run of shy cues */
-tr.shy-collapsed > td {
-  padding: 0 !important;
-  height: 4px;
-  line-height: 0;
-  font-size: 0;
-  background-color: var(--color-secondary);
-}
-
-tr.shy-collapsed > td > * {
-  display: none;
-}
-

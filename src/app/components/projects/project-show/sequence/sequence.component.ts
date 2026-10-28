@@ -13,6 +13,7 @@ import { OscService } from '../../../../services/osc.service';
 import { TranslateModule, TranslateService } from '@ngx-translate/core';
 import { NotificationService } from '../../../../services/ui/notification.service';
 import { copyToClipboard } from '../../../../core/utils';
+import { ShyModeService } from '../../../../services/ui/shy-mode-service';
 
 @Component({
   selector: 'app-project-show-sequence',
@@ -27,6 +28,7 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
   private oscService = inject(OscService);
   private translateService = inject(TranslateService);
   private notificationService = inject(NotificationService);
+  public shyMode = inject(ShyModeService);
 
   readonly DRAWER_WIDTH = 500; // px
   
@@ -245,6 +247,33 @@ export class ProjectShowSequenceComponent implements OnInit, OnDestroy {
     const uuid = this.getCueId(cueItem);
     return this.oscService.isCueEnabled(uuid);
   }
+
+  /** Read-only in show: shy comes from the cue's ui_properties. */
+  isCueShy(cueItem: any): boolean {
+    const data = cueItem?.AudioCue ?? cueItem?.VideoCue ?? cueItem?.ActionCue
+              ?? cueItem?.DmxCue ?? cueItem?.FadeCue;
+    const v = data?.ui_properties?.shy;
+    return v === true || v === 'True' || v === 'true';
+  }
+
+  /** The next cue and the ones playing are always shown, even if shy:
+   *  the operator must not lose track, and the auto-scroll needs the row. */
+  private isPinned(cueItem: any): boolean {
+    const cueId = this.getCueId(cueItem);
+    const status = this.oscService.getCueStatus(cueId);
+    return this.oscService.nextCue() === cueId || (status >= 1 && status < 100);
+  }
+
+  isShyHidden(cueItem: any): boolean {
+    return this.isCueShy(cueItem) && !this.shyMode.editMode() && !this.isPinned(cueItem);
+  }
+
+  /** First hidden cue of a run: the one drawn as the thin line. */
+  isShyGroupStart(index: number): boolean {
+    const contents = this.project?.CuemsScript?.CueList?.contents ?? [];
+    return this.isShyHidden(contents[index])
+      && !(index > 0 && this.isShyHidden(contents[index - 1]));
+  }  
   
   onToggleEnabled(cueItem: any, event: Event): void {
     event.stopPropagation();

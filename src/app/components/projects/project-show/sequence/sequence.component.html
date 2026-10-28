@@ -2,6 +2,15 @@
 <div class="py-4">
   <div class="flex items-center justify-between p-4 border-b">
     <h2 class="text-lg font-semibold">Sequence</h2>
+
+    <button type="button"
+            class="p-1 rounded hover:bg-dark-300 transition-colors cursor-pointer"
+            (click)="shyMode.toggle()"
+            [class.text-primary]="shyMode.editMode()"
+            [attr.aria-pressed]="shyMode.editMode()"
+            [title]="'cue.shy.toggle' | translate">
+      <app-icon icon="ghost" class="w-5 h-5"></app-icon>
+    </button>
   </div>
 
   <div class="flex-1 relative overflow-hidden">
@@ -28,12 +37,15 @@
                 [attr.data-cue-id]="getCueId(cueItem)"
                 [class]="getCuePlaybackClasses(cueItem)"
                 [class.cue-disabled]="!isCueEnabled(cueItem)"
-                [class.pointer-events-none]="!isCueEnabled(cueItem)"                
+                [class.pointer-events-none]="!isCueEnabled(cueItem)"
+                [class.hidden]="isShyHidden(cueItem) && !isShyGroupStart(i)"
+                [class.shy-collapsed]="isShyHidden(cueItem) && isShyGroupStart(i)"
+                [class.shy-row]="isCueShy(cueItem) && shyMode.editMode()"
                 class="hover:bg-dark-200 transition-colors cursor-pointer"
                 (click)="onClickSetNextCue(cueItem)">
               <!-- Type Icon -->
-              <td class="px-4 py-1 relative translate-y-[3px]">
-                <div class="flex items-center gap-2">
+              <td class="px-4 py-1 relative">
+                <div class="flex items-center gap-2 translate-y-[3px]">
                   <app-icon [icon]="getCueTypeIcon(cueItem)" class="w-[16px] h-[16px]"></app-icon>
                   <!-- pointer-events-auto: disabled rows are pointer-events-none, the uuid is still copyable -->
                   <button type="button"
@@ -77,12 +89,14 @@
                 <app-icon [icon]="getCueActionIcon(cueItem)" class="w-8 h-8 fill-red-500"></app-icon>
               </td>
 
-              <td class="px-4 py-1 relative flex items-center justify-center" style="min-width: 20px;" (click)="$event.stopPropagation()">
-                <input 
-                  type="checkbox"
-                  class="checkbox absolute top-1.5 right-1.5 z-10 pointer-events-auto"
-                  [checked]="isCueEnabled(cueItem)"
-                  (change)="onToggleEnabled(cueItem, $event)">
+              <td class="px-4 py-1" style="min-width: 20px;" (click)="$event.stopPropagation()">
+                <div class="flex items-center justify-center">
+                  <input 
+                    type="checkbox"
+                    class="checkbox pointer-events-auto"
+                    [checked]="isCueEnabled(cueItem)"
+                    (change)="onToggleEnabled(cueItem, $event)">
+                </div>
               </td>              
             </tr>
           </tbody>
