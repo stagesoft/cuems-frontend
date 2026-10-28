@@ -10,11 +10,22 @@
     <div class="flex items-center justify-between p-4 border-b">
       <h2 class="text-lg font-semibold">{{ 'project.sequence' | translate }}</h2>
       
-      <span *ngIf="hasUnsavedChanges" class="text-sm text-tertiary">
-        {{ 'project.unsaved.changes' | translate }}
-      </span>
+      <div class="flex items-center gap-4">
+        <span *ngIf="hasUnsavedChanges" class="text-sm text-tertiary">
+          {{ 'project.unsaved.changes' | translate }}
+        </span>
+
+        <button type="button"
+              class="p-1 rounded hover:bg-dark-300 transition-colors cursor-pointer"
+              (click)="shyMode.toggle()"
+              [class.text-primary]="shyMode.editMode()"
+              [attr.aria-pressed]="shyMode.editMode()"
+              [title]="'cue.shy.toggle' | translate">
+            <app-icon icon="ghost" class="w-5 h-5"></app-icon>
+        </button>      
+      </div>
     </div>
-  
+
     <div class="lg:flex lg:gap-6 pt-6">
       <div class="lg:flex-shrink-0 mb-6 lg:mb-0 lg:sticky lg:top-6 lg:self-start lg:h-fit">
         <div class="flex flex-wrap gap-2 lg:flex-col lg:gap-3 lg:w-24">
@@ -76,6 +87,9 @@
                 <tr>
                   <th style="min-width: 28px;"><!-- icon warning --></th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider"><!-- order --></th>
+                  <th class="px-2 py-3" style="width: 40px; min-width: 40px;">
+                    <app-icon icon="ghost" class="w-4 h-4 relative left-[-2px] text-secondary" [class.invisible]="!shyMode.editMode()"></app-icon>
+                  </th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider" style="min-width: 80px;">{{ 'project.cue-table.type' | translate }}</th>
                   <th class="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider" 
                       [class.name-column-responsive]="!drawerService.isActivityDrawerOpen()"
@@ -93,9 +107,11 @@
               <tbody class="divide-y" cdkDropList (cdkDropListDropped)="onDrop($event)">
                 <ng-container *ngFor="let cue of cues; let i = index">
                   <tr class="hover:bg-opacity-50"
-                      [class.cue-disabled]="!cue.enabled"
-                      cdkDrag [attr.data-cue-index]="i"
-                  >
+                    [class.cue-disabled]="!cue.enabled"
+                    [class.hidden]="isShyHidden(cue) && !isShyGroupStart(i)"
+                    [class.shy-collapsed]="isShyHidden(cue) && isShyGroupStart(i)"
+                    [class.shy-row]="cue.shy && shyMode.editMode()"
+                    cdkDrag [attr.data-cue-index]="i">
                     <td>
                       <app-icon 
                       *ngIf="shouldShowWarningIcon(cue)" 
@@ -110,6 +126,15 @@
                         ⠿
                       </div>
                     </td>
+
+                    <td class="px-2 py-1" style="width: 40px; min-width: 40px;">
+                      <input type="checkbox"
+                             class="checkbox"
+                             [class.invisible]="!shyMode.editMode()"
+                             [title]="'cue.shy' | translate"
+                             [(ngModel)]="cue.shy"
+                             (ngModelChange)="checkForChanges()">
+                    </td>                   
                     
                     <td class="px-4 py-1">
                       <div class="flex items-center gap-2">
@@ -236,8 +261,8 @@
                     </td>                    
                   </tr>
                   
-                  <tr *ngIf="cue.expanded" class="bg-dark-200">
-                    <td colspan="10" class="px-4 py-12">
+                  <tr *ngIf="cue.expanded && !isShyHidden(cue)" class="bg-dark-200">
+                    <td colspan="11" class="px-4 py-12">
                       <div class="rounded">
                         <!-- Tabs -->
                         <div class="flex mb-3 border-b-2 mb-12">

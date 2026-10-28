@@ -49,6 +49,7 @@ import { StopIcon } from './icons/stop';
 import { ChevronUpIcon } from './icons/chevron-up';
 import { ChevronDownIcon } from './icons/chevron-down';
 import { CopyIcon } from './icons/copy';
+import { GhostIcon } from './icons/ghost';
 
 @Injectable({
   providedIn: 'root'
@@ -115,7 +116,8 @@ export class IconService {
     'stop': StopIcon,
     'pencil': PencilIcon,
     'radio': RadioIcon,
-    'copy': CopyIcon
+    'copy': CopyIcon,
+    'ghost': GhostIcon
   };
 
   private cache = new Map<string, SafeHtml>();

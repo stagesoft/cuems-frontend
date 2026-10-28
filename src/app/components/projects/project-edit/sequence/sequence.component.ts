@@ -25,6 +25,7 @@ import { ConfirmationDialogComponent } from '../../../ui/confirmation-dialog/con
 import { CanvasRegionVisualizerComponent } from '../../../ui/canvas-region-visualizer/canvas-region-visualizer.component';
 import { NotificationService } from '../../../../services/ui/notification.service';
 import { findInvalidFadeCuesInContents, findMediaCueProblems, mediaBlockToSave, mediaResolution, MediaResolution, normalizeUiWarning, isValidFadeDurationTc, normalizeFadeDurationTc, normalizeFadeCurveType, FadeCurveType, copyToClipboard } from '../../../../core/utils';
+import { ShyModeService } from '../../../../services/ui/shy-mode-service';
 
 interface CueData {
   id: string | number;
@@ -41,6 +42,7 @@ interface CueData {
   notes: string;
   expanded: boolean;
   enabled: boolean;
+  shy: boolean;
   activeTab: 'notes' | 'edit' | 'media';
   selectedMediaFile?: {uuid: string, file: any};
   selectedAudioOutput?: string;
@@ -98,6 +100,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
   isConfirmDeleteOpen = false;
   cueToDeleteIndex: number | null = null;
   readonly DRAWER_WIDTH = 500; // px
+  public shyMode = inject(ShyModeService);
 
   projectUuid: string | null = null;
   projectData: any = null;
@@ -537,6 +540,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
         loop_times: this.determineLoopTimes(cueData.loop),
         notes: cueData.description || '',
         enabled: cueData.enabled === true || cueData.enabled === 'True',
+        shy: this.readShy(cueData.ui_properties),
         expanded: false,
         activeTab: 'edit' as 'notes' | 'edit' | 'media',
         selectedMediaFile,
@@ -714,6 +718,7 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
       loop_times: 1,
       notes: '',
       enabled: true,
+      shy: false,
       expanded: true,
       activeTab: 'edit' as 'notes' | 'edit' | 'media',
       selectedMediaFile: undefined,
@@ -1072,6 +1077,11 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
 
     newCue.enabled = cue.enabled ? 'True' : 'False';
 
+    // Keep the cue's existing ui_properties (warning, ...) and add shy.
+    const originalUi = this.getCueData(cue.originalData)?.ui_properties;
+    const baseUi = (originalUi && typeof originalUi === 'object') ? originalUi : {};
+    newCue.ui_properties = { ...baseUi, shy: cue.shy };    
+
     // Assign loop: -1 for infinite, positive number for specific times
     newCue.loop = cue.loop === 'inf' ? -1 : cue.loop_times;
 
@@ -1299,6 +1309,22 @@ export class ProjectEditSequenceComponent implements OnInit, OnDestroy {
     const cueTypeKey = this.getCueTypeKey(originalData);
     return cueTypeKey ? originalData[cueTypeKey] : null;
   }
+
+  /** ui_properties is anyType in the XML: booleans may arrive as strings. */
+  private readShy(uiProperties: any): boolean {
+    const v = uiProperties?.shy;
+    return v === true || v === 'True' || v === 'true';
+  }
+
+  /** Shy cue while shy mode is off: not rendered. */
+  isShyHidden(cue: CueData): boolean {
+    return cue.shy && !this.shyMode.editMode();
+  }
+  
+  /** First shy cue of a consecutive run: the one that draws the thin line. */
+  isShyGroupStart(index: number): boolean {
+    return this.cues[index].shy && !(index > 0 && this.cues[index - 1].shy);
+  }  
 
   public onLoopTypeChange(cue: CueData): void {
     if (cue.loop === 'inf') {
