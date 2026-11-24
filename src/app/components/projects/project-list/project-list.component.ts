@@ -10,6 +10,7 @@ import { ConfirmationDialogComponent } from '../../ui/confirmation-dialog/confir
 import { Subscription } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
 import { ExportService } from '../../../services/media/export.service';
+import { OscService } from '../../../services/osc.service';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { IconComponent } from '../../ui/icon/icon.component';
 
@@ -21,6 +22,7 @@ import { IconComponent } from '../../ui/icon/icon.component';
 })
 export class ProjectListComponent implements OnInit, OnDestroy {
   private exportService = inject(ExportService);
+  private oscService = inject(OscService);
 
   public projectsService = inject(ProjectsService);
   private destroyRef = inject(DestroyRef);
@@ -277,13 +279,27 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   // Métodos para exportar
   // A project is PLAYING: the editor refuses to export, and the buttons say so before
   // the operator presses. The editor never stops anything to make room.
+  //
+  // The state comes from the engine's LIVE channel (/engine/status/running and
+  // /engine/status/load), the same source as the green project name in the
+  // header. ProjectsService.runningProjectUuid/loadedProjectUuid come from
+  // `project_status`, which is asked ONCE per connection: a project loaded after
+  // this tab opened never reached them, so the warning did not show and the
+  // editor had to refuse (1amfwm7kana, seen on rig test). They stay as the
+  // fallback while the engine channel is down.
   get exportBlockedByPlayback(): boolean {
+    if (this.oscService.isConnected()) {
+      return this.oscService.running();
+    }
     return this.projectsService.runningProjectUuid() !== null;
   }
 
   // A project is LOADED but not playing (armed, waiting for GO): a long read of the
   // media could delay that GO, so the operator is warned and decides (Ion, 2026-11-24).
   get exportNeedsLoadedConfirm(): boolean {
+    if (this.oscService.isConnected()) {
+      return !this.oscService.running() && this.oscService.loadedProject() !== '';
+    }
     return this.projectsService.runningProjectUuid() === null
         && this.projectsService.loadedProjectUuid() !== null;
   }
