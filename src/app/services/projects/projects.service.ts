@@ -21,6 +21,7 @@ import {
 export interface ProjectList {
   uuid: string;
   name: string;
+  description?: string;
   unix_name: string;
   created: string;
   modified: string;

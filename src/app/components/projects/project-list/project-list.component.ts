@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component, inject, DestroyRef, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -239,5 +242,10 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       
       this.isBulkDeleting = false;
     }, 5000);
+  }
+
+  truncateText(text: string, maxLength: number = 17): string {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
   }
 }
