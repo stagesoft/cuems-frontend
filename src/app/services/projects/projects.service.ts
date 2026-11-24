@@ -299,7 +299,7 @@ export class ProjectsService {
           // The export button waits for the editor's answer; an error must
           // release it (the editor answers project_export errors by action).
           if (error.action === 'project_export') {
-            this.exportService.exportError.next(error.message || 'Error al exportar el proyecto');
+            this.exportService.fail(error.message || 'Error al exportar el proyecto');
             this.notificationService.showError(error.message || 'Error al exportar el proyecto');
             return;
           }

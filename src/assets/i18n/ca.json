@@ -76,6 +76,7 @@
     "project.edit": "Editar",
     "project.export": "Exportar",
     "project.exporting": "Exportant…",
+    "project.export.blocked.playing": "No es pot exportar mentre hi ha un projecte carregat o en reproducció",
     "project.import": "Importar",
     "project.show": "Show",
     "project.edit.editing": "Editant projecte",

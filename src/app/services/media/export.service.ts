@@ -16,13 +16,15 @@ export class ExportService {
   public exportError = new Subject<string>();
 
   private exportInProgress = false;
+  // The safety timer of the export in flight. It must die with that export: left
+  // running it would release the button of a LATER export before its time.
+  private timeoutHandle: ReturnType<typeof setTimeout> | null = null;
 
   exportProject(projectUuid: string): void {
     if (this.exportInProgress) {
       console.warn('Ya hay un export en curso, cancelando anterior intento');
-      // Opcional: reset para forzar nuevo export
-      this.exportInProgress = false;
     }
+    this.settle();
 
     this.exportInProgress = true;
 
@@ -35,13 +37,28 @@ export class ExportService {
 
     // Safety timeout: the editor zips the project AND its media before it
     // answers (38 s measured for a small project), so allow minutes, not seconds.
-    setTimeout(() => {
+    this.timeoutHandle = setTimeout(() => {
+      this.timeoutHandle = null;
       if (this.exportInProgress) {
         console.warn('Export timed out, liberando exportInProgress');
-        this.exportInProgress = false;
-        this.exportError.next('Timeout exportación');
+        this.fail('Timeout exportación');
       }
     }, EXPORT_TIMEOUT_MS);
+  }
+
+  /** The export in flight is over (done, failed or replaced): flag down, timer cancelled. */
+  private settle(): void {
+    this.exportInProgress = false;
+    if (this.timeoutHandle !== null) {
+      clearTimeout(this.timeoutHandle);
+      this.timeoutHandle = null;
+    }
+  }
+
+  /** An error answer (or the timeout) ends the export in flight and tells the listeners. */
+  fail(message: string): void {
+    this.settle();
+    this.exportError.next(message);
   }
 
   private sendMessageToWebSocket(message: any): void {
@@ -59,14 +76,14 @@ export class ExportService {
       const fileUrl = this.extractFileUrl(message);
 
       if (!fileUrl) {
-        this.exportError.next('No se recibió URL');
+        this.fail('No se recibió URL');
       } else {
         this.exportComplete.next(fileUrl);
         this.downloadFile(fileUrl);
       }
 
-      // Liberar bandera siempre
-      this.exportInProgress = false;
+      // Liberar bandera y temporizador siempre
+      this.settle();
     }
   }
 

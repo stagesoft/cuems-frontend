@@ -85,20 +85,25 @@
               <td class="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
                 <!-- Export: same look as the Edit / View links next to it. While the
                      editor builds the zip the clicked row shows progress and every
-                     export button stays locked until the file is delivered. -->
-                <button *ngIf="!isProjectBeingDeleted(project.uuid)"
+                     export button stays locked until the file is delivered. It is also
+                     locked while a project is playing (the editor refuses too: this only
+                     tells the operator why before they press). The tooltip sits on the
+                     span because a disabled button shows no title in every browser. -->
+                <span *ngIf="!isProjectBeingDeleted(project.uuid)" class="mr-4"
+                  [attr.title]="exportBlockedByPlayback ? ('project.export.blocked.playing' | translate) : null">
+                <button
                   type="button"
                   (click)="$event.stopPropagation(); exportProject(project.uuid)"
-                  class="mr-4"
-                  [class.cursor-pointer]="exportingUuid === null"
+                  [class.cursor-pointer]="exportingUuid === null && !exportBlockedByPlayback"
                   [class.cursor-wait]="exportingUuid === project.uuid"
-                  [class.cursor-not-allowed]="exportingUuid !== null && exportingUuid !== project.uuid"
-                  [class.opacity-50]="exportingUuid !== null && exportingUuid !== project.uuid"
-                  [disabled]="exportingUuid !== null"
+                  [class.cursor-not-allowed]="exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
+                  [class.opacity-50]="exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
+                  [disabled]="exportingUuid !== null || exportBlockedByPlayback"
                   [attr.aria-busy]="exportingUuid === project.uuid">
                   <span *ngIf="exportingUuid === project.uuid"
                     class="loading loading-spinner loading-xs mr-1"></span>{{ (exportingUuid === project.uuid ? 'project.exporting' : 'project.export') | translate }}
                 </button>
+                </span>
 
                 <a *ngIf="!isProjectBeingDeleted(project.uuid)" [routerLink]="['/projects', project.uuid, 'edit']" (click)="$event.stopPropagation()" class="mr-4">
                   {{ 'project.list.edit' | translate }}<span class="sr-only">, {{ project.name }}</span>

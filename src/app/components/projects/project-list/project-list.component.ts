@@ -275,8 +275,17 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   // Métodos para exportar
+  // A project is playing OR loaded (armed, waiting for GO): the editor refuses to
+  // export, because a long read of the media must never get in the way of a show
+  // (Ion, 2026-11-24: always protect the show). The editor never stops or unloads
+  // anything to make room; the buttons only say so before the operator presses.
+  get exportBlockedByPlayback(): boolean {
+    return this.projectsService.runningProjectUuid() !== null
+        || this.projectsService.loadedProjectUuid() !== null;
+  }
+
   exportProject(projectUuid: string): void {
-    if (this.exportingUuid !== null) return;
+    if (this.exportingUuid !== null || this.exportBlockedByPlayback) return;
 
     this.exportingUuid = projectUuid;
     this.exportService.exportProject(projectUuid);

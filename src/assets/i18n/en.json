@@ -75,6 +75,7 @@
     "project.edit": "Edit",
     "project.export": "Export",
     "project.exporting": "Exporting…",
+    "project.export.blocked.playing": "Cannot export while a project is loaded or playing",
     "project.import": "Import",
     "project.show": "Show",
     "project.edit.editing": "Editing project",
