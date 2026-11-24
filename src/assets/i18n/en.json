@@ -74,6 +74,7 @@
     "project.unsaved.changes": "Unsaved changes",
     "project.edit": "Edit",
     "project.export": "Export",
+    "project.exporting": "Exporting…",
     "project.import": "Import",
     "project.show": "Show",
     "project.edit.editing": "Editing project",

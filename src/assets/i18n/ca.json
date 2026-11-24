@@ -75,6 +75,7 @@
     "project.unsaved.changes": "Canvis no desats",
     "project.edit": "Editar",
     "project.export": "Exportar",
+    "project.exporting": "Exportant…",
     "project.import": "Importar",
     "project.show": "Show",
     "project.edit.editing": "Editant projecte",

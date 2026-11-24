@@ -85,7 +85,7 @@ export class ExportService {
   private downloadFile(fileUrl: string): void {
     const link = document.createElement('a');
     link.href = fileUrl;
-    link.download = 'project.zip';
+    link.download = decodeURIComponent(fileUrl.split('/').pop() || '') || 'project.zip';
     link.target = '_blank';
 
     document.body.appendChild(link);

@@ -83,14 +83,21 @@
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.created | date:'medium' }}</td>
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.modified | date:'medium' }}</td>
               <td class="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
-                <!-- Botón Export con spinner cuando está exportando -->
+                <!-- Export: same look as the Edit / View links next to it. While the
+                     editor builds the zip the clicked row shows progress and every
+                     export button stays locked until the file is delivered. -->
                 <button *ngIf="!isProjectBeingDeleted(project.uuid)"
+                  type="button"
                   (click)="$event.stopPropagation(); exportProject(project.uuid)"
-                  class="mr-4 text-primary hover:text-primary-light"
-                  [disabled]="isExporting">
-                  <span *ngIf="isExporting"
-                    class="loading loading-spinner loading-xs mr-1"></span>
-                    {{ 'project.export' | translate }}
+                  class="mr-4"
+                  [class.cursor-pointer]="exportingUuid === null"
+                  [class.cursor-wait]="exportingUuid === project.uuid"
+                  [class.cursor-not-allowed]="exportingUuid !== null && exportingUuid !== project.uuid"
+                  [class.opacity-50]="exportingUuid !== null && exportingUuid !== project.uuid"
+                  [disabled]="exportingUuid !== null"
+                  [attr.aria-busy]="exportingUuid === project.uuid">
+                  <span *ngIf="exportingUuid === project.uuid"
+                    class="loading loading-spinner loading-xs mr-1"></span>{{ (exportingUuid === project.uuid ? 'project.exporting' : 'project.export') | translate }}
                 </button>
 
                 <a *ngIf="!isProjectBeingDeleted(project.uuid)" [routerLink]="['/projects', project.uuid, 'edit']" (click)="$event.stopPropagation()" class="mr-4">

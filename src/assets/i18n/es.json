@@ -96,6 +96,7 @@
     "project.cue.empty.description": "Clica en Audio, Video, DMX, Acción o Fade para crear tu primera cue",
     "project.edit": "Editar",
     "project.export": "Exportar",
+    "project.exporting": "Exportando…",
     "project.import": "Importar",
     "project.show": "Show",
     "project.edit.editing": "Editando proyecto",

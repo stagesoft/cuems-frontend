@@ -35,7 +35,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   isConfirmBulkDeleteOpen = false;
   isBulkDeleting = false;
 
-  isExporting = false;
+  // uuid of the project being exported; null when nothing is. One export at a
+  // time: the editor works in a folder named after the project.
+  exportingUuid: string | null = null;
 
   private deletingProjects = new Map<string, boolean>();
 
@@ -73,14 +75,14 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.exportService.exportComplete.subscribe(fileUrl => {
         console.log('Export OK:', fileUrl);
-        this.isExporting = false;
+        this.exportingUuid = null;
       })
     );
 
     this.subscription.add(
       this.exportService.exportError.subscribe(error => {
         console.error('Export ERROR:', error);
-        this.isExporting = false;
+        this.exportingUuid = null;
       })
     );
   }
@@ -274,9 +276,9 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   // Métodos para exportar
   exportProject(projectUuid: string): void {
-    if (this.isExporting) return;
+    if (this.exportingUuid !== null) return;
 
-    this.isExporting = true;
+    this.exportingUuid = projectUuid;
     this.exportService.exportProject(projectUuid);
   }
 }
