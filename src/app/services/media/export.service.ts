@@ -20,7 +20,9 @@ export class ExportService {
   // running it would release the button of a LATER export before its time.
   private timeoutHandle: ReturnType<typeof setTimeout> | null = null;
 
-  exportProject(projectUuid: string): void {
+  // acceptLoaded: the operator saw the warning for a project that is loaded (armed, waiting for GO)
+  // and accepted. The editor may ask for it (extra top-level key, as nodelist_modify's modify_action).
+  exportProject(projectUuid: string, acceptLoaded = false): void {
     if (this.exportInProgress) {
       console.warn('Ya hay un export en curso, cancelando anterior intento');
     }
@@ -28,10 +30,13 @@ export class ExportService {
 
     this.exportInProgress = true;
 
-    const message = {
+    const message: { action: string; value: string; accept_loaded?: boolean } = {
       action: 'project_export',
       value: projectUuid,
     };
+    if (acceptLoaded) {
+      message.accept_loaded = true;
+    }
 
     this.sendMessageToWebSocket(message);
 

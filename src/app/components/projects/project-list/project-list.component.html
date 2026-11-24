@@ -177,4 +177,13 @@
   (confirm)="confirmBulkDelete()"
 ></app-confirmation-dialog>
 
-
+<!-- Export while a project is loaded (armed, waiting for GO): warn of the risk, the operator decides. -->
+<app-confirmation-dialog
+  [isOpen]="isConfirmExportOpen"
+  [title]="'project.export.loaded.title' | translate"
+  [message]="'project.export.loaded.message' | translate"
+  [confirmText]="'project.export.loaded.confirm' | translate"
+  [cancelText]="'project.list.cancel' | translate"
+  (close)="closeExportConfirmation()"
+  (confirm)="confirmExportLoaded()"
+></app-confirmation-dialog>

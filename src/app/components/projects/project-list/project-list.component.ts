@@ -275,19 +275,48 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   // Métodos para exportar
-  // A project is playing OR loaded (armed, waiting for GO): the editor refuses to
-  // export, because a long read of the media must never get in the way of a show
-  // (Ion, 2026-11-24: always protect the show). The editor never stops or unloads
-  // anything to make room; the buttons only say so before the operator presses.
+  // A project is PLAYING: the editor refuses to export, and the buttons say so before
+  // the operator presses. The editor never stops anything to make room.
   get exportBlockedByPlayback(): boolean {
-    return this.projectsService.runningProjectUuid() !== null
-        || this.projectsService.loadedProjectUuid() !== null;
+    return this.projectsService.runningProjectUuid() !== null;
   }
+
+  // A project is LOADED but not playing (armed, waiting for GO): a long read of the
+  // media could delay that GO, so the operator is warned and decides (Ion, 2026-11-24).
+  get exportNeedsLoadedConfirm(): boolean {
+    return this.projectsService.runningProjectUuid() === null
+        && this.projectsService.loadedProjectUuid() !== null;
+  }
+
+  isConfirmExportOpen = false;
+  private projectToExportUuid: string | null = null;
 
   exportProject(projectUuid: string): void {
     if (this.exportingUuid !== null || this.exportBlockedByPlayback) return;
 
+    if (this.exportNeedsLoadedConfirm) {
+      this.projectToExportUuid = projectUuid;
+      this.isConfirmExportOpen = true;
+      return;
+    }
+    this.startExport(projectUuid, false);
+  }
+
+  // The dialog emits confirm first and close right after, so the uuid is still here.
+  confirmExportLoaded(): void {
+    const uuid = this.projectToExportUuid;
+    // The state may have moved while the dialog was open: never export into a show that started meanwhile.
+    if (!uuid || this.exportingUuid !== null || this.exportBlockedByPlayback) return;
+    this.startExport(uuid, true);
+  }
+
+  closeExportConfirmation(): void {
+    this.isConfirmExportOpen = false;
+    this.projectToExportUuid = null;
+  }
+
+  private startExport(projectUuid: string, acceptLoaded: boolean): void {
     this.exportingUuid = projectUuid;
-    this.exportService.exportProject(projectUuid);
+    this.exportService.exportProject(projectUuid, acceptLoaded);
   }
 }
