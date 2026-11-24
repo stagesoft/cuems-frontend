@@ -9,6 +9,7 @@ import { ProjectsService, ProjectList } from '../../../services/projects/project
 import { ConfirmationDialogComponent } from '../../ui/confirmation-dialog/confirmation-dialog.component';
 import { Subscription } from 'rxjs';
 import { TranslateModule } from '@ngx-translate/core';
+import { ExportService } from '../../../services/media/export.service';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { IconComponent } from '../../ui/icon/icon.component';
 
@@ -19,6 +20,8 @@ import { IconComponent } from '../../ui/icon/icon.component';
   templateUrl: './project-list.component.html'
 })
 export class ProjectListComponent implements OnInit, OnDestroy {
+  private exportService = inject(ExportService);
+
   public projectsService = inject(ProjectsService);
   private destroyRef = inject(DestroyRef);
   private router = inject(Router);
@@ -31,16 +34,18 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   isConfirmDeleteOpen = false;
   isConfirmBulkDeleteOpen = false;
   isBulkDeleting = false;
-  
+
+  isExporting = false;
+
   private deletingProjects = new Map<string, boolean>();
-  
+
   constructor() {
     this.refreshProjects();
 
     effect(() => {
       const projects = this.projectsService.projects();
       this.isLoading = false;
-      
+
       this.cleanupProjectMaps(projects);
     });
   }
@@ -49,15 +54,33 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.projectsService.errorEvent.subscribe(error => {
         console.log('Error event received:', error);
-        
+
         if (error.action === 'project_delete') {
           if (this.projectToDeleteUuid) {
             this.deletingProjects.delete(this.projectToDeleteUuid);
             this.projectToDeleteUuid = null;
           }
-          
+
           this.isBulkDeleting = false;
         }
+      })
+    );
+    this.setupExportSubscriptions();
+
+  }
+
+  private setupExportSubscriptions(): void {
+    this.subscription.add(
+      this.exportService.exportComplete.subscribe(fileUrl => {
+        console.log('Export OK:', fileUrl);
+        this.isExporting = false;
+      })
+    );
+
+    this.subscription.add(
+      this.exportService.exportError.subscribe(error => {
+        console.error('Export ERROR:', error);
+        this.isExporting = false;
       })
     );
   }
@@ -68,16 +91,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   cleanupProjectMaps(projects: ProjectList[]) {
     const existingUuids = projects.map(p => p.uuid);
-    
+
     if (this.selectedProjects.length > 0) {
       const previousLength = this.selectedProjects.length;
       this.selectedProjects = this.selectedProjects.filter(uuid => existingUuids.includes(uuid));
-      
+
       if (previousLength !== this.selectedProjects.length) {
         console.log(`Removed ${previousLength - this.selectedProjects.length} non-existent projects from selection`);
       }
     }
-    
+
     if (this.deletingProjects.size > 0) {
       let removed = 0;
       this.deletingProjects.forEach((value, uuid) => {
@@ -86,7 +109,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           removed++;
         }
       });
-      
+
       if (this.deletingProjects.size === 0) {
         this.isBulkDeleting = false;
       }
@@ -123,11 +146,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
       if (this.selectedProjects.includes(this.projectToDeleteUuid)) {
         this.selectedProjects = this.selectedProjects.filter(uuid => uuid !== this.projectToDeleteUuid);
-  }
+      }
 
       this.executeProjectDeletion(this.projectToDeleteUuid);
       this.closeDeleteConfirmation();
-      
+
       const uuidToCleanup = this.projectToDeleteUuid;
       setTimeout(() => {
         if (this.deletingProjects.has(uuidToCleanup)) {
@@ -146,7 +169,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     if (this.isProjectBeingDeleted(uuid)) {
       return;
     }
-    
+
     this.openDeleteConfirmation(uuid);
   }
 
@@ -162,7 +185,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     if (this.isProjectBeingDeleted(uuid)) {
       return;
     }
-    
+
     if (this.selectedProjects.includes(uuid)) {
       this.selectedProjects = this.selectedProjects.filter(id => id !== uuid);
     } else {
@@ -177,7 +200,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this.selectedProjects = this.getSelectableProjects();
     }
   }
-  
+
   getSelectableProjects(): string[] {
     return this.projectsService.projects()
       .filter(project => !this.isProjectBeingDeleted(project.uuid))
@@ -190,16 +213,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   deleteSelectedProjects(): void {
     if (this.selectedProjects.length === 0) return;
-    
-    const validSelectedProjects = this.selectedProjects.filter(uuid => 
-      !this.isProjectBeingDeleted(uuid) && 
+
+    const validSelectedProjects = this.selectedProjects.filter(uuid =>
+      !this.isProjectBeingDeleted(uuid) &&
       this.projectsService.projects().some(p => p.uuid === uuid)
     );
-    
+
     this.selectedProjects = validSelectedProjects;
-    
+
     if (this.selectedProjects.length === 0) return;
-    
+
     this.isConfirmBulkDeleteOpen = true;
   }
 
@@ -208,38 +231,38 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   confirmBulkDelete(): void {
-    const validSelectedProjects = this.selectedProjects.filter(uuid => 
-      !this.isProjectBeingDeleted(uuid) && 
+    const validSelectedProjects = this.selectedProjects.filter(uuid =>
+      !this.isProjectBeingDeleted(uuid) &&
       this.projectsService.projects().some(p => p.uuid === uuid)
     );
-    
+
     if (validSelectedProjects.length > 0) {
       this.executeDeleteProjects([...validSelectedProjects]);
     }
-    
+
     this.closeBulkDeleteConfirmation();
   }
 
   executeDeleteProjects(uuids: string[]): void {
     if (uuids.length === 0) return;
-    
+
     this.isBulkDeleting = true;
-    
+
     uuids.forEach(uuid => {
       this.deletingProjects.set(uuid, true);
     });
-    
-    uuids.forEach(uuid => 
+
+    uuids.forEach(uuid =>
       this.projectsService.deleteProject(uuid)
     );
-    
+
     this.selectedProjects = [];
-    
+
     setTimeout(() => {
       uuids.forEach(uuid => {
         this.deletingProjects.delete(uuid);
       });
-      
+
       this.isBulkDeleting = false;
     }, 5000);
   }
@@ -247,5 +270,13 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   truncateText(text: string, maxLength: number = 17): string {
     if (!text) return '';
     return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  }
+
+  // Métodos para exportar
+  exportProject(projectUuid: string): void {
+    if (this.isExporting) return;
+
+    this.isExporting = true;
+    this.exportService.exportProject(projectUuid);
   }
 }

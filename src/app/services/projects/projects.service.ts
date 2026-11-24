@@ -1,6 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
+import { ExportService } from '../media/export.service';
 import { Injectable, DestroyRef, EventEmitter, inject, signal, effect } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { WebsocketService, WebSocketError } from '../websocket.service';
@@ -181,6 +182,7 @@ export class ProjectsService {
   private wsService = inject(WebsocketService);
   private notificationService = inject(NotificationService);
   private router = inject(Router);
+  private exportService = inject(ExportService);
 
   public errorEvent = new EventEmitter<WebSocketError>();
   public newProjectCreated = new EventEmitter<string>();
@@ -294,6 +296,14 @@ export class ProjectsService {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (error: WebSocketError) => {
+          // The export button waits for the editor's answer; an error must
+          // release it (the editor answers project_export errors by action).
+          if (error.action === 'project_export') {
+            this.exportService.exportError.next(error.message || 'Error al exportar el proyecto');
+            this.notificationService.showError(error.message || 'Error al exportar el proyecto');
+            return;
+          }
+
           const projectActions = [
             'project_new', 'project_save', 'project_delete', 'project_restore', 
             'project_trash_delete', 'project_list', 'project_trash_list', 
@@ -324,6 +334,13 @@ export class ProjectsService {
     if (response && response.type === 'list_update') {
       if (response.value === 'project_list') this.getProjectList();
       else if (response.value === 'project_trash_list') this.getProjectTrashList();
+      return;
+    }
+
+    // The editor answers project_export with the URL of the zip; the export
+    // service downloads it and releases the button.
+    if (response && response.type === 'project_export') {
+      this.exportService.processServerResponse(response);
       return;
     }
 
