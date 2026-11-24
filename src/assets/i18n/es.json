@@ -99,7 +99,7 @@
     "project.exporting": "Exportando…",
     "project.export.blocked.playing": "No se puede exportar mientras se reproduce un proyecto",
     "project.export.loaded.title": "Hay un proyecto cargado",
-    "project.export.loaded.message": "Hay un proyecto cargado y listo para reproducirse. Exportar lee muchos datos del disco y podría retrasar el inicio de la reproducción (el GO). ¿Quieres exportar de todos modos?",
+    "project.export.loaded.message": "Hay un proyecto cargado y listo para reproducirse. Exportar lee muchos datos del disco y podría retrasar el inicio de la reproducción (el GO). Si exportas, recarga el proyecto después para compensarlo. ¿Quieres exportar de todos modos?",
     "project.export.loaded.confirm": "Exportar de todos modos",
     "project.import": "Importar",
     "project.show": "Show",
