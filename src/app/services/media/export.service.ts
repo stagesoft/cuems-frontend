@@ -5,6 +5,8 @@ import { Injectable, inject } from '@angular/core';
 import { WebsocketService } from '../websocket.service';
 import { Subject } from 'rxjs';
 
+const EXPORT_TIMEOUT_MS = 5 * 60 * 1000;
+
 @Injectable({
   providedIn: 'root'
 })
@@ -31,14 +33,15 @@ export class ExportService {
 
     this.sendMessageToWebSocket(message);
 
-    // Timeout de seguridad: si no llega respuesta en 10s, liberar bandera
+    // Safety timeout: the editor zips the project AND its media before it
+    // answers (38 s measured for a small project), so allow minutes, not seconds.
     setTimeout(() => {
       if (this.exportInProgress) {
         console.warn('Export timed out, liberando exportInProgress');
         this.exportInProgress = false;
         this.exportError.next('Timeout exportación');
       }
-    }, 30000);
+    }, EXPORT_TIMEOUT_MS);
   }
 
   private sendMessageToWebSocket(message: any): void {
@@ -68,8 +71,15 @@ export class ExportService {
   }
 
   private extractFileUrl(message: any): string {
-    if (typeof message.value === 'string') return message.value;
-    return message.value?.fileUrl || message.value?.url;
+    const url = typeof message.value === 'string'
+      ? message.value
+      : message.value?.fileUrl || message.value?.url;
+    if (!url) return url;
+    // The editor answers with a path relative to its export root
+    // ("exports/<name>.zip"). Resolved against the current page it would
+    // depend on the route (/projects/edit/... -> /projects/edit/exports/...),
+    // so anchor it at the site root.
+    return /^([a-z][a-z0-9+.-]*:|\/)/i.test(url) ? url : '/' + url;
   }
 
   private downloadFile(fileUrl: string): void {
