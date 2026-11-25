@@ -144,7 +144,7 @@
     "project.import.report.relinked.hint": "Esperaban un archivo con ese nombre.",
     "project.import.report.warnings": "Avisos",
     "project.import.report.ignored": "Entradas del archivo ignoradas",
-    "project.import.report.ignored.hint": "No forman parte del proyecto (carpetas, archivos del sistema).",
+    "project.import.report.ignored.hint": "No forman parte del proyecto (archivos del sistema u otros que el proyecto no usa).",
     "project.show": "Show",
     "project.edit.editing": "Editando proyecto",
     "project.edit.save.changes": "Guardar cambios",

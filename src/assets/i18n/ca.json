@@ -123,7 +123,7 @@
     "project.import.report.relinked.hint": "Esperaven un fitxer amb aquest nom.",
     "project.import.report.warnings": "Avisos",
     "project.import.report.ignored": "Entrades de l'arxiu ignorades",
-    "project.import.report.ignored.hint": "No formen part del projecte (carpetes, fitxers del sistema).",
+    "project.import.report.ignored.hint": "No formen part del projecte (fitxers del sistema o altres que el projecte no fa servir).",
     "project.show": "Show",
     "project.edit.editing": "Editant projecte",
     "project.edit.save.changes": "Desar canvis",

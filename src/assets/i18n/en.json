@@ -122,7 +122,7 @@
     "project.import.report.relinked.hint": "They were waiting for a file with that name.",
     "project.import.report.warnings": "Warnings",
     "project.import.report.ignored": "Archive entries ignored",
-    "project.import.report.ignored.hint": "Not part of the project (folders, system files).",
+    "project.import.report.ignored.hint": "Not part of the project (system files, or others the project does not use).",
     "project.show": "Show",
     "project.edit.editing": "Editing project",
     "project.edit.save.changes": "Save changes",

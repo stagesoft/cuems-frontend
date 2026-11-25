@@ -169,7 +169,8 @@ export function buildReportSections(report: ImportReport | null): ImportReportSe
     {
       titleKey: 'project.import.report.ignored',
       hintKey: 'project.import.report.ignored.hint',
-      lines: list(report.ignored),
+      // Folder entries are in every export's zip: listing them looked like a fault.
+      lines: list(report.ignored).filter(entry => !entry.endsWith('/')),
       tone: 'normal',
     },
   ];
