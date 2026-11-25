@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
 // SPDX-License-Identifier: GPL-3.0-or-later
 // SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
-import { Component, inject, DestroyRef, effect, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, DestroyRef, effect, OnInit, OnDestroy, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { AppPageHeaderComponent } from '../../layout/app-page-header/app-page-header.component';
@@ -13,16 +13,19 @@ import { ExportService } from '../../../services/media/export.service';
 import { OscService } from '../../../services/osc.service';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { IconComponent } from '../../ui/icon/icon.component';
+import { ImportService } from '../../../services/media/import.service';
+import { ImportDialogComponent } from '../../ui/import-dialog/import-dialog.component';
 
 @Component({
   selector: 'app-project-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, AppPageHeaderComponent, ConfirmationDialogComponent, TranslateModule, CdkMenu, CdkMenuItem, CdkMenuTrigger, IconComponent],
+  imports: [CommonModule, RouterModule, AppPageHeaderComponent, ConfirmationDialogComponent, TranslateModule, CdkMenu, CdkMenuItem, CdkMenuTrigger, IconComponent, ImportDialogComponent],
   templateUrl: './project-list.component.html'
 })
 export class ProjectListComponent implements OnInit, OnDestroy {
   private exportService = inject(ExportService);
   private oscService = inject(OscService);
+  public importService = inject(ImportService);
 
   public projectsService = inject(ProjectsService);
   private destroyRef = inject(DestroyRef);
@@ -170,7 +173,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   deleteProject(uuid: string) {
-    if (this.isProjectBeingDeleted(uuid)) {
+    if (this.isProjectBeingDeleted(uuid) || this.importBusy) {
       return;
     }
 
@@ -178,6 +181,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   duplicateProject(uuid: string) {
+    if (this.importBusy) return;
     this.projectsService.duplicateProject(uuid);
   }
 
@@ -216,7 +220,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   deleteSelectedProjects(): void {
-    if (this.selectedProjects.length === 0) return;
+    if (this.selectedProjects.length === 0 || this.importBusy) return;
 
     const validSelectedProjects = this.selectedProjects.filter(uuid =>
       !this.isProjectBeingDeleted(uuid) &&
@@ -308,7 +312,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private projectToExportUuid: string | null = null;
 
   exportProject(projectUuid: string): void {
-    if (this.exportingUuid !== null || this.exportBlockedByPlayback) return;
+    if (this.exportingUuid !== null || this.importBusy || this.exportBlockedByPlayback) return;
 
     if (this.exportNeedsLoadedConfirm) {
       this.projectToExportUuid = projectUuid;
@@ -322,7 +326,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   confirmExportLoaded(): void {
     const uuid = this.projectToExportUuid;
     // The state may have moved while the dialog was open: never export into a show that started meanwhile.
-    if (!uuid || this.exportingUuid !== null || this.exportBlockedByPlayback) return;
+    if (!uuid || this.exportingUuid !== null || this.importBusy || this.exportBlockedByPlayback) return;
     this.startExport(uuid, true);
   }
 
@@ -334,5 +338,83 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   private startExport(projectUuid: string, acceptLoaded: boolean): void {
     this.exportingUuid = projectUuid;
     this.exportService.exportProject(projectUuid, acceptLoaded);
+  }
+
+  // Import of a project archive (1amfwm7kcjp). The export's guard, read the same way:
+  // a PLAYING project disables the button (the editor refuses too), a LOADED one asks
+  // the operator to accept the warning before the request carries accept_loaded.
+  // While an import runs the list is locked: no second import, no export, no delete
+  // or duplicate. The new project and media reach the lists by list_update.
+  @ViewChild('importInput') importInput?: ElementRef<HTMLInputElement>;
+
+  isConfirmImportOpen = false;
+  private fileToImport: File | null = null;
+
+  get importBusy(): boolean {
+    return this.importService.busy();
+  }
+
+  /** Something else holds the list: an export in flight, or an import. */
+  get listLocked(): boolean {
+    return this.importBusy || this.exportingUuid !== null;
+  }
+
+  get importDisabled(): boolean {
+    return this.listLocked || this.exportBlockedByPlayback;
+  }
+
+  get importTooltipKey(): string | null {
+    if (this.exportBlockedByPlayback) return 'project.import.blocked.playing';
+    if (this.listLocked) return 'project.import.blocked.busy';
+    return null;
+  }
+
+  openImportPicker(): void {
+    if (this.importDisabled || !this.importInput) return;
+    this.importInput.nativeElement.value = '';
+    this.importInput.nativeElement.click();
+  }
+
+  onImportFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0] ?? null;
+    input.value = '';
+    // The state may have moved while the picker was open.
+    if (!file || this.importDisabled) return;
+
+    if (this.exportNeedsLoadedConfirm) {
+      this.fileToImport = file;
+      this.isConfirmImportOpen = true;
+      return;
+    }
+    this.importService.start(file, false);
+  }
+
+  // The dialog emits confirm first and close right after, so the file is still here.
+  confirmImportLoaded(): void {
+    const file = this.fileToImport;
+    // Never import into a show that started while the dialog was open.
+    if (!file || this.importDisabled) return;
+    this.importService.start(file, true);
+  }
+
+  // Cancel sends nothing.
+  closeImportConfirmation(): void {
+    this.isConfirmImportOpen = false;
+    this.fileToImport = null;
+  }
+
+  cancelImport(): void {
+    this.importService.cancel();
+  }
+
+  closeImportDialog(): void {
+    this.importService.reset();
+  }
+
+  /** The editor refused because a project is loaded: the operator accepts in the dialog. */
+  acceptImportLoaded(): void {
+    if (this.exportBlockedByPlayback || this.exportingUuid !== null) return;
+    this.importService.retryAcceptingLoaded();
   }
 }

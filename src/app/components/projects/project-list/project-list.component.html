@@ -31,6 +31,20 @@
       </div>
     </div>
     <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-3">
+      <!-- Import a project archive (a zip made by Export). The export's guard: disabled
+           with a tooltip while a project plays, and while an export or an import runs;
+           a loaded project opens the warning first. The tooltip sits on the span because
+           a disabled button shows no title in every browser. -->
+      <span [attr.title]="importTooltipKey ? (importTooltipKey | translate) : null">
+        <button type="button" (click)="openImportPicker()" class="btn btn-muted btn-normal"
+          [disabled]="importDisabled"
+          [attr.aria-busy]="importBusy">
+          <span *ngIf="importBusy" class="loading loading-spinner loading-xs mr-2"></span>
+          {{ (importBusy ? 'project.importing' : 'project.import') | translate }}
+        </button>
+      </span>
+      <input #importInput type="file" accept=".zip,application/zip" class="hidden"
+        (change)="onImportFileSelected($event)">
       <button type="button" (click)="createNewProject()" class="btn btn-primary btn-normal">
         {{ 'project.list.new.project' | translate }}
       </button>
@@ -40,7 +54,7 @@
   <div class="flex gap-4">
     <button type="button" (click)="selectAllProjects()" class="btn btn-small btn-muted" [disabled]="selectedProjects.length === getSelectableProjects().length || isBulkDeleting">{{ 'project.list.select.all' | translate }}</button>
     <button type="button" (click)="deselectAllProjects()" class="btn btn-small btn-muted" [disabled]="selectedProjects.length === 0 || isBulkDeleting">{{ 'project.list.deselect.all' | translate }}</button>
-    <button type="button" (click)="deleteSelectedProjects()" class="btn btn-tertiary btn-small" [disabled]="selectedProjects.length === 0 || isBulkDeleting">
+    <button type="button" (click)="deleteSelectedProjects()" class="btn btn-tertiary btn-small" [disabled]="selectedProjects.length === 0 || isBulkDeleting || importBusy">
       <span *ngIf="isBulkDeleting" class="loading loading-spinner loading-xs mr-2"></span>
       {{ 'project.list.delete' | translate }}
     </button>
@@ -94,11 +108,11 @@
                 <button
                   type="button"
                   (click)="$event.stopPropagation(); exportProject(project.uuid)"
-                  [class.cursor-pointer]="exportingUuid === null && !exportBlockedByPlayback"
+                  [class.cursor-pointer]="exportingUuid === null && !importBusy && !exportBlockedByPlayback"
                   [class.cursor-wait]="exportingUuid === project.uuid"
-                  [class.cursor-not-allowed]="exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
-                  [class.opacity-50]="exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
-                  [disabled]="exportingUuid !== null || exportBlockedByPlayback"
+                  [class.cursor-not-allowed]="importBusy || exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
+                  [class.opacity-50]="importBusy || exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
+                  [disabled]="exportingUuid !== null || importBusy || exportBlockedByPlayback"
                   [attr.aria-busy]="exportingUuid === project.uuid">
                   <span *ngIf="exportingUuid === project.uuid"
                     class="loading loading-spinner loading-xs mr-1"></span>{{ (exportingUuid === project.uuid ? 'project.exporting' : 'project.export') | translate }}
@@ -126,13 +140,14 @@
                   <button 
                     cdkMenuItem 
                     (cdkMenuItemTriggered)="duplicateProject(project.uuid)"
+                    [disabled]="importBusy"
                     class="flex items-center gap-2 px-3 py-2 text-sm w-full text-left hover:bg-dark-300 rounded transition-colors cursor-pointer">
                     {{ 'project.list.duplicate' | translate }}
                   </button>
                   <button 
                     cdkMenuItem 
                     (cdkMenuItemTriggered)="deleteProject(project.uuid)"
-                    [disabled]="isProjectBeingDeleted(project.uuid) || isBulkDeleting"
+                    [disabled]="isProjectBeingDeleted(project.uuid) || isBulkDeleting || importBusy"
                     class="flex items-center gap-2 px-3 py-2 text-sm w-full text-left hover:bg-dark-300 rounded transition-colors text-tertiary hover:text-tertiary-light cursor-pointer">
                     <span *ngIf="isProjectBeingDeleted(project.uuid)" class="loading loading-spinner loading-xs"></span>
                     {{ 'project.list.delete' | translate }}
@@ -187,3 +202,23 @@
   (close)="closeExportConfirmation()"
   (confirm)="confirmExportLoaded()"
 ></app-confirmation-dialog>
+
+<!-- Import while a project is loaded (armed, waiting for GO): warn of the risk, the operator decides.
+     Cancel sends nothing; Accept sends the guard with accept_loaded. -->
+<app-confirmation-dialog
+  [isOpen]="isConfirmImportOpen"
+  [title]="'project.import.loaded.title' | translate"
+  [message]="'project.import.loaded.message' | translate"
+  [confirmText]="'project.import.loaded.confirm' | translate"
+  [cancelText]="'project.list.cancel' | translate"
+  (close)="closeImportConfirmation()"
+  (confirm)="confirmImportLoaded()"
+></app-confirmation-dialog>
+
+<!-- The import's progress, then its report (or the editor's refusal). -->
+<app-import-dialog
+  [state]="importService.state()"
+  (cancel)="cancelImport()"
+  (close)="closeImportDialog()"
+  (acceptLoaded)="acceptImportLoaded()"
+></app-import-dialog>

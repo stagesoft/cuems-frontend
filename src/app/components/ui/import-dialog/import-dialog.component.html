@@ -1,0 +1,117 @@
+<!-- SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
+@if (isOpen) {
+  <app-modal [isOpen]="isOpen" size="lg" (close)="onModalClose()">
+    <div class="flex flex-col space-y-4 text-left" role="dialog" aria-live="polite">
+      <div class="flex items-center gap-4">
+        <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full"
+          [class.bg-danger-light]="state.phase === 'failed'"
+          [class.bg-success-light]="state.phase !== 'failed'">
+          <app-icon [icon]="state.phase === 'failed' ? 'warning' : (state.phase === 'done' ? 'project' : 'upload')"
+            class="w-5 h-5 text-white" />
+        </div>
+        <div class="flex-1 min-w-0">
+          <h2 class="text-lg font-semibold text-dark-100">{{ titleKey | translate }}</h2>
+          <p class="text-sm text-muted truncate" [title]="state.fileName">{{ state.fileName }} · {{ fileSize }}</p>
+        </div>
+      </div>
+
+      <!-- Under way: what the editor is doing, and a bar when there is a measure. -->
+      @if (isWorking) {
+        <div>
+          <p class="text-sm text-dark-100">
+            {{ stepKey | translate }}@if (stepName) {<span class="text-muted">: {{ stepName }}</span>}
+          </p>
+          <div class="w-full bg-gray-300 rounded-full h-2.5 mt-2 overflow-hidden">
+            @if (percent !== null) {
+              <div class="h-2.5 rounded-full bg-success-light transition-all duration-300" [style.width.%]="percent"></div>
+            } @else {
+              <div class="h-2.5 w-1/3 rounded-full bg-success-light animate-pulse"></div>
+            }
+          </div>
+          <div class="flex justify-between mt-1 text-xs text-muted">
+            <span>{{ countText }}</span>
+            @if (percent !== null) { <span>{{ percent }} %</span> }
+          </div>
+          @if (state.phase === 'work') {
+            <p class="text-xs text-muted mt-3">{{ 'project.import.work.hint' | translate }}</p>
+          }
+        </div>
+      }
+
+      <!-- Failed: the editor's text as it comes, or ours when it said nothing usable. -->
+      @if (state.phase === 'failed') {
+        <div class="rounded-md border border-danger/60 bg-danger/10 px-4 py-3">
+          @if (state.error) {
+            <p class="text-sm text-dark-100 whitespace-pre-line break-words">{{ state.error }}</p>
+          }
+          @if (state.errorKey) {
+            <p class="text-sm text-dark-100">{{ state.errorKey | translate }}</p>
+          }
+        </div>
+        @if (state.canAcceptLoaded) {
+          <p class="text-sm text-muted">{{ 'project.import.loaded.message' | translate }}</p>
+        }
+      }
+
+      <!-- Done: the project created. -->
+      @if (state.phase === 'done') {
+        <div class="rounded-md border border-success/60 bg-success/10 px-4 py-3">
+          <p class="text-sm text-dark-100">
+            {{ 'project.import.report.project' | translate }}
+            <span class="font-semibold">{{ projectName }}</span>
+            @if (projectUnixName) { <span class="text-muted">({{ projectUnixName }})</span> }
+          </p>
+          @if (projectRenamed) {
+            <p class="text-xs text-muted mt-1">{{ 'project.import.report.project.renamed' | translate }}</p>
+          }
+        </div>
+      }
+
+      <!-- The report: on success, or what a failed import left in the library. -->
+      @if (!isWorking && sections.length > 0) {
+        @if (state.phase === 'failed') {
+          <p class="text-sm text-muted">{{ 'project.import.report.left' | translate }}</p>
+        }
+        <div class="flex flex-col gap-3">
+          @for (section of sections; track section.titleKey) {
+            <div>
+              <p class="text-sm font-semibold"
+                [class.text-dark-100]="section.tone === 'normal'"
+                [class.text-amber-500]="section.tone === 'warning'">
+                {{ section.titleKey | translate }} ({{ section.lines.length }})
+              </p>
+              @if (section.hintKey) {
+                <p class="text-xs text-muted">{{ section.hintKey | translate }}</p>
+              }
+              <ul class="mt-1 max-h-32 overflow-y-auto text-xs text-dark-100 list-disc pl-5 break-words">
+                @for (line of section.lines; track $index) {
+                  <li>{{ line }}</li>
+                }
+              </ul>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="flex justify-end gap-3 mt-6">
+      @if (canCancel) {
+        <button type="button" class="btn btn-normal btn-muted" (click)="cancel.emit()">
+          {{ 'project.list.cancel' | translate }}
+        </button>
+      }
+      @if (state.phase === 'failed' && state.canAcceptLoaded) {
+        <button type="button" class="btn btn-normal btn-tertiary" (click)="acceptLoaded.emit()">
+          {{ 'project.import.loaded.confirm' | translate }}
+        </button>
+      }
+      @if (!isWorking) {
+        <button type="button" class="btn btn-normal btn-primary" (click)="close.emit()">
+          {{ 'project.import.close' | translate }}
+        </button>
+      }
+    </div>
+  </app-modal>
+}
