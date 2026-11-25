@@ -301,7 +301,7 @@ export class ProjectsService {
           if (error.action === 'project_export') {
             // The app-level handler already shows the toast for every error frame:
             // a second one here showed the refusal twice.
-            this.exportService.fail(error.message || 'Error al exportar el proyecto');
+            this.exportService.refused(error);
             return;
           }
 

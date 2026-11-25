@@ -80,6 +80,8 @@
     "project.export.loaded.title": "Hi ha un projecte carregat",
     "project.export.loaded.message": "Hi ha un projecte carregat i a punt per reproduir-se. Exportar llegeix moltes dades del disc i podria endarrerir l'inici de la reproducció (el GO). Si exportes, torna a carregar el projecte després per compensar-ho. Vols exportar igualment?",
     "project.export.loaded.confirm": "Exporta igualment",
+    "project.export.error.timeout": "L'exportació no ha respost en 5 minuts. Pot ser que l'editor encara estigui treballant: espera una mica i torna a exportar.",
+    "project.export.error.nourl": "L'editor no ha retornat el fitxer exportat: torna a exportar.",
     "project.import": "Importar",
     "project.show": "Show",
     "project.edit.editing": "Editant projecte",

@@ -79,6 +79,8 @@
     "project.export.loaded.title": "A project is loaded",
     "project.export.loaded.message": "A project is loaded and ready to play. Exporting reads a lot of data from the disk and could delay the start of playback (the GO). If you export, reload the project afterwards to compensate. Do you want to export anyway?",
     "project.export.loaded.confirm": "Export anyway",
+    "project.export.error.timeout": "The export has not answered in 5 minutes. The editor may still be working: wait a while and export again.",
+    "project.export.error.nourl": "The editor did not return the exported file: export again.",
     "project.import": "Import",
     "project.show": "Show",
     "project.edit.editing": "Editing project",
