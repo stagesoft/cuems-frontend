@@ -15,6 +15,10 @@ import { NotificationService } from '../ui/notification.service';
 const SLOW_EXPORT_NOTICE_MS = 5 * 60 * 1000;
 // How long the question "is a project loaded?" waits for its answer after a refusal.
 const STATUS_TIMEOUT_MS = 30 * 1000;
+// For this long after asking, an error answer to project_status is that question's.
+// The editor takes 25 s to give up on a silent engine, and the operator may press
+// Export again meanwhile, which drops the question but not the error on its way.
+const STATUS_ERROR_CLAIM_MS = 60 * 1000;
 
 interface ExportInFlight {
   uuid: string;
@@ -44,6 +48,7 @@ export class ExportService {
   // The "still going" notice of the export in flight. It must die with that export.
   private noticeHandle: ReturnType<typeof setTimeout> | null = null;
   private statusQuestion: Subscription | null = null;
+  private claimStatusErrorUntil = 0;
 
   constructor() {
     this.webSocketService.connectionLost.subscribe(() => this.connectionGone());
@@ -101,6 +106,7 @@ export class ExportService {
 
   private connectionGone(): void {
     this.dropStatusQuestion();
+    this.claimStatusErrorUntil = 0;
     if (this.current() !== null) {
       this.fail('project.export.error.disconnected');
     }
@@ -144,12 +150,14 @@ export class ExportService {
       )
       .subscribe({
         next: (message: any) => {
+          this.claimStatusErrorUntil = 0;
           if (message.value?.status === 'loaded' && this.current() === null) {
             this.loadedRefusal.next(projectUuid);
           }
         },
         error: () => console.warn('No project_status answer after the export refusal'),
       });
+    this.claimStatusErrorUntil = Date.now() + STATUS_ERROR_CLAIM_MS;
     this.sendMessageToWebSocket({ action: 'project_status' });
   }
 
@@ -159,11 +167,7 @@ export class ExportService {
    * question's, and the app has nothing more to show.
    */
   claimStatusError(error: WebSocketError): boolean {
-    if (error.action !== 'project_status' || !this.statusQuestion || this.statusQuestion.closed) {
-      return false;
-    }
-    this.dropStatusQuestion();
-    return true;
+    return error.action === 'project_status' && Date.now() < this.claimStatusErrorUntil;
   }
 
   private dropStatusQuestion(): void {
