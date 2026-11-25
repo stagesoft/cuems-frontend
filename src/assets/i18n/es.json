@@ -101,6 +101,8 @@
     "project.export.loaded.title": "Hay un proyecto cargado",
     "project.export.loaded.message": "Hay un proyecto cargado y listo para reproducirse. Exportar lee muchos datos del disco y podría retrasar el inicio de la reproducción (el GO). Si exportas, recarga el proyecto después para compensarlo. ¿Quieres exportar de todos modos?",
     "project.export.loaded.confirm": "Exportar de todos modos",
+    "project.export.error.timeout": "La exportación no ha respondido en 5 minutos. Puede que el editor siga trabajando: espera un poco y vuelve a exportar.",
+    "project.export.error.nourl": "El editor no ha devuelto el archivo exportado: vuelve a exportar.",
     "project.import": "Importar",
     "project.importing": "Importando…",
     "project.import.blocked.playing": "No se puede importar mientras se reproduce un proyecto",
