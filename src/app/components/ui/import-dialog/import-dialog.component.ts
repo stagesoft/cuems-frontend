@@ -52,6 +52,7 @@ export class ImportDialogComponent {
     switch (this.state.phase) {
       case 'done': return 'project.import.title.done';
       case 'failed': return 'project.import.title.failed';
+      case 'unknown': return 'project.import.title.unknown';
       default: return 'project.import.title.working';
     }
   }

@@ -90,6 +90,7 @@
     "project.import.title.working": "Important un projecte",
     "project.import.title.done": "Projecte importat",
     "project.import.title.failed": "El projecte no s'ha importat",
+    "project.import.title.unknown": "Es desconeix el resultat de la importació: revisa la llista de projectes",
     "project.import.step.guard": "Comprovant que no es reprodueix cap espectacle…",
     "project.import.step.cancelling": "Cancel·lant…",
     "project.import.step.upload": "Pujant l'arxiu",

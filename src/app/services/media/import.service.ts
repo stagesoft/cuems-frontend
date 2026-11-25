@@ -16,8 +16,9 @@ import { WebsocketService, WebSocketError } from '../websocket.service';
  *    (+ "accept_loaded": true only after the operator accepted the loaded-project
  *    warning). Answer: {"type":"project_import","value":{"ticket","expires_s"}}, or the
  *    action error {"type":"error","action":"project_import","value":<text>}. A released
- *    editor answers {"type":"error","value":"unsupported action: ..."} with no action:
- *    an error with no action that arrives while our one guard is pending is its answer.
+ *    editor answers {"type":"error","value":"unsupported action: {...'project_import'...}"}
+ *    with no action: that error, while our one guard is pending, is its answer. Any other
+ *    error with no action is left to the app's toast.
  * 2. The UPLOAD, on /upload: first frame {"action":"upload","value":{"name","size",
  *    "type":"PROJECT","ticket"}}; each {"ready":true} gets the next binary frame (at most
  *    IMPORT_CHUNK_BYTES); after the last one, {"action":"finished","value":<md5 hex>}.
@@ -25,7 +26,9 @@ import { WebsocketService, WebSocketError } from '../websocket.service';
  *    at least every 5 s, then {"imported":<report>} and {"close":true}. A failure is
  *    {"error":<text>,"fatal":true}, with a "report" once something was written.
  *
- * Success is ONLY the "imported" frame, never the sending of "finished".
+ * Success is ONLY the "imported" frame, never the sending of "finished". After
+ * "finished", a socket that closes, or a "close" without "imported", leaves the
+ * outcome UNKNOWN (the editor goes on to its end): phase 'unknown', not 'failed'.
  * The lists (projects, media) refresh through the editor's list_update frames.
  */
 
@@ -35,13 +38,23 @@ export const IMPORT_CHUNK_BYTES = 500000;
 /** The editor waits up to 25 s for the engine before it answers the guard. */
 const GUARD_TIMEOUT_MS = 60 * 1000;
 
-/** How a released editor (no import) answers the guard. */
-const OLD_EDITOR_PREFIX = 'unsupported action';
+/**
+ * How a released editor (no import) answers the guard: cuems-editor's CuemsWsUser,
+ * `notify_error_to_user(f"unsupported action: {data}")`, `data` being our request as a
+ * Python dict (so it names `'project_import'`), with no `action` key.
+ */
+const OLD_EDITOR_PREFIX = 'unsupported action: ';
+const OLD_EDITOR_ACTION = "'project_import'";
 
 /** Start of the editor's I5 refusal (a project is loaded, no accept_loaded). */
 const LOADED_REFUSAL_PREFIX = 'A project is loaded';
 
-export type ImportPhase = 'idle' | 'guard' | 'upload' | 'work' | 'done' | 'failed';
+/**
+ * `failed`: the editor said no, or nothing was imported. `unknown`: the editor was
+ * working when we lost it (socket closed after `finished`, `close` with no report):
+ * it may have imported, the project list tells.
+ */
+export type ImportPhase = 'idle' | 'guard' | 'upload' | 'work' | 'done' | 'failed' | 'unknown';
 
 /** The editor's progress frame: `check` in bytes, `media` in files, `project` once. */
 export interface ImportProgress {
@@ -79,7 +92,8 @@ export interface ImportState {
   report: ImportReport | null;
   /** The editor's text, shown as it comes (English). */
   error: string | null;
-  /** An i18n key, for what the editor could not say (old editor, connection closed...). */
+  /** An i18n key, for what the editor could not say (old editor, connection closed...);
+   *  in phase `unknown`, why the outcome is unknown. */
   errorKey: string | null;
   /** Refused because a project is loaded and the warning was not accepted: the dialog may offer it. */
   canAcceptLoaded: boolean;
@@ -111,10 +125,14 @@ export class ImportService {
 
   private file: File | null = null;
   private acceptLoadedSent = false;
+  // A guard that timed out may still be answered later. The answer carries no request
+  // id, so a guard pending then takes it, and that guard's own answer, arriving with
+  // no guard pending, is dropped (a ticket among them holds the editor's slot until it
+  // expires, 60 s). It does no harm beyond a refusal: a late refusal is a refusal; a
+  // late ticket lets in only an upload of the size it was given, while it is valid (I6
+  // otherwise), and the editor asks the show rule again when the upload ends and
+  // before each file (D4), with the loaded-project acceptance of the guard it answered.
   private guardTimer: ReturnType<typeof setTimeout> | null = null;
-  // Guards that timed out: their answer may still come and must not be taken
-  // as the answer of a later guard.
-  private staleGuardAnswers = 0;
   private socket: WebSocketSubject<any> | null = null;
   // Bare error frames (no action) taken as the guard's answer, so that the other
   // subscribers of WebsocketService.errors can tell them apart whatever their order.
@@ -139,10 +157,21 @@ export class ImportService {
    * leaves those to the import dialog. Asked by other subscribers of the same frame,
    * before or after this service handled it (a bare error is remembered once claimed).
    */
-  ownsError(error: { action?: string | null }): boolean {
+  ownsError(error: { action?: string | null; message?: string; raw?: any }): boolean {
     return error.action === 'project_import'
         || this.claimedErrors.has(error)
-        || (!error.action && this.guardPending());
+        || (!error.action && this.guardPending() && this.isOldEditorAnswer(error));
+  }
+
+  /** The released editor's bare answer to our guard: "unsupported action: {...'project_import'...}". */
+  private isOldEditorAnswer(error: { message?: string; raw?: any }): boolean {
+    const text = this.errorText(error);
+    return text.startsWith(OLD_EDITOR_PREFIX) && text.includes(OLD_EDITOR_ACTION);
+  }
+
+  private errorText(error: { message?: string; raw?: any }): string {
+    const raw = error.raw?.value;
+    return typeof raw === 'string' ? raw : (error.message || '');
   }
 
   /**
@@ -175,7 +204,6 @@ export class ImportService {
     this.guardTimer = setTimeout(() => {
       this.guardTimer = null;
       if (!this.guardPending()) return;
-      this.staleGuardAnswers++;
       if (this.state().cancelling) {
         this.toIdle();
       } else {
@@ -227,7 +255,6 @@ export class ImportService {
   private onMainMessage(message: any): void {
     if (!message || message.type !== 'project_import') return;
     if (!this.guardPending()) {
-      if (this.staleGuardAnswers > 0) this.staleGuardAnswers--;
       console.warn('ImportService: project_import answer with no guard pending, ignored');
       return;
     }
@@ -247,19 +274,16 @@ export class ImportService {
 
   private onMainError(error: WebSocketError): void {
     if (!this.ownsError(error)) return;
-    if (this.guardPending()) this.claimedErrors.add(error);
-    if (!this.guardPending()) {
-      if (error.action === 'project_import' && this.staleGuardAnswers > 0) this.staleGuardAnswers--;
-      return;
-    }
+    if (!this.guardPending()) return;
+    this.claimedErrors.add(error);
     this.clearGuardTimer();
     if (this.state().cancelling) {
       this.toIdle();
       return;
     }
-    const raw = error.raw?.value;
-    const text = typeof raw === 'string' ? raw : (error.message || '');
-    if (!error.action && text.startsWith(OLD_EDITOR_PREFIX)) {
+    const text = this.errorText(error);
+    if (!error.action) {
+      // ownsError took it only as the released editor's answer.
       this.fail(null, 'project.import.error.old.editor');
       return;
     }
@@ -338,7 +362,8 @@ export class ImportService {
         if (frame.close) {
           const ended = this.state().phase === 'done';
           this.closeSocket();
-          if (!ended) this.fail(null, 'project.import.error.no.report');
+          // The editor ended with no report: it may have imported.
+          if (!ended) this.unknown('project.import.error.no.report');
           return;
         }
         if (frame.ready) {
@@ -365,7 +390,7 @@ export class ImportService {
       this.fail(null, 'project.import.error.closed.upload');
     } else if (phase === 'work') {
       // After `finished` the editor goes on to its end; the lists refresh by list_update.
-      this.fail(null, 'project.import.error.closed.work');
+      this.unknown('project.import.error.closed.work');
     }
   }
 
@@ -389,6 +414,15 @@ export class ImportService {
     this.clearGuardTimer();
     this.state.update(s => ({
       ...s, phase: 'failed', error, errorKey, report, canAcceptLoaded, cancelling: false,
+    }));
+  }
+
+  /** We lost the editor while it worked: the outcome is not known here. */
+  private unknown(reasonKey: string): void {
+    this.clearGuardTimer();
+    this.state.update(s => ({
+      ...s, phase: 'unknown', error: null, errorKey: reasonKey, report: null,
+      canAcceptLoaded: false, cancelling: false,
     }));
   }
 

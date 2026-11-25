@@ -7,8 +7,9 @@
       <div class="flex items-center gap-4">
         <div class="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full"
           [class.bg-danger-light]="state.phase === 'failed'"
-          [class.bg-success-light]="state.phase !== 'failed'">
-          <app-icon [icon]="state.phase === 'failed' ? 'warning' : (state.phase === 'done' ? 'project' : 'upload')"
+          [class.bg-amber-500]="state.phase === 'unknown'"
+          [class.bg-success-light]="state.phase !== 'failed' && state.phase !== 'unknown'">
+          <app-icon [icon]="state.phase === 'failed' || state.phase === 'unknown' ? 'warning' : (state.phase === 'done' ? 'project' : 'upload')"
             class="w-5 h-5 text-white" />
         </div>
         <div class="flex-1 min-w-0">
@@ -53,6 +54,15 @@
         @if (state.canAcceptLoaded) {
           <p class="text-sm text-muted">{{ 'project.import.loaded.message' | translate }}</p>
         }
+      }
+
+      <!-- Unknown: the editor was working when the connection was lost; it may have imported. -->
+      @if (state.phase === 'unknown') {
+        <div class="rounded-md border border-amber-500/60 bg-amber-500/10 px-4 py-3">
+          @if (state.errorKey) {
+            <p class="text-sm text-dark-100">{{ state.errorKey | translate }}</p>
+          }
+        </div>
       }
 
       <!-- Done: the project created. -->

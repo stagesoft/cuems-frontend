@@ -89,6 +89,7 @@
     "project.import.title.working": "Importing a project",
     "project.import.title.done": "Project imported",
     "project.import.title.failed": "The project was not imported",
+    "project.import.title.unknown": "The result of the import is unknown: check the project list",
     "project.import.step.guard": "Checking that no show is playing…",
     "project.import.step.cancelling": "Cancelling…",
     "project.import.step.upload": "Uploading the archive",

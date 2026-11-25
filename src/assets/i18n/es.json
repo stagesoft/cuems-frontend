@@ -111,6 +111,7 @@
     "project.import.title.working": "Importando un proyecto",
     "project.import.title.done": "Proyecto importado",
     "project.import.title.failed": "El proyecto no se ha importado",
+    "project.import.title.unknown": "Se desconoce el resultado de la importación: revisa la lista de proyectos",
     "project.import.step.guard": "Comprobando que no se reproduce ningún espectáculo…",
     "project.import.step.cancelling": "Cancelando…",
     "project.import.step.upload": "Subiendo el archivo",
