@@ -8,9 +8,17 @@ import { filter, take, timeout } from 'rxjs/operators';
 import { WebsocketService, WebSocketError } from '../websocket.service';
 import { NotificationService } from '../ui/notification.service';
 
-const EXPORT_TIMEOUT_MS = 5 * 60 * 1000;
+// After this long the operator is told the export is still going. It is NOT a time
+// limit: neither the answer nor the error carries a request id, so a tab that gave
+// up and asked again could not tell the two answers apart (and a large show can
+// take longer than any limit we would pick).
+const SLOW_EXPORT_NOTICE_MS = 5 * 60 * 1000;
 // How long the question "is a project loaded?" waits for its answer after a refusal.
 const STATUS_TIMEOUT_MS = 30 * 1000;
+// For this long after asking, an error answer to project_status is that question's.
+// The editor takes 25 s to give up on a silent engine, and the operator may press
+// Export again meanwhile, which drops the question but not the error on its way.
+const STATUS_ERROR_CLAIM_MS = 60 * 1000;
 
 interface ExportInFlight {
   uuid: string;
@@ -37,10 +45,14 @@ export class ExportService {
   // The one export in flight of this tab. It lives here and not in the project
   // list: the list is destroyed when the operator navigates away, the export goes on.
   private current = signal<ExportInFlight | null>(null);
-  // The safety timer of the export in flight. It must die with that export: left
-  // running it would release the button of a LATER export before its time.
-  private timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+  // The "still going" notice of the export in flight. It must die with that export.
+  private noticeHandle: ReturnType<typeof setTimeout> | null = null;
   private statusQuestion: Subscription | null = null;
+  private claimStatusErrorUntil = 0;
+
+  constructor() {
+    this.webSocketService.connectionLost.subscribe(() => this.connectionGone());
+  }
 
   /** uuid of the project being exported; null when nothing is. */
   get exportingUuid(): string | null {
@@ -49,10 +61,16 @@ export class ExportService {
 
   // acceptLoaded: the operator saw the warning for a project that is loaded (armed, waiting for GO)
   // and accepted. The editor may ask for it (extra top-level key, as nodelist_modify's modify_action).
-  // false: another export is in flight and this one was not sent.
+  // false: not sent, because another export is in flight or the editor is not connected.
   exportProject(projectUuid: string, acceptLoaded = false, unixName?: string): boolean {
     if (this.current() !== null) {
       console.warn('Ya hay un export en curso, no se envía otro');
+      return false;
+    }
+    // Sent while disconnected, the request would stay in a socket the reconnection
+    // throws away: no answer, no close to hear about, and the lock held for ever.
+    if (!this.webSocketService.isConnected()) {
+      this.notificationService.showError(this.translate.instant('project.export.error.offline'));
       return false;
     }
     this.dropStatusQuestion();
@@ -68,22 +86,29 @@ export class ExportService {
 
     this.sendMessageToWebSocket(message);
 
-    // Safety timeout: the editor zips the project AND its media before it
-    // answers (38 s measured for a small project), so allow minutes, not seconds.
-    this.timeoutHandle = setTimeout(() => {
-      this.timeoutHandle = null;
-      console.warn('Export timed out, liberando el export en curso');
-      this.fail('project.export.error.timeout');
-    }, EXPORT_TIMEOUT_MS);
+    // The editor zips the project AND its media before it answers. The export
+    // ends with its answer, its error or the loss of the connection.
+    this.noticeHandle = setTimeout(() => {
+      this.noticeHandle = null;
+      this.notificationService.showWarning(this.translate.instant('project.export.slow'));
+    }, SLOW_EXPORT_NOTICE_MS);
     return true;
   }
 
   /** The export in flight is over (done or failed): lock released, timer cancelled. */
   private settle(): void {
     this.current.set(null);
-    if (this.timeoutHandle !== null) {
-      clearTimeout(this.timeoutHandle);
-      this.timeoutHandle = null;
+    if (this.noticeHandle !== null) {
+      clearTimeout(this.noticeHandle);
+      this.noticeHandle = null;
+    }
+  }
+
+  private connectionGone(): void {
+    this.dropStatusQuestion();
+    this.claimStatusErrorUntil = 0;
+    if (this.current() !== null) {
+      this.fail('project.export.error.disconnected');
     }
   }
 
@@ -95,8 +120,8 @@ export class ExportService {
 
   /**
    * The editor's error answer to project_export. The app-wide handler already
-   * shows its text. An error that names another project belongs to an earlier
-   * export (one this tab gave up on) and releases nothing.
+   * shows its text. An error that names another project is not this export's
+   * and releases nothing.
    */
   refused(error: WebSocketError): void {
     const sent = this.current();
@@ -125,13 +150,24 @@ export class ExportService {
       )
       .subscribe({
         next: (message: any) => {
+          this.claimStatusErrorUntil = 0;
           if (message.value?.status === 'loaded' && this.current() === null) {
             this.loadedRefusal.next(projectUuid);
           }
         },
         error: () => console.warn('No project_status answer after the export refusal'),
       });
+    this.claimStatusErrorUntil = Date.now() + STATUS_ERROR_CLAIM_MS;
     this.sendMessageToWebSocket({ action: 'project_status' });
+  }
+
+  /**
+   * The error answer to the project_status asked after a refusal: the engine is
+   * silent, which the refusal's own toast already said. true: it was that
+   * question's, and the app has nothing more to show.
+   */
+  claimStatusError(error: WebSocketError): boolean {
+    return error.action === 'project_status' && Date.now() < this.claimStatusErrorUntil;
   }
 
   private dropStatusQuestion(): void {
@@ -153,8 +189,7 @@ export class ExportService {
 
     const sent = this.current();
     if (sent === null) {
-      // Nothing waits for it: this tab already gave up and told the operator.
-      console.warn('Late project_export answer, ignored');
+      console.warn('project_export answer with no export in flight, ignored');
       return;
     }
 

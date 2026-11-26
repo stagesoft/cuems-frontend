@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Injectable, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { webSocket, WebSocketSubject } from 'rxjs/webSocket';
@@ -23,6 +26,9 @@ export class WebsocketService {
 
   public messages = new Subject<any>();
   public errors = new Subject<WebSocketError>();
+  /** A connection closed (or an attempt to open one failed). The editor answers on
+   *  the connection that asked, so what was still waiting will never be answered. */
+  public connectionLost = new Subject<void>();
 
   public hasRecentError = false;
 
@@ -33,7 +39,7 @@ export class WebsocketService {
         next: () => this.isConnected.set(true)
       },
       closeObserver: {
-        next: () => this.isConnected.set(false)
+        next: () => this.handleClose()
       }
     });
 
@@ -45,6 +51,11 @@ export class WebsocketService {
           this.reconnect();
         }
       });
+  }
+
+  private handleClose(): void {
+    this.isConnected.set(false);
+    this.connectionLost.next();
   }
 
   private handleServerMessage(response: any): void {
@@ -98,7 +109,7 @@ export class WebsocketService {
           next: () => this.isConnected.set(true)
         },
         closeObserver: {
-          next: () => this.isConnected.set(false)
+          next: () => this.handleClose()
         }
       });
 

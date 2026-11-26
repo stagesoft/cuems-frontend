@@ -21,6 +21,7 @@ import { ProjectList, ProjectsService } from './services/projects/projects.servi
 import { PlayControlsFloatingComponent } from './components/ui/play-controls/play-controls-floating/play-controls-floating.component';
 import { ClusterWarning, OscService } from './services/osc.service';
 import { ImportService } from './services/media/import.service';
+import { ExportService } from './services/media/export.service';
 
 /** How long an empty engine load must last before an open show is closed.
  *  Engines from cdf8fcf on blank /engine/status/load at the start of every
@@ -51,6 +52,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private strategy = inject(RouteReuseStrategy) as CustomRouteReuseStrategy;
   private router = inject(Router);
   private projectsService = inject(ProjectsService);
+  private exportService = inject(ExportService);
   oscService = inject(OscService);
   // Keeps the editor's media_check_report warnings on every page (869fat84r D20).
   private mediaCheck = inject(MediaCheckService);
@@ -271,6 +273,7 @@ export class AppComponent implements OnInit, OnDestroy {
     // A refusal of a project import (or a released editor's bare "unsupported action"
     // while its guard waits) is shown in the import dialog, not as a toast.
     if (this.importService.ownsError(error)) return;
+    if (this.exportService.claimStatusError(error)) return;
     // WebsocketService emits {action, message, raw} — the old error.value
     // branch was always undefined, so every backend rejection surfaced as the
     // generic toast. Match special cases against the raw backend text and
