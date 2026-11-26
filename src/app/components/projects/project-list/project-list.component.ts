@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 import { Component, inject, DestroyRef, effect, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
@@ -5,7 +8,10 @@ import { AppPageHeaderComponent } from '../../layout/app-page-header/app-page-he
 import { ProjectsService, ProjectList } from '../../../services/projects/projects.service';
 import { ConfirmationDialogComponent } from '../../ui/confirmation-dialog/confirmation-dialog.component';
 import { Subscription } from 'rxjs';
-import { TranslateModule } from '@ngx-translate/core';
+import { TranslateModule, TranslateService } from '@ngx-translate/core';
+import { ExportService } from '../../../services/media/export.service';
+import { NotificationService } from '../../../services/ui/notification.service';
+import { OscService } from '../../../services/osc.service';
 import { CdkMenu, CdkMenuItem, CdkMenuTrigger } from '@angular/cdk/menu';
 import { IconComponent } from '../../ui/icon/icon.component';
 
@@ -16,6 +22,11 @@ import { IconComponent } from '../../ui/icon/icon.component';
   templateUrl: './project-list.component.html'
 })
 export class ProjectListComponent implements OnInit, OnDestroy {
+  private exportService = inject(ExportService);
+  private oscService = inject(OscService);
+  private notificationService = inject(NotificationService);
+  private translate = inject(TranslateService);
+
   public projectsService = inject(ProjectsService);
   private destroyRef = inject(DestroyRef);
   private router = inject(Router);
@@ -28,16 +39,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   isConfirmDeleteOpen = false;
   isConfirmBulkDeleteOpen = false;
   isBulkDeleting = false;
-  
+
   private deletingProjects = new Map<string, boolean>();
-  
+
   constructor() {
     this.refreshProjects();
 
     effect(() => {
       const projects = this.projectsService.projects();
       this.isLoading = false;
-      
+
       this.cleanupProjectMaps(projects);
     });
   }
@@ -46,15 +57,30 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     this.subscription.add(
       this.projectsService.errorEvent.subscribe(error => {
         console.log('Error event received:', error);
-        
+
         if (error.action === 'project_delete') {
           if (this.projectToDeleteUuid) {
             this.deletingProjects.delete(this.projectToDeleteUuid);
             this.projectToDeleteUuid = null;
           }
-          
+
           this.isBulkDeleting = false;
         }
+      })
+    );
+    this.setupExportSubscriptions();
+
+  }
+
+  private setupExportSubscriptions(): void {
+    this.subscription.add(
+      this.exportService.loadedRefusal.subscribe(uuid => {
+        // The editor said no because a project is loaded and this screen had not
+        // seen it: give the operator the dialog its message asks to accept.
+        // An open dialog keeps its project: it does not name it, so swapping it
+        // underneath would export another one on Accept.
+        if (this.isConfirmExportOpen || this.exportingUuid !== null || this.exportBlockedByPlayback) return;
+        this.openExportConfirmation(uuid);
       })
     );
   }
@@ -65,16 +91,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   cleanupProjectMaps(projects: ProjectList[]) {
     const existingUuids = projects.map(p => p.uuid);
-    
+
     if (this.selectedProjects.length > 0) {
       const previousLength = this.selectedProjects.length;
       this.selectedProjects = this.selectedProjects.filter(uuid => existingUuids.includes(uuid));
-      
+
       if (previousLength !== this.selectedProjects.length) {
         console.log(`Removed ${previousLength - this.selectedProjects.length} non-existent projects from selection`);
       }
     }
-    
+
     if (this.deletingProjects.size > 0) {
       let removed = 0;
       this.deletingProjects.forEach((value, uuid) => {
@@ -83,7 +109,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
           removed++;
         }
       });
-      
+
       if (this.deletingProjects.size === 0) {
         this.isBulkDeleting = false;
       }
@@ -120,11 +146,11 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
       if (this.selectedProjects.includes(this.projectToDeleteUuid)) {
         this.selectedProjects = this.selectedProjects.filter(uuid => uuid !== this.projectToDeleteUuid);
-  }
+      }
 
       this.executeProjectDeletion(this.projectToDeleteUuid);
       this.closeDeleteConfirmation();
-      
+
       const uuidToCleanup = this.projectToDeleteUuid;
       setTimeout(() => {
         if (this.deletingProjects.has(uuidToCleanup)) {
@@ -143,7 +169,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     if (this.isProjectBeingDeleted(uuid)) {
       return;
     }
-    
+
     this.openDeleteConfirmation(uuid);
   }
 
@@ -159,7 +185,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
     if (this.isProjectBeingDeleted(uuid)) {
       return;
     }
-    
+
     if (this.selectedProjects.includes(uuid)) {
       this.selectedProjects = this.selectedProjects.filter(id => id !== uuid);
     } else {
@@ -174,7 +200,7 @@ export class ProjectListComponent implements OnInit, OnDestroy {
       this.selectedProjects = this.getSelectableProjects();
     }
   }
-  
+
   getSelectableProjects(): string[] {
     return this.projectsService.projects()
       .filter(project => !this.isProjectBeingDeleted(project.uuid))
@@ -187,16 +213,16 @@ export class ProjectListComponent implements OnInit, OnDestroy {
 
   deleteSelectedProjects(): void {
     if (this.selectedProjects.length === 0) return;
-    
-    const validSelectedProjects = this.selectedProjects.filter(uuid => 
-      !this.isProjectBeingDeleted(uuid) && 
+
+    const validSelectedProjects = this.selectedProjects.filter(uuid =>
+      !this.isProjectBeingDeleted(uuid) &&
       this.projectsService.projects().some(p => p.uuid === uuid)
     );
-    
+
     this.selectedProjects = validSelectedProjects;
-    
+
     if (this.selectedProjects.length === 0) return;
-    
+
     this.isConfirmBulkDeleteOpen = true;
   }
 
@@ -205,39 +231,119 @@ export class ProjectListComponent implements OnInit, OnDestroy {
   }
 
   confirmBulkDelete(): void {
-    const validSelectedProjects = this.selectedProjects.filter(uuid => 
-      !this.isProjectBeingDeleted(uuid) && 
+    const validSelectedProjects = this.selectedProjects.filter(uuid =>
+      !this.isProjectBeingDeleted(uuid) &&
       this.projectsService.projects().some(p => p.uuid === uuid)
     );
-    
+
     if (validSelectedProjects.length > 0) {
       this.executeDeleteProjects([...validSelectedProjects]);
     }
-    
+
     this.closeBulkDeleteConfirmation();
   }
 
   executeDeleteProjects(uuids: string[]): void {
     if (uuids.length === 0) return;
-    
+
     this.isBulkDeleting = true;
-    
+
     uuids.forEach(uuid => {
       this.deletingProjects.set(uuid, true);
     });
-    
-    uuids.forEach(uuid => 
+
+    uuids.forEach(uuid =>
       this.projectsService.deleteProject(uuid)
     );
-    
+
     this.selectedProjects = [];
-    
+
     setTimeout(() => {
       uuids.forEach(uuid => {
         this.deletingProjects.delete(uuid);
       });
-      
+
       this.isBulkDeleting = false;
     }, 5000);
+  }
+
+  truncateText(text: string, maxLength: number = 17): string {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  }
+
+  // Métodos para exportar
+  // uuid of the project being exported; null when nothing is. One export at a time
+  // per tab: one row shows progress and every export button waits for it. The
+  // state is ExportService's, so it is still there after leaving this list.
+  get exportingUuid(): string | null {
+    return this.exportService.exportingUuid;
+  }
+
+  // A project is PLAYING: the editor refuses to export, and the buttons say so before
+  // the operator presses. The editor never stops anything to make room.
+  //
+  // The state comes from the engine's LIVE channel (/engine/status/running and
+  // /engine/status/load), the same source as the green project name in the
+  // header. ProjectsService.runningProjectUuid/loadedProjectUuid come from
+  // `project_status`, which is asked ONCE per connection: a project loaded after
+  // this tab opened never reached them, so the warning did not show and the
+  // editor had to refuse (1amfwm7kana, seen on rig test). They stay as the
+  // fallback while the engine channel is down.
+  get exportBlockedByPlayback(): boolean {
+    if (this.oscService.isConnected()) {
+      return this.oscService.running();
+    }
+    return this.projectsService.runningProjectUuid() !== null;
+  }
+
+  // A project is LOADED but not playing (armed, waiting for GO): a long read of the
+  // media could delay that GO, so the operator is warned and decides (Ion, 2026-11-24).
+  get exportNeedsLoadedConfirm(): boolean {
+    if (this.oscService.isConnected()) {
+      return !this.oscService.running() && this.oscService.loadedProject() !== '';
+    }
+    return this.projectsService.runningProjectUuid() === null
+        && this.projectsService.loadedProjectUuid() !== null;
+  }
+
+  isConfirmExportOpen = false;
+  private projectToExportUuid: string | null = null;
+
+  exportProject(projectUuid: string): void {
+    if (this.exportingUuid !== null || this.exportBlockedByPlayback) return;
+
+    if (this.exportNeedsLoadedConfirm) {
+      this.openExportConfirmation(projectUuid);
+      return;
+    }
+    this.startExport(projectUuid, false);
+  }
+
+  // The dialog emits confirm first and close right after, so the uuid is still here.
+  confirmExportLoaded(): void {
+    const uuid = this.projectToExportUuid;
+    if (!uuid || this.exportingUuid !== null) return;
+    // The state may have moved while the dialog was open: never export into a show that started meanwhile.
+    if (this.exportBlockedByPlayback) {
+      this.notificationService.showError(this.translate.instant('project.export.blocked.playing'));
+      return;
+    }
+    this.startExport(uuid, true);
+  }
+
+  private openExportConfirmation(projectUuid: string): void {
+    this.projectToExportUuid = projectUuid;
+    this.isConfirmExportOpen = true;
+  }
+
+  closeExportConfirmation(): void {
+    this.isConfirmExportOpen = false;
+    this.projectToExportUuid = null;
+  }
+
+  private startExport(projectUuid: string, acceptLoaded: boolean): void {
+    const unixName = this.projectsService.projects().find(p => p.uuid === projectUuid)?.unix_name;
+    this.exportService.exportProject(projectUuid, acceptLoaded, unixName);
   }
 }

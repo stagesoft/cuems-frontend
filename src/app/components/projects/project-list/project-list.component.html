@@ -1,3 +1,6 @@
+<!-- SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL -->
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<!-- SPDX-FileContributor: Ion Reguera <ion@stagelab.coop> -->
 <div class="wrapper">
   <app-page-header
   title="projects"
@@ -27,8 +30,10 @@
         </a>
       </div>
     </div>
-    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
-      <button type="button" (click)="createNewProject()" class="btn btn-primary btn-normal">{{ 'project.list.new.project' | translate }}</button>
+    <div class="mt-4 sm:mt-0 sm:ml-16 sm:flex-none flex gap-3">
+      <button type="button" (click)="createNewProject()" class="btn btn-primary btn-normal">
+        {{ 'project.list.new.project' | translate }}
+      </button>
     </div>
   </div>
 
@@ -59,7 +64,7 @@
                 <input class="checkbox" type="checkbox" (click)="$event.stopPropagation(); selectAllProjects()" [checked]="selectedProjects.length === getSelectableProjects().length" [disabled]="isBulkDeleting">
               </th>
               <th scope="col" class="w-64 py-3.5 pr-3 pl-4 text-left text-sm font-semibold sm:pl-0">{{ 'project.list.name' | translate }}</th>
-              <th scope="col" class="w-40 px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.unix_name' | translate }}</th>
+              <th scope="col" class="w-40 px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.description' | translate }}</th>
               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.created' | translate }}</th>
               <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold">{{ 'project.list.modified' | translate }}</th>
               <th scope="col" class="relative py-3.5 pr-4 pl-3 sm:pr-0">
@@ -74,10 +79,32 @@
                   <input class="checkbox" type="checkbox" (click)="selectProject(project.uuid)" [checked]="selectedProjects.includes(project.uuid)" [disabled]="isProjectBeingDeleted(project.uuid) || isBulkDeleting">
                 </td>
               <td class="w-64 py-4 pr-3 pl-4 text-sm font-medium whitespace-nowrap sm:pl-0">{{ project.name }}</td>
-              <td class="w-40 px-3 py-4 text-sm whitespace-nowrap">{{ project.unix_name }}</td>
+              <td class="w-40 px-3 py-4 text-sm whitespace-nowrap cursor-default" [attr.title]="project.description">{{ truncateText(project.description || '', 17) }}</td>
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.created | date:'medium' }}</td>
               <td class="px-3 py-4 text-sm whitespace-nowrap">{{ project.modified | date:'medium' }}</td>
               <td class="relative py-4 pr-4 pl-3 text-right text-sm font-medium whitespace-nowrap sm:pr-0">
+                <!-- Export: same look as the Edit / View links next to it. While the
+                     editor builds the zip the clicked row shows progress and every
+                     export button stays locked until the file is delivered. It is also
+                     locked while a project is playing (the editor refuses too: this only
+                     tells the operator why before they press). The tooltip sits on the
+                     span because a disabled button shows no title in every browser. -->
+                <span *ngIf="!isProjectBeingDeleted(project.uuid)" class="mr-4"
+                  [attr.title]="exportBlockedByPlayback ? ('project.export.blocked.playing' | translate) : null">
+                <button
+                  type="button"
+                  (click)="$event.stopPropagation(); exportProject(project.uuid)"
+                  [class.cursor-pointer]="exportingUuid === null && !exportBlockedByPlayback"
+                  [class.cursor-wait]="exportingUuid === project.uuid"
+                  [class.cursor-not-allowed]="exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
+                  [class.opacity-50]="exportBlockedByPlayback || (exportingUuid !== null && exportingUuid !== project.uuid)"
+                  [disabled]="exportingUuid !== null || exportBlockedByPlayback"
+                  [attr.aria-busy]="exportingUuid === project.uuid">
+                  <span *ngIf="exportingUuid === project.uuid"
+                    class="loading loading-spinner loading-xs mr-1"></span>{{ (exportingUuid === project.uuid ? 'project.exporting' : 'project.export') | translate }}
+                </button>
+                </span>
+
                 <a *ngIf="!isProjectBeingDeleted(project.uuid)" [routerLink]="['/projects', project.uuid, 'edit']" (click)="$event.stopPropagation()" class="mr-4">
                   {{ 'project.list.edit' | translate }}<span class="sr-only">, {{ project.name }}</span>
                 </a>
@@ -150,4 +177,13 @@
   (confirm)="confirmBulkDelete()"
 ></app-confirmation-dialog>
 
-
+<!-- Export while a project is loaded (armed, waiting for GO): warn of the risk, the operator decides. -->
+<app-confirmation-dialog
+  [isOpen]="isConfirmExportOpen"
+  [title]="'project.export.loaded.title' | translate"
+  [message]="'project.export.loaded.message' | translate"
+  [confirmText]="'project.export.loaded.confirm' | translate"
+  [cancelText]="'project.list.cancel' | translate"
+  (close)="closeExportConfirmation()"
+  (confirm)="confirmExportLoaded()"
+></app-confirmation-dialog>

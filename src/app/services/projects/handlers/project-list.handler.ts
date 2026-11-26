@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Stagelab Coop SCCL
+// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-FileContributor: Ion Reguera <ion@stagelab.coop>
 // src/app/services/projects/handlers/project-list.handler.ts
 import { ProjectList } from '../projects.service';
 
@@ -12,6 +15,7 @@ export function transformProjectsResponse(projectsData: any[]): ProjectList[] {
     return {
       uuid,
       name: projectData.name,
+      description: projectData.description ?? projectData.CuemsScript?.description,
       unix_name: projectData.unix_name,
       created: projectData.created,
       modified: projectData.modified
